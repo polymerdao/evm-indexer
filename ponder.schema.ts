@@ -12,6 +12,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   CloseIbcChannel: p.createTable({
     id: p.string(),
@@ -23,6 +26,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   ConnectIbcChannel: p.createTable({
     id: p.string(),
@@ -34,6 +40,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   OpenIbcChannel: p.createTable({
     id: p.string(),
@@ -50,6 +59,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   OwnershipTransferred: p.createTable({
     id: p.string(),
@@ -61,6 +73,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   RecvPacket: p.createTable({
     id: p.string(),
@@ -73,6 +88,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   SendPacket: p.createTable({
     id: p.string(),
@@ -87,6 +105,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   Timeout: p.createTable({
     id: p.string(),
@@ -99,6 +120,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   WriteAckPacket: p.createTable({
     id: p.string(),
@@ -113,6 +137,9 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
   WriteTimeoutPacket: p.createTable({
     id: p.string(),
@@ -128,5 +155,8 @@ export default createSchema((p) => ({
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
     chainId: p.int(),
+    gas: p.bigint(),
+    maxFeePerGas: p.bigint().optional(),
+    maxPriorityFeePerGas: p.bigint().optional(),
   }),
 }));
