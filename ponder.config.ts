@@ -9,12 +9,12 @@ export default createConfig({
     base: {
       chainId: 84532,
       transport: http(process.env.PONDER_RPC_URL_84532),
-      pollingInterval: 15_000,
+      pollingInterval: 5_000,
     },
     optimism: {
       chainId: 11155420,
       transport: http(process.env.PONDER_RPC_URL_11155420),
-      pollingInterval: 15_000,
+      pollingInterval: 5_000,
     },
   },
   contracts: {

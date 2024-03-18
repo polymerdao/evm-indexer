@@ -2,6 +2,7 @@ import { ponder } from "@/generated";
 
 ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.Acknowledgement.create({
     id: event.log.id,
@@ -14,12 +15,14 @@ ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
@@ -31,12 +34,14 @@ ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.ConnectIbcChannel.create({
     id: event.log.id,
@@ -48,12 +53,14 @@ ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.OpenIbcChannel.create({
     id: event.log.id,
@@ -71,12 +78,14 @@ ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.OwnershipTransferred.create({
     id: event.log.id,
@@ -88,12 +97,14 @@ ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.RecvPacket.create({
     id: event.log.id,
@@ -106,12 +117,14 @@ ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.SendPacket.create({
     id: event.log.id,
@@ -126,12 +139,14 @@ ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.Timeout.create({
     id: event.log.id,
@@ -144,12 +159,14 @@ ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.WriteAckPacket.create({
     id: event.log.id,
@@ -164,12 +181,14 @@ ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
 
   await context.db.WriteTimeoutPacket.create({
     id: event.log.id,
@@ -185,6 +204,7 @@ ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
@@ -192,6 +212,7 @@ ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
 
 ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.Acknowledgement.create({
     id: event.log.id,
@@ -204,12 +225,14 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
@@ -221,12 +244,14 @@ ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.ConnectIbcChannel.create({
     id: event.log.id,
@@ -238,12 +263,14 @@ ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.OpenIbcChannel.create({
     id: event.log.id,
@@ -261,12 +288,14 @@ ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.OwnershipTransferred.create({
     id: event.log.id,
@@ -278,12 +307,14 @@ ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.RecvPacket.create({
     id: event.log.id,
@@ -296,12 +327,14 @@ ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.SendPacket.create({
     id: event.log.id,
@@ -316,12 +349,14 @@ ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.Timeout.create({
     id: event.log.id,
@@ -334,12 +369,14 @@ ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.WriteAckPacket.create({
     id: event.log.id,
@@ -354,16 +391,19 @@ ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
+      chainId: chainId,
     }
   });
 });
 
 ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
   const { address } = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
 
   await context.db.WriteTimeoutPacket.create({
     id: event.log.id,
     data: {
+      chainId: chainId,
       dispatcherAddress: address || "",
       dispatcherType: "proof",
       writerPortAddress: event.args.writerPortAddress,

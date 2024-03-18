@@ -11,6 +11,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   CloseIbcChannel: p.createTable({
     id: p.string(),
@@ -21,6 +22,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   ConnectIbcChannel: p.createTable({
     id: p.string(),
@@ -31,6 +33,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   OpenIbcChannel: p.createTable({
     id: p.string(),
@@ -46,6 +49,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   OwnershipTransferred: p.createTable({
     id: p.string(),
@@ -56,6 +60,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   RecvPacket: p.createTable({
     id: p.string(),
@@ -67,6 +72,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   SendPacket: p.createTable({
     id: p.string(),
@@ -80,6 +86,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   Timeout: p.createTable({
     id: p.string(),
@@ -91,6 +98,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   WriteAckPacket: p.createTable({
     id: p.string(),
@@ -104,6 +112,7 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
   WriteTimeoutPacket: p.createTable({
     id: p.string(),
@@ -118,5 +127,6 @@ export default createSchema((p) => ({
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
     transactionHash: p.string(),
+    chainId: p.int(),
   }),
 }));
