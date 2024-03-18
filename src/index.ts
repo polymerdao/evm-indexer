@@ -7,7 +7,7 @@ ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
   await context.db.Acknowledgement.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
@@ -19,6 +19,7 @@ ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -29,7 +30,7 @@ ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       portAddress: event.args.portAddress,
       channelId: ethers.decodeBytes32String(event.args.channelId),
@@ -40,6 +41,7 @@ ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -50,7 +52,7 @@ ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
   await context.db.ConnectIbcChannel.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       portAddress: event.args.portAddress,
       channelId: ethers.decodeBytes32String(event.args.channelId),
@@ -61,6 +63,7 @@ ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -71,7 +74,7 @@ ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
   await context.db.OpenIbcChannel.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       portAddress: event.args.portAddress,
       version: event.args.version,
@@ -88,6 +91,7 @@ ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -98,7 +102,7 @@ ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
   await context.db.OwnershipTransferred.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       previousOwner: event.args.previousOwner,
       newOwner: event.args.newOwner,
@@ -109,6 +113,7 @@ ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -119,7 +124,7 @@ ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       destPortAddress: event.args.destPortAddress,
       destChannelId: ethers.decodeBytes32String(event.args.destChannelId),
@@ -131,6 +136,7 @@ ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -141,7 +147,7 @@ ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
   await context.db.SendPacket.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
@@ -155,6 +161,7 @@ ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -165,7 +172,7 @@ ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
   await context.db.Timeout.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
@@ -177,6 +184,7 @@ ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -187,7 +195,7 @@ ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
   await context.db.WriteAckPacket.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       writerPortAddress: event.args.writerPortAddress,
       writerChannelId: ethers.decodeBytes32String(event.args.writerChannelId),
@@ -201,6 +209,7 @@ ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -211,7 +220,7 @@ ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
   await context.db.WriteTimeoutPacket.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "sim",
       writerPortAddress: event.args.writerPortAddress,
       writerChannelId: ethers.decodeBytes32String(event.args.writerChannelId),
@@ -226,6 +235,7 @@ ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -236,7 +246,7 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   await context.db.Acknowledgement.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
@@ -248,6 +258,7 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -258,7 +269,7 @@ ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       portAddress: event.args.portAddress,
       channelId: ethers.decodeBytes32String(event.args.channelId),
@@ -269,6 +280,7 @@ ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -279,7 +291,7 @@ ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
   await context.db.ConnectIbcChannel.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       portAddress: event.args.portAddress,
       channelId: ethers.decodeBytes32String(event.args.channelId),
@@ -290,33 +302,7 @@ ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
-    },
-  });
-});
-
-ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
-  const {address} = context.contracts.DispatcherProof;
-  const chainId = context.network.chainId;
-  await context.db.OpenIbcChannel.create({
-    id: event.log.id,
-    data: {
-      dispatcherAddress: address || "",
-      dispatcherType: "proof",
-      portAddress: event.args.portAddress,
-      version: event.args.version,
-      ordering: event.args.ordering,
-      feeEnabled: event.args.feeEnabled,
-      // @ts-ignore
-      connectionHops: event.args.connectionHops,
-      counterpartyPortId: event.args.counterpartyPortId,
-      counterpartyChannelId: ethers.decodeBytes32String(event.args.counterpartyChannelId),
-      blockNumber: event.block.number,
-      blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
-      chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -327,7 +313,7 @@ ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
   await context.db.OwnershipTransferred.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       previousOwner: event.args.previousOwner,
       newOwner: event.args.newOwner,
@@ -338,6 +324,7 @@ ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -348,7 +335,7 @@ ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       destPortAddress: event.args.destPortAddress,
       destChannelId: ethers.decodeBytes32String(event.args.destChannelId),
@@ -360,6 +347,7 @@ ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -370,7 +358,7 @@ ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
   await context.db.SendPacket.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
@@ -384,6 +372,7 @@ ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -394,7 +383,7 @@ ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
   await context.db.Timeout.create({
     id: event.log.id,
     data: {
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
@@ -406,6 +395,7 @@ ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
@@ -417,7 +407,7 @@ ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
     id: event.log.id,
     data: {
       chainId: chainId,
-      dispatcherAddress: address || "",
+      dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       writerPortAddress: event.args.writerPortAddress,
       writerChannelId: ethers.decodeBytes32String(event.args.writerChannelId),
@@ -431,6 +421,7 @@ ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from,
     },
   });
 });
