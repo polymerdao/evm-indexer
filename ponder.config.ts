@@ -3,6 +3,26 @@ import { http } from "viem";
 
 import { DispatcherAbi } from "./abis/Dispatcher";
 
+function mustAddress(value?: string): `0x${string}` {
+  // value starts with 0x
+  if (!value) {
+    throw new Error("Address is required");
+  }
+
+  // extract the address without 0x
+  const address = value.slice(2);
+  if (address.length !== 40) {
+    throw new Error("Invalid address");
+  }
+  return `0x${address}`;
+}
+
+function mustInt(val?: string) {
+  if (!val) {
+    throw new Error("Value is required");
+  }
+  return parseInt(val);
+}
 
 export default createConfig({
   networks: {
@@ -22,12 +42,12 @@ export default createConfig({
       abi: DispatcherAbi,
       network: {
         base: {
-          address: "0x0dE926fE2001B2c96e9cA6b79089CEB276325E9F",
-          startBlock: 6769996,
+          address: mustAddress(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT),
+          startBlock: mustInt(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT_START_BLOCK),
         },
         optimism: {
-          address: "0x6C9427E8d770Ad9e5a493D201280Cc178125CEc0",
-          startBlock: 8752864,
+          address: mustAddress(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT),
+          startBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK),
         },
       },
     },
@@ -35,12 +55,12 @@ export default createConfig({
       abi: DispatcherAbi,
       network: {
         base: {
-          address: "0xfC1d3E02e00e0077628e8Cc9edb6812F95Db05dC",
-          startBlock: 6778793,
+          address: mustAddress(process.env.DISPATCHER_ADDRESS_BASE),
+          startBlock: mustInt(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK),
         },
         optimism: {
-          address: "0x58f1863F75c9Db1c7266dC3d7b43832b58f35e83",
-          startBlock: 8761661,
+          address: mustAddress(process.env.DISPATCHER_ADDRESS_OPTIMISM),
+          startBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK),
         },
       },
     },
