@@ -6,19 +6,24 @@ import logger from './logger';
 ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
   const {address} = context.contracts.DispatcherSim;
   const chainId = context.network.chainId;
+  let counterpartyPortId = event.args.counterpartyPortId;
+  let counterpartyChannelId = ethers.decodeBytes32String(event.args.counterpartyChannelId);
+  let connectionHops = event.args.connectionHops;
+  let portAddress = event.args.portAddress;
+  let version = event.args.version;
   await context.db.OpenIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: "sim",
-      portAddress: event.args.portAddress,
-      version: event.args.version,
+      portAddress: portAddress,
+      version: version,
       ordering: event.args.ordering,
       feeEnabled: event.args.feeEnabled,
       // @ts-ignore
-      connectionHops: event.args.connectionHops,
-      counterpartyPortId: event.args.counterpartyPortId,
-      counterpartyChannelId: ethers.decodeBytes32String(event.args.counterpartyChannelId),
+      connectionHops: connectionHops,
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: counterpartyChannelId,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
@@ -29,28 +34,114 @@ ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
       from: event.transaction.from.toString(),
     },
   });
+
+  let channelId = '';
+  let client = DISPATCHER_CLIENT[address!];
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
+  let state: "INIT" | "TRY" = counterpartyChannelId == "" ? "INIT" : "TRY";
+
+  if (state == "TRY") {
+    const tmClient = await TmClient.getInstance();
+    let channel;
+    try {
+      channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
+      if (!channel.channel) {
+        logger.warn('No channel found for write ack: ', counterpartyChannelId, counterpartyPortId);
+      } else {
+        channelId = channel.channel.counterparty.channelId;
+      }
+    } catch (e) {
+      logger.warn('Skipping packet for channel: ', counterpartyChannelId);
+    }
+  }
+
+  await context.db.Channel.create({
+    id: event.log.id,
+    data: {
+      channelId: channelId,
+      portId: portId,
+      connectionHops: [...connectionHops],
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: counterpartyChannelId,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      state: state,
+    }
+  })
 });
 
 ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
   const {address} = context.contracts.DispatcherSim;
   const chainId = context.network.chainId;
+  let channelId = ethers.decodeBytes32String(event.args.channelId);
+  let portAddress = event.args.portAddress;
   await context.db.ConnectIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: "sim",
-      portAddress: event.args.portAddress,
-      channelId: ethers.decodeBytes32String(event.args.channelId),
+      portAddress: portAddress,
+      channelId: channelId,
+      chainId: chainId,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
-      chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
+
+  let counterpartyPortId = '';
+  let counterpartyChannelId = '';
+  let client = DISPATCHER_CLIENT[address!];
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
+
+  const tmClient = await TmClient.getInstance();
+  let channel;
+  try {
+    channel = await tmClient.ibc.channel.channel(portId, channelId);
+    if (!channel.channel) {
+      logger.warn('No channel found for write ack: ', channelId, portId);
+    } else {
+      counterpartyChannelId = channel.channel.counterparty.channelId;
+      counterpartyPortId = channel.channel.counterparty.portId;
+    }
+  } catch (e) {
+    logger.info('Skipping packet for channel: ', channelId);
+  }
+
+  // update earliest INIT state record that have incomplete id
+  let channels = await context.db.Channel.findMany({where: {portId: portId, channelId: ""}, orderBy: {blockTimestamp: "asc"}, limit: 1});
+  for (let channel of channels.items) {
+    await context.db.Channel.update({
+      id: channel.id,
+      data: {
+        channelId: channelId,
+        counterpartyChannelId: counterpartyChannelId,
+        counterpartyPortId: counterpartyPortId,
+        state: "OPEN",
+        blockNumber: event.block.number,
+        blockTimestamp: event.block.timestamp,
+        transactionHash: event.transaction.hash,
+      }
+    })
+  }
+
+  channels = await context.db.Channel.findMany({where: {portId: portId, channelId: channelId}, orderBy: {blockTimestamp: "asc"}, limit: 1});
+  for (let channel of channels.items) {
+    await context.db.Channel.update({
+      id: channel.id,
+      data: {
+        state: "OPEN",
+        blockNumber: event.block.number,
+        blockTimestamp: event.block.timestamp,
+        transactionHash: event.transaction.hash,
+      }
+    })
+  }
 });
 
 ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {

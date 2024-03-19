@@ -195,4 +195,17 @@ export default createSchema((p) => ({
     ackPacketId: p.string().optional().references('Acknowledgement.id'),
     ackPacket: p.one('ackPacketId'),
   }),
+  ChannelStates: p.createEnum(["INIT", "TRY", "OPEN", "CLOSED"]),
+  Channel: p.createTable({
+    id: p.string(),
+    channelId: p.string(),
+    portId: p.string(),
+    counterpartyPortId: p.string(),
+    counterpartyChannelId: p.string(),
+    connectionHops: p.string().list(),
+    blockNumber: p.bigint(),
+    blockTimestamp: p.bigint(),
+    transactionHash: p.string(),
+    state: p.enum('ChannelStates'),
+  }),
 }));
