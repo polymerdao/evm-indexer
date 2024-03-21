@@ -93,7 +93,7 @@ ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stats, StatName.SendPackets)
+  await updateStats(context.db.Stat, StatName.SendPackets)
 });
 
 ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
@@ -151,7 +151,7 @@ ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
       };
     },
   });
-  await updateStats(context.db.Stats, StatName.RecvPackets)
+  await updateStats(context.db.Stat, StatName.RecvPackets)
 });
 
 ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
@@ -214,7 +214,7 @@ ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
     },
   });
 
-  await updateStats(context.db.Stats, StatName.WriteAckPacket);
+  await updateStats(context.db.Stat, StatName.WriteAckPacket);
 });
 
 
@@ -239,7 +239,7 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stats, StatName.AckPackets)
+  await updateStats(context.db.Stat, StatName.AckPackets)
 });
 
 ponder.on("DispatcherProof:Timeout", async ({event, context}) => {

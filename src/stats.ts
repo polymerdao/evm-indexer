@@ -9,8 +9,8 @@ export enum StatName {
   WriteAckPacket = 'WriteAckPacket',
 }
 
-export async function updateStats<T extends DatabaseModel<Infer<schema>["Stats"]>>(Stats: T, id: StatName) {
-  await Stats.upsert({
+export async function updateStats<T extends DatabaseModel<Infer<schema>["Stat"]>>(Stat: T, id: StatName) {
+  await Stat.upsert({
     id: id,
     create: {
       val: 1,

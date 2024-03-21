@@ -237,7 +237,7 @@ ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
     }
   });
 
-  await updateStats(context.db.Stats, StatName.SendPackets)
+  await updateStats(context.db.Stat, StatName.SendPackets)
 });
 
 ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
@@ -299,7 +299,7 @@ ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
     },
   });
 
-  await updateStats(context.db.Stats, StatName.WriteAckPacket);
+  await updateStats(context.db.Stat, StatName.WriteAckPacket);
 });
 
 ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
@@ -323,7 +323,7 @@ ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stats, StatName.RecvPackets)
+  await updateStats(context.db.Stat, StatName.RecvPackets)
 });
 
 ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
@@ -364,7 +364,7 @@ ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
       state: "ACK",
     }
   });
-  await updateStats(context.db.Stats, StatName.AckPackets)
+  await updateStats(context.db.Stat, StatName.AckPackets)
 });
 
 ponder.on("DispatcherSim:Timeout", async ({event, context}) => {

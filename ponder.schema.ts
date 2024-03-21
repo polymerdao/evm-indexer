@@ -208,7 +208,7 @@ export default createSchema((p) => ({
     transactionHash: p.string(),
     state: p.enum('ChannelStates'),
   }),
-  Stats: p.createTable({
+  Stat: p.createTable({
     id: p.string(),
     val: p.int(),
   }),
