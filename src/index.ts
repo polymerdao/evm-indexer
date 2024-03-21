@@ -85,6 +85,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       state: state,
     }
   })
+  await updateStats(context.db.Stat, StatName.OpenIBCChannel)
 }
 
 ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
@@ -135,7 +136,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
       counterpartyPortId = channel.channel.counterparty.portId;
     }
   } catch (e) {
-    logger.info('Skipping packet for channel: ', channelId);
+    logger.error('Skipping packet for channel: ', channelId);
   }
 
   // update earliest INIT state record that have incomplete id
@@ -175,6 +176,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
       }
     })
   }
+  await updateStats(context.db.Stat, StatName.ConnectIbcChannel)
 }
 
 ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
@@ -206,6 +208,7 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
       from: event.transaction.from.toString(),
     },
   });
+  await updateStats(context.db.Stat, StatName.CloseIBCChannel)
 }
 
 ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
@@ -484,6 +487,7 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
       from: event.transaction.from.toString(),
     },
   });
+  await updateStats(context.db.Stat, StatName.Timeout)
 }
 
 ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
@@ -519,6 +523,8 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
       from: event.transaction.from.toString(),
     },
   });
+
+  await updateStats(context.db.Stat, StatName.WriteTimeoutPacket)
 }
 
 ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {

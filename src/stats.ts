@@ -7,6 +7,8 @@ export enum StatName {
   RecvPackets = 'RecvPackets',
   AckPackets = 'AckPackets',
   WriteAckPacket = 'WriteAckPacket',
+  WriteTimeoutPacket = 'WriteTimeoutPacket',
+  Timeout = 'Timeout',
   OpenIBCChannel = 'OpenIBCChannel',
   CloseIBCChannel = 'CloseIBCChannel',
   ConnectIbcChannel = 'ConnectIbcChannel',
