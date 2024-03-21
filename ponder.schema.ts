@@ -3,7 +3,7 @@ import { createSchema } from "@ponder/core";
 export default createSchema((p) => ({
   Acknowledgement: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     sourcePortAddress: p.string(),
     sourceChannelId: p.string(),
@@ -19,7 +19,7 @@ export default createSchema((p) => ({
   }),
   CloseIbcChannel: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     portAddress: p.string(),
     channelId: p.string(),
@@ -34,7 +34,7 @@ export default createSchema((p) => ({
   }),
   ConnectIbcChannel: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     portAddress: p.string(),
     channelId: p.string(),
@@ -49,7 +49,7 @@ export default createSchema((p) => ({
   }),
   OpenIbcChannel: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     portAddress: p.string(),
     version: p.string(),
@@ -69,7 +69,7 @@ export default createSchema((p) => ({
   }),
   OwnershipTransferred: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     previousOwner: p.string(),
     newOwner: p.string(),
@@ -84,7 +84,7 @@ export default createSchema((p) => ({
   }),
   RecvPacket: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     destPortAddress: p.string(),
     destChannelId: p.string(),
@@ -100,7 +100,7 @@ export default createSchema((p) => ({
   }),
   SendPacket: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     sourcePortAddress: p.string(),
     sourceChannelId: p.string(),
@@ -118,7 +118,7 @@ export default createSchema((p) => ({
   }),
   Timeout: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     sourcePortAddress: p.string(),
     sourceChannelId: p.string(),
@@ -134,7 +134,7 @@ export default createSchema((p) => ({
   }),
   WriteAckPacket: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     writerPortAddress: p.string(),
     writerChannelId: p.string(),
@@ -152,7 +152,7 @@ export default createSchema((p) => ({
   }),
   WriteTimeoutPacket: p.createTable({
     id: p.string(),
-    dispatcherAddress: p.hex(),
+    dispatcherAddress: p.string(),
     dispatcherType: p.string(),
     writerPortAddress: p.string(),
     writerChannelId: p.string(),

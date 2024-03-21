@@ -7,6 +7,9 @@ export enum StatName {
   RecvPackets = 'RecvPackets',
   AckPackets = 'AckPackets',
   WriteAckPacket = 'WriteAckPacket',
+  OpenIBCChannel = 'OpenIBCChannel',
+  CloseIBCChannel = 'CloseIBCChannel',
+  ConnectIbcChannel = 'ConnectIbcChannel',
 }
 
 export async function updateStats<T extends DatabaseModel<Infer<schema>["Stat"]>>(Stat: T, id: StatName) {
