@@ -2,6 +2,7 @@ import { ponder } from "@/generated";
 import { ethers } from "ethers";
 import { DISPATCHER_CLIENT, TmClient } from "./client";
 import logger from './logger';
+import { StatName, updateStats } from "./stats";
 
 ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
   const {address} = context.contracts.DispatcherSim;
@@ -114,7 +115,11 @@ ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
   }
 
   // update earliest INIT state record that have incomplete id
-  let channels = await context.db.Channel.findMany({where: {portId: portId, channelId: ""}, orderBy: {blockTimestamp: "asc"}, limit: 1});
+  let channels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: ""},
+    orderBy: {blockTimestamp: "asc"},
+    limit: 1
+  });
   for (let channel of channels.items) {
     await context.db.Channel.update({
       id: channel.id,
@@ -130,7 +135,11 @@ ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
     })
   }
 
-  channels = await context.db.Channel.findMany({where: {portId: portId, channelId: channelId}, orderBy: {blockTimestamp: "asc"}, limit: 1});
+  channels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: channelId},
+    orderBy: {blockTimestamp: "asc"},
+    limit: 1
+  });
   for (let channel of channels.items) {
     await context.db.Channel.update({
       id: channel.id,
@@ -227,29 +236,8 @@ ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
       sendPacketId: event.log.id,
     }
   });
-});
 
-ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
-  const {address} = context.contracts.DispatcherSim;
-  const chainId = context.network.chainId;
-  await context.db.RecvPacket.create({
-    id: event.log.id,
-    data: {
-      dispatcherAddress: address || "0x",
-      dispatcherType: "sim",
-      destPortAddress: event.args.destPortAddress,
-      destChannelId: ethers.decodeBytes32String(event.args.destChannelId),
-      sequence: event.args.sequence,
-      blockNumber: event.block.number,
-      blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
-      chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
-      from: event.transaction.from.toString(),
-    },
-  });
+  await updateStats(context.db.Stats, StatName.SendPackets)
 });
 
 ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
@@ -310,6 +298,32 @@ ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
       };
     },
   });
+
+  await updateStats(context.db.Stats, StatName.WriteAckPacket);
+});
+
+ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
+  const {address} = context.contracts.DispatcherSim;
+  const chainId = context.network.chainId;
+  await context.db.RecvPacket.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address || "0x",
+      dispatcherType: "sim",
+      destPortAddress: event.args.destPortAddress,
+      destChannelId: ethers.decodeBytes32String(event.args.destChannelId),
+      sequence: event.args.sequence,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      chainId: chainId,
+      gas: event.transaction.gas,
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
+  await updateStats(context.db.Stats, StatName.RecvPackets)
 });
 
 ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
@@ -350,6 +364,7 @@ ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
       state: "ACK",
     }
   });
+  await updateStats(context.db.Stats, StatName.AckPackets)
 });
 
 ponder.on("DispatcherSim:Timeout", async ({event, context}) => {

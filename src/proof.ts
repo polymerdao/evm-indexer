@@ -2,6 +2,7 @@ import { ponder } from "@/generated";
 import { ethers } from "ethers";
 import { DISPATCHER_CLIENT, TmClient } from "./client";
 import logger from './logger';
+import { StatName, updateStats } from "./stats";
 
 ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
   const {address} = context.contracts.DispatcherProof;
@@ -69,17 +70,19 @@ ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
   });
 });
 
-ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
+ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
   const {address} = context.contracts.DispatcherProof;
   const chainId = context.network.chainId;
-  await context.db.Acknowledgement.create({
+  await context.db.SendPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: "proof",
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
+      packet: event.args.packet,
       sequence: event.args.sequence,
+      timeoutTimestamp: event.args.timeoutTimestamp,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
@@ -90,6 +93,7 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
       from: event.transaction.from.toString(),
     },
   });
+  await updateStats(context.db.Stats, StatName.SendPackets)
 });
 
 ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
@@ -147,21 +151,25 @@ ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
       };
     },
   });
+  await updateStats(context.db.Stats, StatName.RecvPackets)
 });
 
-ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
+ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
   const {address} = context.contracts.DispatcherProof;
   const chainId = context.network.chainId;
-  await context.db.SendPacket.create({
+  let writerPortAddress = event.args.writerPortAddress;
+  let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
+  let sequence = event.args.sequence;
+  await context.db.WriteAckPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: "proof",
-      sourcePortAddress: event.args.sourcePortAddress,
-      sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
-      packet: event.args.packet,
-      sequence: event.args.sequence,
-      timeoutTimestamp: event.args.timeoutTimestamp,
+      writerPortAddress: writerPortAddress,
+      writerChannelId: writerChannelId,
+      sequence: sequence,
+      ackPacketSuccess: event.args.ackPacket.success,
+      ackPacketData: event.args.ackPacket.data,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
@@ -172,6 +180,66 @@ ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
       from: event.transaction.from.toString(),
     },
   });
+
+  let client = DISPATCHER_CLIENT[address!];
+  const destPortId = `polyibc.${client}.${writerPortAddress.slice(2)}`;
+  const tmClient = await TmClient.getInstance();
+  let channel;
+  try {
+    channel = await tmClient.ibc.channel.channel(destPortId, writerChannelId);
+  } catch (e) {
+    logger.info('Skipping packet for channel: ', writerChannelId);
+    return;
+  }
+  if (!channel.channel) {
+    logger.warn('No channel found for write ack: ', writerChannelId, writerPortAddress);
+    return;
+  }
+  const key = `${channel.channel.counterparty.portId}-${channel.channel.counterparty.channelId}-${sequence}`;
+  await context.db.Packet.upsert({
+    id: key,
+    create: {
+      state: "WRITE_ACK",
+      writeAckPacketId: event.log.id,
+    },
+    update: ({current}) => {
+      let state = current.state;
+      if (current.state == "SENT") {
+        state = "WRITE_ACK"
+      }
+      return {
+        writeAckPacketId: event.log.id,
+        state: state,
+      };
+    },
+  });
+
+  await updateStats(context.db.Stats, StatName.WriteAckPacket);
+});
+
+
+ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
+  const {address} = context.contracts.DispatcherProof;
+  const chainId = context.network.chainId;
+  await context.db.Acknowledgement.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address || "0x",
+      dispatcherType: "proof",
+      sourcePortAddress: event.args.sourcePortAddress,
+      sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
+      sequence: event.args.sequence,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      chainId: chainId,
+      gas: event.transaction.gas,
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
+  await updateStats(context.db.Stats, StatName.AckPackets)
 });
 
 ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
