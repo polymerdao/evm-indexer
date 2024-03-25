@@ -509,21 +509,21 @@ ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
 ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
   await connectIbcChannel(event, context, "DispatcherProof");
 });
-// ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
-//   await closeIbcChannel(event, context, "DispatcherSim");
-// });
+ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
+  await closeIbcChannel(event, context, "DispatcherSim");
+});
 
-// ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
-//   await closeIbcChannel(event, context, "DispatcherProof");
-// });
+ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
+  await closeIbcChannel(event, context, "DispatcherProof");
+});
 
-// ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
-//   await ownershipTransferred(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
-//   await ownershipTransferred(event, context, "DispatcherProof");
-// });
+ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
+  await ownershipTransferred(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
+  await ownershipTransferred(event, context, "DispatcherProof");
+});
 
 
 ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
@@ -534,23 +534,23 @@ ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
   await sendPacket(event, context, "DispatcherProof");
 });
 
-// ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
-//   await writeAckPacket(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
-//   await writeAckPacket(event, context, "DispatcherProof");
-// });
-//
-//
-// ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
-//   await recvPacket(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
-//   await recvPacket(event, context, "DispatcherProof");
-// });
-//
+ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
+  await writeAckPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
+  await writeAckPacket(event, context, "DispatcherProof");
+});
+
+
+ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
+  await recvPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
+  await recvPacket(event, context, "DispatcherProof");
+});
+
 
 ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "DispatcherSim");
@@ -559,20 +559,20 @@ ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
 ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "DispatcherProof");
 });
-//
-//
-// ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
-//   await timeout(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
-//   await timeout(event, context, "DispatcherProof");
-// });
-//
-// ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherProof");
-// });
+
+
+ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
+  await timeout(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
+  await timeout(event, context, "DispatcherProof");
+});
+
+ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
+  await writeTimeoutPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
+  await writeTimeoutPacket(event, context, "DispatcherProof");
+});
