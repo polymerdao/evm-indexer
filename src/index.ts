@@ -79,11 +79,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       // You can also specify a custom retry strategy
       // onRetry: (err, attempt) => {},
     }).catch(e => {
-      console.log(e);
       logger.warn('Skipping packet for channel in openIbcChannel: ', counterpartyPortId, counterpartyChannelId);
-      logger.info("tx hash: ", event.transaction.hash);
-      logger.info("address: ", address);
-      logger.info("dispatcherType: ", client);
     });
   }
 
@@ -155,15 +151,11 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     // Custom retry strategy or additional logging can be specified here
     onRetry: (err, attempt) => {
       // This is a good place to log retry attempts if needed
-      console.log(`Retry attempt ${attempt} due to error: ${err.message}`);
+      logger.info(`Retry attempt ${attempt} due to error: ${err.message}`);
     },
   }).catch(e => {
     // This catch block is executed if retries are exhausted or bail was called
-    console.log(e);
     logger.warn('Skipping packet for connectIbcChannel: ', portId, channelId);
-    logger.info("tx hash: ", event.transaction.hash);
-    logger.info("address: ", address);
-    logger.info("dispatcherType: ", client);
   });
 
 
@@ -291,9 +283,11 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     create: {
       state: "SENT",
       sendPacketId: event.log.id,
+      sendTx: event.transaction.hash,
     },
     update: {
       sendPacketId: event.log.id,
+      sendTx: event.transaction.hash,
     }
   });
 
@@ -335,9 +329,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   try {
     channel = await tmClient.ibc.channel.channel(destPortId, writerChannelId);
   } catch (e) {
-    console.log(e);
     logger.info('Skipping packet for channel in writeAckPacket: ', destPortId, writerChannelId);
-    logger.info("tx hash: ", event.transaction.hash);
     return;
   }
 
@@ -352,6 +344,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
     create: {
       state: "WRITE_ACK",
       writeAckPacketId: event.log.id,
+      writeAckTx: event.transaction.hash,
     },
     update: ({current}) => {
       let state = current.state;
@@ -361,6 +354,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       return {
         writeAckPacketId: event.log.id,
         state: state,
+        writeAckTx: event.transaction.hash,
       };
     },
   });
@@ -371,15 +365,18 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
 async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
+  let destPortAddress = event.args.destPortAddress;
 
+  let destChannelId = ethers.decodeBytes32String(event.args.destChannelId);
+  let sequence = event.args.sequence;
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
-      destPortAddress: event.args.destPortAddress,
-      destChannelId: ethers.decodeBytes32String(event.args.destChannelId),
-      sequence: event.args.sequence,
+      destPortAddress: destPortAddress,
+      destChannelId: destChannelId,
+      sequence: sequence,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
@@ -390,6 +387,44 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       from: event.transaction.from.toString(),
     },
   });
+
+  let client = DISPATCHER_CLIENT[address!];
+  const destPortId = `polyibc.${client}.${destPortAddress.slice(2)}`;
+  const tmClient = await TmClient.getInstance();
+  let channel;
+  try {
+    channel = await tmClient.ibc.channel.channel(destPortId, destChannelId);
+  } catch (e) {
+    logger.info('Skipping packet for channel in recvPacket: ', destPortId, destChannelId);
+    return;
+  }
+
+  if (!channel.channel) {
+    logger.warn('No channel found for recv: ', destPortId, destChannelId);
+    return;
+  }
+
+  const key = `${channel.channel.counterparty.portId}-${channel.channel.counterparty.channelId}-${sequence}`;
+  await context.db.Packet.upsert({
+    id: key,
+    create: {
+      state: "RECV",
+      sendPacketId: event.log.id,
+      sendTx: event.transaction.hash,
+    },
+    update: ({current}) => {
+      let state = current.state;
+      if (current.state == "SENT" || current.state == "WRITE_ACK") {
+        state = "RECV"
+      }
+      return {
+        sendPacketId: event.log.id,
+        state: state,
+        sendTx: event.transaction.hash,
+      };
+    },
+  });
+
 
   await updateStats(context.db.Stat, StatName.RecvPackets)
 }
@@ -429,10 +464,12 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     create: {
       state: "ACK",
       ackPacketId: event.log.id,
+      ackTx: event.transaction.hash,
     },
     update: {
       ackPacketId: event.log.id,
       state: "ACK",
+      ackTx: event.transaction.hash,
     }
   });
 
