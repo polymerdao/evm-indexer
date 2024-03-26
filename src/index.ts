@@ -4,6 +4,7 @@ import { DISPATCHER_CLIENT, TmClient } from "./client";
 import logger from './logger';
 import { StatName, updateStats } from "./stats";
 import { Virtual } from "@ponder/core";
+import retry from 'async-retry';
 
 function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(contractName: "DispatcherSim" | "DispatcherProof", context: Virtual.Context<config, schema, name>) {
   let address: `0x${string}` = "0x";
@@ -58,18 +59,30 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
 
   if (state == "TRY") {
     const tmClient = await TmClient.getInstance();
-    let channel;
-    try {
-      channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
+    await retry(async bail => {
+      // If anything throws within this function, it will retry
+      let channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
+
       if (!channel.channel) {
         logger.warn('No channel found for write ack: ', counterpartyChannelId, counterpartyPortId);
+        // Optionally, you can bail out on certain conditions if retrying is futile
+        bail(new Error('No channel found, giving up'));
       } else {
         channelId = channel.channel.counterparty.channelId;
       }
-    } catch (e) {
-      logger.warn('Skipping packet for channel: ', counterpartyChannelId);
-    }
+    }, {
+
+      retries: 3, // The maximum amount of times to retry the operation. Default is 10
+      factor: 2, // The exponential factor to use. Default is 2
+      minTimeout: 1000, // The number of milliseconds before starting the first retry. Default is 1000
+      maxTimeout: 5000, // The maximum number of milliseconds between two retries. Default is Infinity
+      // You can also specify a custom retry strategy
+      // onRetry: (err, attempt) => {},
+    }).catch(e => {
+      logger.warn('Skipping packet for channel in openIbcChannel: ', counterpartyPortId, counterpartyChannelId);
+    });
   }
+
 
   await context.db.Channel.create({
     id: event.log.id,
@@ -87,14 +100,6 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   })
   await updateStats(context.db.Stat, StatName.OpenIBCChannel)
 }
-
-ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
-  await openIbcChannel(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
-  await openIbcChannel(event, context, "DispatcherProof");
-});
 
 async function connectIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ConnectIbcChannel" | "DispatcherProof:ConnectIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
@@ -126,18 +131,33 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
   let portId = `polyibc.${client}.${portAddress.slice(2)}`;
 
   const tmClient = await TmClient.getInstance();
-  let channel;
-  try {
-    channel = await tmClient.ibc.channel.channel(portId, channelId);
+
+  await retry(async bail => {
+    const channel = await tmClient.ibc.channel.channel(portId, channelId);
+
     if (!channel.channel) {
-      logger.warn('No channel found for write ack: ', channelId, portId);
+      logger.warn('No channel found for write ack: ', portId, channelId );
+      // Use bail to immediately stop retrying under certain conditions
+      bail(new Error('No channel found, giving up'));
     } else {
       counterpartyChannelId = channel.channel.counterparty.channelId;
       counterpartyPortId = channel.channel.counterparty.portId;
     }
-  } catch (e) {
-    logger.error('Skipping packet for channel: ', channelId);
-  }
+  }, {
+    retries: 3, // The maximum amount of times to retry the operation.
+    factor: 2, // The exponential factor to use.
+    minTimeout: 1000, // The number of milliseconds before starting the first retry.
+    maxTimeout: 5000, // The maximum number of milliseconds between two retries.
+    // Custom retry strategy or additional logging can be specified here
+    onRetry: (err, attempt) => {
+      // This is a good place to log retry attempts if needed
+      logger.info(`Retry attempt ${attempt} due to error: ${err.message}`);
+    },
+  }).catch(e => {
+    // This catch block is executed if retries are exhausted or bail was called
+    logger.warn('Skipping packet for connectIbcChannel: ', portId, channelId);
+  });
+
 
   // update earliest INIT state record that have incomplete id
   let channels = await context.db.Channel.findMany({
@@ -179,14 +199,6 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
   await updateStats(context.db.Stat, StatName.ConnectIbcChannel)
 }
 
-ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
-  await connectIbcChannel(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
-  await connectIbcChannel(event, context, "DispatcherProof");
-});
-
 async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
@@ -211,14 +223,6 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
   await updateStats(context.db.Stat, StatName.CloseIBCChannel)
 }
 
-ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
-  await closeIbcChannel(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
-  await closeIbcChannel(event, context, "DispatcherProof");
-});
-
 async function ownershipTransferred<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OwnershipTransferred" | "DispatcherProof:OwnershipTransferred">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
@@ -241,14 +245,6 @@ async function ownershipTransferred<name extends Virtual.EventNames<config>>(eve
     },
   });
 }
-
-ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
-  await ownershipTransferred(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
-  await ownershipTransferred(event, context, "DispatcherProof");
-});
 
 async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:SendPacket" | "DispatcherProof:SendPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
@@ -287,22 +283,16 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     create: {
       state: "SENT",
       sendPacketId: event.log.id,
+      sendTx: event.transaction.hash,
     },
     update: {
       sendPacketId: event.log.id,
+      sendTx: event.transaction.hash,
     }
   });
 
   await updateStats(context.db.Stat, StatName.SendPackets)
 }
-
-ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
-  await sendPacket(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
-  await sendPacket(event, context, "DispatcherProof");
-});
 
 async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteAckPacket" | "DispatcherProof:WriteAckPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
@@ -339,7 +329,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   try {
     channel = await tmClient.ibc.channel.channel(destPortId, writerChannelId);
   } catch (e) {
-    logger.info('Skipping packet for channel: ', writerChannelId);
+    logger.info('Skipping packet for channel in writeAckPacket: ', destPortId, writerChannelId);
     return;
   }
 
@@ -354,6 +344,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
     create: {
       state: "WRITE_ACK",
       writeAckPacketId: event.log.id,
+      writeAckTx: event.transaction.hash,
     },
     update: ({current}) => {
       let state = current.state;
@@ -363,6 +354,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       return {
         writeAckPacketId: event.log.id,
         state: state,
+        writeAckTx: event.transaction.hash,
       };
     },
   });
@@ -370,26 +362,21 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   await updateStats(context.db.Stat, StatName.WriteAckPacket);
 }
 
-ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
-  await writeAckPacket(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
-  await writeAckPacket(event, context, "DispatcherProof");
-});
-
 async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
+  let destPortAddress = event.args.destPortAddress;
 
+  let destChannelId = ethers.decodeBytes32String(event.args.destChannelId);
+  let sequence = event.args.sequence;
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
-      destPortAddress: event.args.destPortAddress,
-      destChannelId: ethers.decodeBytes32String(event.args.destChannelId),
-      sequence: event.args.sequence,
+      destPortAddress: destPortAddress,
+      destChannelId: destChannelId,
+      sequence: sequence,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
@@ -401,16 +388,46 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
     },
   });
 
+  let client = DISPATCHER_CLIENT[address!];
+  const destPortId = `polyibc.${client}.${destPortAddress.slice(2)}`;
+  const tmClient = await TmClient.getInstance();
+  let channel;
+  try {
+    channel = await tmClient.ibc.channel.channel(destPortId, destChannelId);
+  } catch (e) {
+    logger.info('Skipping packet for channel in recvPacket: ', destPortId, destChannelId);
+    return;
+  }
+
+  if (!channel.channel) {
+    logger.warn('No channel found for recv: ', destPortId, destChannelId);
+    return;
+  }
+
+  const key = `${channel.channel.counterparty.portId}-${channel.channel.counterparty.channelId}-${sequence}`;
+  await context.db.Packet.upsert({
+    id: key,
+    create: {
+      state: "RECV",
+      sendPacketId: event.log.id,
+      sendTx: event.transaction.hash,
+    },
+    update: ({current}) => {
+      let state = current.state;
+      if (current.state == "SENT" || current.state == "WRITE_ACK") {
+        state = "RECV"
+      }
+      return {
+        sendPacketId: event.log.id,
+        state: state,
+        sendTx: event.transaction.hash,
+      };
+    },
+  });
+
+
   await updateStats(context.db.Stat, StatName.RecvPackets)
 }
-
-ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
-  await recvPacket(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
-  await recvPacket(event, context, "DispatcherProof");
-});
 
 async function acknowledgement<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Acknowledgement" | "DispatcherProof:Acknowledgement">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
@@ -447,23 +464,17 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     create: {
       state: "ACK",
       ackPacketId: event.log.id,
+      ackTx: event.transaction.hash,
     },
     update: {
       ackPacketId: event.log.id,
       state: "ACK",
+      ackTx: event.transaction.hash,
     }
   });
 
   await updateStats(context.db.Stat, StatName.AckPackets)
 }
-
-ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
-  await acknowledgement(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
-  await acknowledgement(event, context, "DispatcherProof");
-});
 
 async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Timeout" | "DispatcherProof:Timeout">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
@@ -489,14 +500,6 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
   });
   await updateStats(context.db.Stat, StatName.Timeout)
 }
-
-ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
-  await timeout(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
-  await timeout(event, context, "DispatcherProof");
-});
 
 async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteTimeoutPacket" | "DispatcherProof:WriteTimeoutPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
@@ -526,6 +529,82 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
 
   await updateStats(context.db.Stat, StatName.WriteTimeoutPacket)
 }
+
+ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
+  await openIbcChannel(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
+  await openIbcChannel(event, context, "DispatcherProof");
+});
+
+
+ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
+  await connectIbcChannel(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
+  await connectIbcChannel(event, context, "DispatcherProof");
+});
+ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
+  await closeIbcChannel(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
+  await closeIbcChannel(event, context, "DispatcherProof");
+});
+
+ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
+  await ownershipTransferred(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
+  await ownershipTransferred(event, context, "DispatcherProof");
+});
+
+
+ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
+  await sendPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
+  await sendPacket(event, context, "DispatcherProof");
+});
+
+ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
+  await writeAckPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
+  await writeAckPacket(event, context, "DispatcherProof");
+});
+
+
+ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
+  await recvPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
+  await recvPacket(event, context, "DispatcherProof");
+});
+
+
+ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
+  await acknowledgement(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
+  await acknowledgement(event, context, "DispatcherProof");
+});
+
+
+ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
+  await timeout(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
+  await timeout(event, context, "DispatcherProof");
+});
 
 ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
   await writeTimeoutPacket(event, context, "DispatcherSim");
