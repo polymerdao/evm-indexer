@@ -369,6 +369,7 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
 
   let destChannelId = ethers.decodeBytes32String(event.args.destChannelId);
   let sequence = event.args.sequence;
+  let recvTx = event.transaction.hash;
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
@@ -379,7 +380,7 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       sequence: sequence,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
+      transactionHash: recvTx,
       chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
@@ -387,6 +388,9 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       from: event.transaction.from.toString(),
     },
   });
+
+  logger.debug('recvPacket', destPortAddress, destChannelId, sequence)
+  logger.debug("recvTx", recvTx)
 
   let client = DISPATCHER_CLIENT[address!];
   const destPortId = `polyibc.${client}.${destPortAddress.slice(2)}`;
@@ -409,8 +413,8 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
     id: key,
     create: {
       state: "RECV",
-      sendPacketId: event.log.id,
-      sendTx: event.transaction.hash,
+      recvPacketId: event.log.id,
+      recvTx: recvTx,
     },
     update: ({current}) => {
       let state = current.state;
@@ -418,9 +422,9 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
         state = "RECV"
       }
       return {
-        sendPacketId: event.log.id,
+        recvPacketId: event.log.id,
         state: state,
-        sendTx: event.transaction.hash,
+        recvTx: recvTx,
       };
     },
   });
@@ -467,8 +471,8 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
       ackTx: event.transaction.hash,
     },
     update: {
-      ackPacketId: event.log.id,
       state: "ACK",
+      ackPacketId: event.log.id,
       ackTx: event.transaction.hash,
     }
   });
