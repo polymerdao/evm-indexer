@@ -25,9 +25,6 @@ function mustInt(val?: string) {
 }
 
 export default createConfig({
-  options: {
-    maxHealthcheckDuration: mustInt(process.env.MAX_HEALTHCHECK_DURATION ?? "2000"),
-  },
   networks: {
     base: {
       chainId: 84532,
