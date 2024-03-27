@@ -252,6 +252,10 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
   let srcPortAddress = event.args.sourcePortAddress;
   let sequence = event.args.sequence;
+  let transactionHash = event.transaction.hash;
+
+  logger.debug('sendPacket', sourceChannelId, sequence)
+  logger.debug("sendTx", transactionHash)
 
   await context.db.SendPacket.create({
     id: event.log.id,
@@ -265,7 +269,7 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
       timeoutTimestamp: event.args.timeoutTimestamp,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
+      transactionHash: transactionHash,
       chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
@@ -283,11 +287,11 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     create: {
       state: "SENT",
       sendPacketId: event.log.id,
-      sendTx: event.transaction.hash,
+      sendTx: transactionHash,
     },
     update: {
       sendPacketId: event.log.id,
-      sendTx: event.transaction.hash,
+      sendTx: transactionHash,
     }
   });
 
@@ -300,6 +304,10 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   let writerPortAddress = event.args.writerPortAddress;
   let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
   let sequence = event.args.sequence;
+  let transactionHash = event.transaction.hash;
+
+  logger.debug('writeAckPacket', writerChannelId, sequence)
+  logger.debug("ackTx", transactionHash)
 
   await context.db.WriteAckPacket.create({
     id: event.log.id,
@@ -313,7 +321,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       ackPacketData: event.args.ackPacket.data,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
+      transactionHash: transactionHash,
       chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
@@ -344,7 +352,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
     create: {
       state: "WRITE_ACK",
       writeAckPacketId: event.log.id,
-      writeAckTx: event.transaction.hash,
+      writeAckTx: transactionHash,
     },
     update: ({current}) => {
       let state = current.state;
@@ -354,7 +362,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       return {
         writeAckPacketId: event.log.id,
         state: state,
-        writeAckTx: event.transaction.hash,
+        writeAckTx: transactionHash,
       };
     },
   });
@@ -370,6 +378,10 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
   let destChannelId = ethers.decodeBytes32String(event.args.destChannelId);
   let sequence = event.args.sequence;
   let recvTx = event.transaction.hash;
+
+  logger.debug('recvPacket', destPortAddress, destChannelId, sequence)
+  logger.debug("recvTx", recvTx)
+
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
@@ -388,9 +400,6 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       from: event.transaction.from.toString(),
     },
   });
-
-  logger.debug('recvPacket', destPortAddress, destChannelId, sequence)
-  logger.debug("recvTx", recvTx)
 
   let client = DISPATCHER_CLIENT[address!];
   const destPortId = `polyibc.${client}.${destPortAddress.slice(2)}`;
@@ -439,6 +448,10 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
   let sequence = event.args.sequence;
   let srcPortAddress = event.args.sourcePortAddress;
+  let transactionHash = event.transaction.hash;
+
+  logger.debug('acknowledgement', sourceChannelId, sequence)
+  logger.debug("ackTx", transactionHash)
 
   await context.db.Acknowledgement.create({
     id: event.log.id,
@@ -450,7 +463,7 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
       sequence: sequence,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
+      transactionHash: transactionHash,
       chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
@@ -468,12 +481,12 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     create: {
       state: "ACK",
       ackPacketId: event.log.id,
-      ackTx: event.transaction.hash,
+      ackTx: transactionHash,
     },
     update: {
       state: "ACK",
       ackPacketId: event.log.id,
-      ackTx: event.transaction.hash,
+      ackTx: transactionHash,
     }
   });
 
@@ -483,6 +496,12 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
 async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Timeout" | "DispatcherProof:Timeout">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
+  let transactionHash = event.transaction.hash;
+  let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
+  let sequence = event.args.sequence;
+
+  logger.debug('timeout', sourceChannelId, sequence)
+  logger.debug("timeoutTx", transactionHash)
 
   await context.db.Timeout.create({
     id: event.log.id,
@@ -490,11 +509,11 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
       sourcePortAddress: event.args.sourcePortAddress,
-      sourceChannelId: ethers.decodeBytes32String(event.args.sourceChannelId),
-      sequence: event.args.sequence,
+      sourceChannelId: sourceChannelId,
+      sequence: sequence,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
+      transactionHash: transactionHash,
       chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
@@ -508,21 +527,28 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
 async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteTimeoutPacket" | "DispatcherProof:WriteTimeoutPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
+  let transactionHash = event.transaction.hash;
+  let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
+  let writerPortAddress = event.args.writerPortAddress;
+  let sequence = event.args.sequence;
+
+  logger.debug('writeTimeoutPacket', writerChannelId, writerPortAddress, sequence)
+  logger.debug("timeoutTx", transactionHash)
 
   await context.db.WriteTimeoutPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
-      writerPortAddress: event.args.writerPortAddress,
-      writerChannelId: ethers.decodeBytes32String(event.args.writerChannelId),
-      sequence: event.args.sequence,
+      writerPortAddress: writerPortAddress,
+      writerChannelId: writerChannelId,
+      sequence: sequence,
       timeoutHeightRevisionNumber: event.args.timeoutHeight.revision_number,
       timeoutHeightRevisionHeight: event.args.timeoutHeight.revision_height,
       timeoutTimestamp: event.args.timeoutTimestamp,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
+      transactionHash: transactionHash,
       chainId: chainId,
       gas: event.transaction.gas,
       maxFeePerGas: event.transaction.maxFeePerGas,
