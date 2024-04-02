@@ -36,6 +36,11 @@ export default createConfig({
       transport: http(process.env.PONDER_RPC_URL_11155420),
       pollingInterval: 5_000,
     },
+    molten: {
+      chainId: 49483,
+      transport: http(process.env.PONDER_RPC_URL_49483),
+      pollingInterval: 5_000,
+    },
   },
   contracts: {
     DispatcherSim: {
@@ -48,6 +53,10 @@ export default createConfig({
         optimism: {
           address: mustAddress(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT),
           startBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK),
+        },
+        molten: {
+          address: mustAddress(process.env.DISPATCHER_ADDRESS_MOLTEN_SIMCLIENT),
+          startBlock: mustInt(process.env.DISPATCHER_ADDRESS_MOLTEN_SIMCLIENT_START_BLOCK),
         },
       },
     },
