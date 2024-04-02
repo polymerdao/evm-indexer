@@ -54,10 +54,6 @@ export default createConfig({
           address: mustAddress(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT),
           startBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK),
         },
-        molten: {
-          address: mustAddress(process.env.DISPATCHER_ADDRESS_MOLTEN_SIMCLIENT),
-          startBlock: mustInt(process.env.DISPATCHER_ADDRESS_MOLTEN_SIMCLIENT_START_BLOCK),
-        },
       },
     },
     DispatcherProof: {
