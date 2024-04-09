@@ -21,6 +21,7 @@ function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(co
 
 async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OpenIbcChannel" | "DispatcherProof:OpenIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   let {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let counterpartyPortId = event.args.counterpartyPortId;
   let counterpartyChannelId = ethers.decodeBytes32String(event.args.counterpartyChannelId);
@@ -33,6 +34,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
     data: {
       dispatcherAddress: address,
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       portAddress: portAddress,
       version: version,
       ordering: event.args.ordering,
@@ -45,7 +47,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
@@ -53,7 +55,6 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   });
 
   let channelId = '';
-  let client = DISPATCHER_CLIENT[address!];
   let portId = `polyibc.${client}.${portAddress.slice(2)}`;
   let state: "INIT" | "TRY" = counterpartyChannelId == "" ? "INIT" : "TRY";
 
@@ -103,6 +104,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
 
 async function connectIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ConnectIbcChannel" | "DispatcherProof:ConnectIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let channelId = ethers.decodeBytes32String(event.args.channelId);
   let portAddress = event.args.portAddress;
@@ -112,13 +114,14 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       portAddress: portAddress,
       channelId: channelId,
       chainId: chainId,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
@@ -127,7 +130,6 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
 
   let counterpartyPortId = '';
   let counterpartyChannelId = '';
-  let client = DISPATCHER_CLIENT[address!];
   let portId = `polyibc.${client}.${portAddress.slice(2)}`;
 
   const tmClient = await TmClient.getInstance();
@@ -136,7 +138,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     const channel = await tmClient.ibc.channel.channel(portId, channelId);
 
     if (!channel.channel) {
-      logger.warn('No channel found for write ack: ', portId, channelId );
+      logger.warn('No channel found for write ack: ', portId, channelId);
       // Use bail to immediately stop retrying under certain conditions
       bail(new Error('No channel found, giving up'));
     } else {
@@ -201,6 +203,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
 
 async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
 
   await context.db.CloseIbcChannel.create({
@@ -208,13 +211,14 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       portAddress: event.args.portAddress,
       channelId: ethers.decodeBytes32String(event.args.channelId),
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
@@ -225,6 +229,7 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
 
 async function ownershipTransferred<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OwnershipTransferred" | "DispatcherProof:OwnershipTransferred">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
 
   await context.db.OwnershipTransferred.create({
@@ -232,13 +237,14 @@ async function ownershipTransferred<name extends Virtual.EventNames<config>>(eve
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       previousOwner: event.args.previousOwner,
       newOwner: event.args.newOwner,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
@@ -248,6 +254,7 @@ async function ownershipTransferred<name extends Virtual.EventNames<config>>(eve
 
 async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:SendPacket" | "DispatcherProof:SendPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
   let srcPortAddress = event.args.sourcePortAddress;
@@ -262,6 +269,7 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       sourcePortAddress: srcPortAddress,
       sourceChannelId: sourceChannelId,
       packet: event.args.packet,
@@ -271,14 +279,13 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const srcPortId = `polyibc.${client}.${srcPortAddress.slice(2)}`;
   const key = `${srcPortId}-${sourceChannelId}-${sequence}`;
 
@@ -295,11 +302,13 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     }
   });
 
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.SendPackets)
 }
 
 async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteAckPacket" | "DispatcherProof:WriteAckPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let writerPortAddress = event.args.writerPortAddress;
   let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
@@ -314,6 +323,7 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       writerPortAddress: writerPortAddress,
       writerChannelId: writerChannelId,
       sequence: sequence,
@@ -323,14 +333,13 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const destPortId = `polyibc.${client}.${writerPortAddress.slice(2)}`;
   const tmClient = await TmClient.getInstance();
   let channel;
@@ -370,8 +379,62 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   await updateStats(context.db.Stat, StatName.WriteAckPacket);
 }
 
+async function updatePacket<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, id: string) {
+  let packet = await context.db.Packet.findUnique({id})
+  if (!packet) {
+    console.warn('No packet found for updatePacket', id)
+    return;
+  }
+
+  if (packet.sendPacketId && packet.recvPacketId && !packet.sendToRecvTime) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
+    if (sendPacket && recvPacket) {
+      packet.sendToRecvTime = Number(recvPacket.blockTimestamp - sendPacket.blockTimestamp);
+      packet.sendToRecvGas = Number(recvPacket.gas + sendPacket.gas);
+      await context.db.Packet.update({
+        id,
+        data: {
+          sendToRecvTime: packet.sendToRecvTime,
+          sendToRecvGas: packet.sendToRecvGas,
+        }
+      });
+    }
+  }
+
+  if (packet.sendPacketId && packet.ackPacketId && !packet.sendToAckTime) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
+    if (sendPacket && ackPacket) {
+      packet.sendToAckTime = Number(ackPacket.blockTimestamp - sendPacket.blockTimestamp);
+      await context.db.Packet.update({
+        id,
+        data: {
+          sendToAckTime: packet.sendToAckTime,
+        }
+      });
+    }
+  }
+
+  if (packet.sendPacketId && packet.recvPacketId && packet.ackPacketId && !packet.sendToAckGas) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
+    const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
+    if (sendPacket && recvPacket && ackPacket) {
+      packet.sendToAckGas = Number(ackPacket.gas + recvPacket.gas + sendPacket.gas);
+      await context.db.Packet.update({
+        id,
+        data: {
+          sendToAckGas: packet.sendToAckGas,
+        }
+      });
+    }
+  }
+}
+
 async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let destPortAddress = event.args.destPortAddress;
 
@@ -387,6 +450,7 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       destPortAddress: destPortAddress,
       destChannelId: destChannelId,
       sequence: sequence,
@@ -394,21 +458,20 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       blockTimestamp: event.block.timestamp,
       transactionHash: recvTx,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const destPortId = `polyibc.${client}.${destPortAddress.slice(2)}`;
   const tmClient = await TmClient.getInstance();
   let channel;
   try {
     channel = await tmClient.ibc.channel.channel(destPortId, destChannelId);
   } catch (e) {
-    logger.info('Skipping packet for channel in recvPacket: ', destPortId, destChannelId);
+    logger.info('Skipping packet for channel in recvPacket');
     return;
   }
 
@@ -438,12 +501,13 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
     },
   });
 
-
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.RecvPackets)
 }
 
 async function acknowledgement<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Acknowledgement" | "DispatcherProof:Acknowledgement">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
   let sequence = event.args.sequence;
@@ -458,6 +522,7 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       sourcePortAddress: srcPortAddress,
       sourceChannelId: sourceChannelId,
       sequence: sequence,
@@ -465,14 +530,13 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const srcPortId = `polyibc.${client}.${srcPortAddress.slice(2)}`;
   const key = `${srcPortId}-${sourceChannelId}-${sequence}`;
 
@@ -490,11 +554,13 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     }
   });
 
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.AckPackets)
 }
 
 async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Timeout" | "DispatcherProof:Timeout">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let transactionHash = event.transaction.hash;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
@@ -508,6 +574,7 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: sourceChannelId,
       sequence: sequence,
@@ -515,7 +582,7 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
@@ -526,6 +593,7 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
 
 async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteTimeoutPacket" | "DispatcherProof:WriteTimeoutPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let transactionHash = event.transaction.hash;
   let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
@@ -540,6 +608,7 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
     data: {
       dispatcherAddress: address || "0x",
       dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
       writerPortAddress: writerPortAddress,
       writerChannelId: writerChannelId,
       sequence: sequence,
@@ -550,7 +619,7 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
