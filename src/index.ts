@@ -45,9 +45,9 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -118,9 +118,9 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -136,7 +136,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     const channel = await tmClient.ibc.channel.channel(portId, channelId);
 
     if (!channel.channel) {
-      logger.warn('No channel found for write ack: ', portId, channelId );
+      logger.warn('No channel found for write ack: ', portId, channelId);
       // Use bail to immediately stop retrying under certain conditions
       bail(new Error('No channel found, giving up'));
     } else {
@@ -214,9 +214,9 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -238,9 +238,9 @@ async function ownershipTransferred<name extends Virtual.EventNames<config>>(eve
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -271,9 +271,9 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -295,6 +295,7 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     }
   });
 
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.SendPackets)
 }
 
@@ -323,9 +324,9 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -370,6 +371,59 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   await updateStats(context.db.Stat, StatName.WriteAckPacket);
 }
 
+async function updatePacket<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, id: string) {
+  let packet = await context.db.Packet.findUnique({id})
+  if (!packet) {
+    console.warn('No packet found for updatePacket', id)
+    return;
+  }
+
+  if (packet.sendPacketId && packet.recvPacketId && !packet.sendToRecvTime) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
+    if (sendPacket && recvPacket) {
+      packet.sendToRecvTime = Number(recvPacket.blockTimestamp - sendPacket.blockTimestamp);
+      packet.sendToRecvGas = Number(recvPacket.gas + sendPacket.gas);
+      await context.db.Packet.update({
+        id,
+        data: {
+          sendToRecvTime: packet.sendToRecvTime,
+          sendToRecvGas: packet.sendToRecvGas,
+        }
+      });
+    }
+  }
+
+  if (packet.sendPacketId && packet.ackPacketId && !packet.sendToAckTime) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
+    if (sendPacket && ackPacket) {
+      packet.sendToAckTime = Number(ackPacket.blockTimestamp - sendPacket.blockTimestamp);
+      await context.db.Packet.update({
+        id,
+        data: {
+          sendToAckTime: packet.sendToAckTime,
+        }
+      });
+    }
+  }
+
+  if (packet.sendPacketId && packet.recvPacketId && packet.ackPacketId && !packet.sendToAckGas) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
+    const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
+    if (sendPacket && recvPacket && ackPacket) {
+      packet.sendToAckGas = Number(ackPacket.gas + recvPacket.gas + sendPacket.gas);
+      await context.db.Packet.update({
+        id,
+        data: {
+          sendToAckGas: packet.sendToAckGas,
+        }
+      });
+    }
+  }
+}
+
 async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   const chainId = context.network.chainId as number;
@@ -394,9 +448,9 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       blockTimestamp: event.block.timestamp,
       transactionHash: recvTx,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -408,7 +462,7 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
   try {
     channel = await tmClient.ibc.channel.channel(destPortId, destChannelId);
   } catch (e) {
-    logger.info('Skipping packet for channel in recvPacket: ', destPortId, destChannelId);
+    logger.info('Skipping packet for channel in recvPacket');
     return;
   }
 
@@ -438,7 +492,7 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
     },
   });
 
-
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.RecvPackets)
 }
 
@@ -465,9 +519,9 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -490,6 +544,7 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     }
   });
 
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.AckPackets)
 }
 
@@ -515,9 +570,9 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
@@ -550,9 +605,9 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: Number(event.transaction.maxFeePerGas),
+      maxPriorityFeePerGas: Number(event.transaction.maxPriorityFeePerGas),
       from: event.transaction.from.toString(),
     },
   });
