@@ -227,31 +227,6 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
   await updateStats(context.db.Stat, StatName.CloseIBCChannel)
 }
 
-async function ownershipTransferred<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OwnershipTransferred" | "DispatcherProof:OwnershipTransferred">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
-  let client = DISPATCHER_CLIENT[address!];
-  const chainId = context.network.chainId as number;
-
-  await context.db.OwnershipTransferred.create({
-    id: event.log.id,
-    data: {
-      dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
-      dispatcherClientName: client!,
-      previousOwner: event.args.previousOwner,
-      newOwner: event.args.newOwner,
-      blockNumber: event.block.number,
-      blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
-      chainId: chainId,
-      gas: Number(event.transaction.gas),
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
-      from: event.transaction.from.toString(),
-    },
-  });
-}
-
 async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:SendPacket" | "DispatcherProof:SendPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
@@ -652,15 +627,6 @@ ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
 ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
   await closeIbcChannel(event, context, "DispatcherProof");
 });
-
-ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
-  await ownershipTransferred(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
-  await ownershipTransferred(event, context, "DispatcherProof");
-});
-
 
 ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
   await sendPacket(event, context, "DispatcherSim");
