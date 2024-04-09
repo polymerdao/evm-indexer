@@ -361,6 +361,54 @@ async function updatePacket<name extends Virtual.EventNames<config>>(context: Vi
     return;
   }
 
+  if (packet.sendPacketId && !packet.sendPolymerGas) {
+    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
+    if (sendPacket) {
+      const stargateClient = await TmClient.getStargate();
+      const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
+
+      const txs = await stargateClient.searchTx([
+        {
+          key: "send_packet.packet_sequence",
+          value: sendPacket.sequence
+        },
+        {
+          key: "send_packet.packet_src_port",
+          value: srcPortId
+        },
+        {
+          key: "send_packet.packet_src_channel",
+          value: sendPacket.sourceChannelId
+        }
+      ])
+
+      if (txs.length > 1) {
+        throw new Error(`Multiple txs found for sendPacketId: ${sendPacket.id}`);
+      }
+
+        if (txs.length == 1) {
+        let polymerGas = Number(txs[0]!.gasUsed);
+        await context.db.SendPacket.update({
+          id: sendPacket.id,
+          data: {
+            polymerGas: polymerGas,
+            polymerTxHash: txs[0]!.hash,
+            polymerBlockNumber: BigInt(txs[0]!.height),
+          }
+        });
+        await context.db.Packet.update({
+          id,
+          data: {
+            sendPolymerGas: polymerGas,
+          }
+        })
+      }
+    }
+  }
+
+
+
+
   if (packet.sendPacketId && packet.recvPacketId && !packet.sendToRecvTime) {
     const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
     const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
