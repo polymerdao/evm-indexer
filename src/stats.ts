@@ -1,4 +1,3 @@
-import { DatabaseModel } from "@ponder/core/src/types/model";
 import { Infer } from "@ponder/core/src/schema/types";
 import { schema } from "@/generated";
 
@@ -14,7 +13,7 @@ export enum StatName {
   ConnectIbcChannel = 'ConnectIbcChannel',
 }
 
-export async function updateStats<T extends DatabaseModel<Infer<schema>["Stat"]>>(Stat: T, id: StatName) {
+export async function updateStats<T extends Infer<schema>["Stat"]>(Stat: T, id: StatName) {
   await Stat.upsert({
     id: id,
     create: {

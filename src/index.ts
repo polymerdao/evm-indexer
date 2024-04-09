@@ -5,6 +5,7 @@ import logger from './logger';
 import { StatName, updateStats } from "./stats";
 import { Virtual } from "@ponder/core";
 import retry from 'async-retry';
+import { updatePacket } from "./packet";
 
 function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(contractName: "DispatcherSim" | "DispatcherProof", context: Virtual.Context<config, schema, name>) {
   let address: `0x${string}` = "0x";
@@ -351,60 +352,8 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
     },
   });
 
+  await updatePacket(context, key)
   await updateStats(context.db.Stat, StatName.WriteAckPacket);
-}
-
-async function updatePacket<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, id: string) {
-  let packet = await context.db.Packet.findUnique({id})
-  if (!packet) {
-    console.warn('No packet found for updatePacket', id)
-    return;
-  }
-
-  if (packet.sendPacketId && packet.recvPacketId && !packet.sendToRecvTime) {
-    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
-    const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
-    if (sendPacket && recvPacket) {
-      packet.sendToRecvTime = Number(recvPacket.blockTimestamp - sendPacket.blockTimestamp);
-      packet.sendToRecvGas = Number(recvPacket.gas + sendPacket.gas);
-      await context.db.Packet.update({
-        id,
-        data: {
-          sendToRecvTime: packet.sendToRecvTime,
-          sendToRecvGas: packet.sendToRecvGas,
-        }
-      });
-    }
-  }
-
-  if (packet.sendPacketId && packet.ackPacketId && !packet.sendToAckTime) {
-    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
-    const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
-    if (sendPacket && ackPacket) {
-      packet.sendToAckTime = Number(ackPacket.blockTimestamp - sendPacket.blockTimestamp);
-      await context.db.Packet.update({
-        id,
-        data: {
-          sendToAckTime: packet.sendToAckTime,
-        }
-      });
-    }
-  }
-
-  if (packet.sendPacketId && packet.recvPacketId && packet.ackPacketId && !packet.sendToAckGas) {
-    const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
-    const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
-    const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
-    if (sendPacket && recvPacket && ackPacket) {
-      packet.sendToAckGas = Number(ackPacket.gas + recvPacket.gas + sendPacket.gas);
-      await context.db.Packet.update({
-        id,
-        data: {
-          sendToAckGas: packet.sendToAckGas,
-        }
-      });
-    }
-  }
 }
 
 async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
@@ -662,19 +611,19 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "DispatcherProof");
 });
 
-
-ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
-  await timeout(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
-  await timeout(event, context, "DispatcherProof");
-});
-
-ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
-  await writeTimeoutPacket(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
-  await writeTimeoutPacket(event, context, "DispatcherProof");
-});
+//
+// ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
+//   await timeout(event, context, "DispatcherSim");
+// });
+//
+// ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
+//   await timeout(event, context, "DispatcherProof");
+// });
+//
+// ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
+//   await writeTimeoutPacket(event, context, "DispatcherSim");
+// });
+//
+// ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
+//   await writeTimeoutPacket(event, context, "DispatcherProof");
+// });

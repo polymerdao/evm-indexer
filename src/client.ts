@@ -1,9 +1,10 @@
 import process from "process";
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
-import { IbcExtension, QueryClient, setupIbcExtension } from '@cosmjs/stargate';
+import { IbcExtension, QueryClient, setupIbcExtension, StargateClient } from '@cosmjs/stargate';
 
 export class TmClient {
   private static instance: Promise<QueryClient & IbcExtension> | null = null;
+  private static stargate: Promise<StargateClient> | null = null;
 
   private constructor() {
     // Private constructor to prevent direct instantiation
@@ -14,6 +15,13 @@ export class TmClient {
       TmClient.instance = TmClient.createInstance();
     }
     return TmClient.instance;
+  }
+
+  public static async getStargate(): Promise<StargateClient> {
+    if (!TmClient.stargate) {
+      TmClient.stargate = StargateClient.connect(process.env.API_URL!);
+    }
+    return TmClient.stargate;
   }
 
   private static async createInstance(): Promise<QueryClient & IbcExtension> {
