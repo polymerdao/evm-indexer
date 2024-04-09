@@ -106,6 +106,9 @@ export default createSchema((p) => ({
     maxFeePerGas: p.bigint().optional(),
     maxPriorityFeePerGas: p.bigint().optional(),
     from: p.string(),
+    polymerTxHash: p.string().optional(),
+    polymerGas: p.int().optional(),
+    polymerBlockNumber: p.bigint().optional(),
   }),
   Timeout: p.createTable({
     id: p.string(),
@@ -142,6 +145,9 @@ export default createSchema((p) => ({
     maxFeePerGas: p.bigint().optional(),
     maxPriorityFeePerGas: p.bigint().optional(),
     from: p.string(),
+    polymerTxHash: p.string().optional(),
+    polymerGas: p.int().optional(),
+    polymerBlockNumber: p.bigint().optional(),
   }),
   WriteTimeoutPacket: p.createTable({
     id: p.string(),
@@ -183,6 +189,8 @@ export default createSchema((p) => ({
     ackTx: p.string().optional(),
     sendToAckTime: p.int().optional(),
     sendToAckGas: p.int().optional(),
+    sendToRecvPolymerGas: p.int().optional(),
+    sendToAckPolymerGas: p.int().optional(),
   }),
   ChannelStates: p.createEnum(["INIT", "TRY", "OPEN", "CLOSED"]),
   Channel: p.createTable({
