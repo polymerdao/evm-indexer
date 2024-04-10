@@ -7,6 +7,7 @@ import { Virtual } from "@ponder/core";
 import retry from 'async-retry';
 import { updatePacket } from "./packet";
 import { defaultRetryOpts } from "./retry";
+import { updateChannel } from "./channel";
 
 function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(contractName: "DispatcherSim" | "DispatcherProof", context: Virtual.Context<config, schema, name>) {
   let address: `0x${string}` = "0x";
@@ -29,6 +30,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   let counterpartyChannelId = ethers.decodeBytes32String(event.args.counterpartyChannelId);
   let connectionHops = event.args.connectionHops;
   let portAddress = event.args.portAddress;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
   let version = event.args.version;
 
   await context.db.OpenIbcChannel.create({
@@ -38,6 +40,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       dispatcherType: dispatcherType,
       dispatcherClientName: client!,
       portAddress: portAddress,
+      portId: portId,
       version: version,
       ordering: event.args.ordering,
       feeEnabled: event.args.feeEnabled,
@@ -57,10 +60,15 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   });
 
   let channelId = '';
-  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
   let state: "INIT" | "TRY" = counterpartyChannelId == "" ? "INIT" : "TRY";
+  let openInitChannelId, openTryChannelId;
+
+  if (state == "INIT") {
+    openInitChannelId = event.log.id;
+  }
 
   if (state == "TRY") {
+    openTryChannelId = event.log.id;
     const tmClient = await TmClient.getInstance();
     await retry(async bail => {
         // If anything throws within this function, it will retry
@@ -80,7 +88,6 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
     });
   }
 
-
   await context.db.Channel.create({
     id: event.log.id,
     data: {
@@ -93,8 +100,12 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       state: state,
+      openInitChannelId: openInitChannelId,
+      openTryChannelId: openTryChannelId,
     }
   })
+
+  await updateChannel(context, event.log.id)
   await updateStats(context.db.Stat, StatName.OpenIBCChannel)
 }
 
@@ -104,29 +115,10 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
   const chainId = context.network.chainId as number;
   let channelId = ethers.decodeBytes32String(event.args.channelId);
   let portAddress = event.args.portAddress;
-
-  await context.db.ConnectIbcChannel.create({
-    id: event.log.id,
-    data: {
-      dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
-      dispatcherClientName: client!,
-      portAddress: portAddress,
-      channelId: channelId,
-      chainId: chainId,
-      blockNumber: event.block.number,
-      blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
-      gas: Number(event.transaction.gas),
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
-      from: event.transaction.from.toString(),
-    },
-  });
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
 
   let counterpartyPortId = '';
   let counterpartyChannelId = '';
-  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
 
   const tmClient = await TmClient.getInstance();
 
@@ -148,6 +140,29 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     logger.warn('Skipping packet for connectIbcChannel after all retry attempts');
   });
 
+
+
+  await context.db.ConnectIbcChannel.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address || "0x",
+      dispatcherType,
+      dispatcherClientName: client!,
+      portId,
+      counterpartyPortId,
+      counterpartyChannelId,
+      portAddress,
+      channelId,
+      chainId,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
 
   // update earliest INIT state record that have incomplete id
   let channels = await context.db.Channel.findMany({
