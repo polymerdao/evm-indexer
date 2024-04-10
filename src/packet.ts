@@ -5,6 +5,7 @@ import { DatabaseModel } from "@ponder/core/src/types/model";
 import { Infer } from "@ponder/core/src/schema/types";
 import { Prettify } from "viem/types/utils";
 import { IndexedTx } from "@cosmjs/stargate";
+import logger from "./logger";
 
 
 async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
@@ -31,7 +32,7 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
           }
         ])
       } catch (e) {
-        console.error('Error searching txs', e)
+        logger.error('Error searching txs', e)
         return
       }
 
@@ -110,7 +111,7 @@ async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>
           }
         ])
       } catch (e) {
-        console.error('Error searching txs', e)
+        logger.error('Error searching txs', e)
         return
       }
 
