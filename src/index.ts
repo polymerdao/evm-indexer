@@ -6,6 +6,7 @@ import { StatName, updateStats } from "./stats";
 import { Virtual } from "@ponder/core";
 import retry from 'async-retry';
 import { updatePacket } from "./packet";
+import { defaultRetryOpts } from "./retry";
 
 function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(contractName: "DispatcherSim" | "DispatcherProof", context: Virtual.Context<config, schema, name>) {
   let address: `0x${string}` = "0x";
@@ -62,26 +63,20 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   if (state == "TRY") {
     const tmClient = await TmClient.getInstance();
     await retry(async bail => {
-      // If anything throws within this function, it will retry
-      let channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
+        // If anything throws within this function, it will retry
+        let channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
 
-      if (!channel.channel) {
-        logger.warn('No channel found for write ack: ', counterpartyChannelId, counterpartyPortId);
-        // Optionally, you can bail out on certain conditions if retrying is futile
-        bail(new Error('No channel found, giving up'));
-      } else {
-        channelId = channel.channel.counterparty.channelId;
-      }
-    }, {
-
-      retries: 3, // The maximum amount of times to retry the operation. Default is 10
-      factor: 2, // The exponential factor to use. Default is 2
-      minTimeout: 1000, // The number of milliseconds before starting the first retry. Default is 1000
-      maxTimeout: 5000, // The maximum number of milliseconds between two retries. Default is Infinity
-      // You can also specify a custom retry strategy
-      // onRetry: (err, attempt) => {},
-    }).catch(e => {
-      logger.warn('Skipping packet for channel in openIbcChannel: ', counterpartyPortId, counterpartyChannelId);
+        if (!channel.channel) {
+          logger.warn('No channel found for write ack: ', counterpartyChannelId, counterpartyPortId);
+          // Optionally, you can bail out on certain conditions if retrying is futile
+          bail(new Error('No channel found, giving up'));
+        } else {
+          channelId = channel.channel.counterparty.channelId;
+        }
+      },
+      defaultRetryOpts
+    ).catch(e => {
+      logger.warn('Skipping packet for channel in openIbcChannel after all retry attempts');
     });
   }
 
@@ -136,29 +131,21 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
   const tmClient = await TmClient.getInstance();
 
   await retry(async bail => {
-    const channel = await tmClient.ibc.channel.channel(portId, channelId);
+      const channel = await tmClient.ibc.channel.channel(portId, channelId);
 
-    if (!channel.channel) {
-      logger.warn('No channel found for write ack: ', portId, channelId);
-      // Use bail to immediately stop retrying under certain conditions
-      bail(new Error('No channel found, giving up'));
-    } else {
-      counterpartyChannelId = channel.channel.counterparty.channelId;
-      counterpartyPortId = channel.channel.counterparty.portId;
-    }
-  }, {
-    retries: 3, // The maximum amount of times to retry the operation.
-    factor: 2, // The exponential factor to use.
-    minTimeout: 1000, // The number of milliseconds before starting the first retry.
-    maxTimeout: 5000, // The maximum number of milliseconds between two retries.
-    // Custom retry strategy or additional logging can be specified here
-    onRetry: (err, attempt) => {
-      // This is a good place to log retry attempts if needed
-      logger.info(`Retry attempt ${attempt} due to error: ${err.message}`);
+      if (!channel.channel) {
+        logger.warn('No channel found for write ack: ', portId, channelId);
+        // Use bail to immediately stop retrying under certain conditions
+        bail(new Error('No channel found, giving up'));
+      } else {
+        counterpartyChannelId = channel.channel.counterparty.channelId;
+        counterpartyPortId = channel.channel.counterparty.portId;
+      }
     },
-  }).catch(e => {
+    defaultRetryOpts
+  ).catch(e => {
     // This catch block is executed if retries are exhausted or bail was called
-    logger.warn('Skipping packet for connectIbcChannel: ', portId, channelId);
+    logger.warn('Skipping packet for connectIbcChannel after all retry attempts');
   });
 
 
