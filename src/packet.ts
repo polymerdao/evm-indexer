@@ -95,9 +95,8 @@ async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>
       const stargateClient = await TmClient.getStargate();
       const destPortId = `polyibc.${writeAckPacket.dispatcherClientName}.${writeAckPacket.writerPortAddress.slice(2)}`;
 
-      let txs: IndexedTx[]
-
-      try {
+      let txs: IndexedTx[] = []
+      await retry(async bail => {
         txs = await stargateClient.searchTx([
           {
             key: "write_acknowledgement.packet_sequence",
@@ -112,10 +111,10 @@ async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>
             value: writeAckPacket.writerChannelId
           }
         ])
-      } catch (e) {
-        logger.error('Error searching txs', e)
+      }, defaultRetryOpts).catch(e => {
+        logger.error('Error searching txs for WriteAckPacket', e)
         return
-      }
+      });
 
       if (txs.length > 1) {
         throw new Error(`Multiple txs found for writePacketId: ${writeAckPacket.id}`);
