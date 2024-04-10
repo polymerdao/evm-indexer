@@ -6,6 +6,8 @@ import { Infer } from "@ponder/core/src/schema/types";
 import { Prettify } from "viem/types/utils";
 import { IndexedTx } from "@cosmjs/stargate";
 import logger from "./logger";
+import retry from "async-retry";
+import { defaultRetryOpts } from "./retry";
 
 
 async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
@@ -15,8 +17,8 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
       const stargateClient = await TmClient.getStargate();
       const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
 
-      let txs: IndexedTx[]
-      try {
+      let txs: IndexedTx[] = []
+      await retry(async bail => {
         txs = await stargateClient.searchTx([
           {
             key: "send_packet.packet_sequence",
@@ -31,10 +33,10 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
             value: sendPacket.sourceChannelId
           }
         ])
-      } catch (e) {
-        logger.error('Error searching txs', e)
+      }, defaultRetryOpts).catch(e => {
+        logger.error('Error searching txs in SendPacket', e)
         return
-      }
+      });
 
       if (txs.length > 1) {
         throw new Error(`Multiple txs found for sendPacketId: ${sendPacket.id}`);
