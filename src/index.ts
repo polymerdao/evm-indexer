@@ -611,19 +611,19 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "DispatcherProof");
 });
 
-//
-// ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
-//   await timeout(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
-//   await timeout(event, context, "DispatcherProof");
-// });
-//
-// ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherProof");
-// });
+
+ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
+  await timeout(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
+  await timeout(event, context, "DispatcherProof");
+});
+
+ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
+  await writeTimeoutPacket(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
+  await writeTimeoutPacket(event, context, "DispatcherProof");
+});

@@ -4,6 +4,7 @@ import { TmClient } from "./client";
 import { DatabaseModel } from "@ponder/core/src/types/model";
 import { Infer } from "@ponder/core/src/schema/types";
 import { Prettify } from "viem/types/utils";
+import { IndexedTx } from "@cosmjs/stargate";
 
 
 async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
@@ -13,20 +14,26 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
       const stargateClient = await TmClient.getStargate();
       const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
 
-      let txs = await stargateClient.searchTx([
-        {
-          key: "send_packet.packet_sequence",
-          value: sendPacket.sequence
-        },
-        {
-          key: "send_packet.packet_src_port",
-          value: srcPortId
-        },
-        {
-          key: "send_packet.packet_src_channel",
-          value: sendPacket.sourceChannelId
-        }
-      ])
+      let txs: IndexedTx[]
+      try {
+        txs = await stargateClient.searchTx([
+          {
+            key: "send_packet.packet_sequence",
+            value: sendPacket.sequence
+          },
+          {
+            key: "send_packet.packet_src_port",
+            value: srcPortId
+          },
+          {
+            key: "send_packet.packet_src_channel",
+            value: sendPacket.sourceChannelId
+          }
+        ])
+      } catch (e) {
+        console.error('Error searching txs', e)
+        return
+      }
 
       if (txs.length > 1) {
         throw new Error(`Multiple txs found for sendPacketId: ${sendPacket.id}`);
@@ -85,20 +92,27 @@ async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>
       const stargateClient = await TmClient.getStargate();
       const destPortId = `polyibc.${writeAckPacket.dispatcherClientName}.${writeAckPacket.writerPortAddress.slice(2)}`;
 
-      let txs = await stargateClient.searchTx([
-        {
-          key: "write_acknowledgement.packet_sequence",
-          value: writeAckPacket.sequence
-        },
-        {
-          key: "write_acknowledgement.packet_dst_port",
-          value: destPortId
-        },
-        {
-          key: "write_acknowledgement.packet_dst_channel",
-          value: writeAckPacket.writerChannelId
-        }
-      ])
+      let txs: IndexedTx[]
+
+      try {
+        txs = await stargateClient.searchTx([
+          {
+            key: "write_acknowledgement.packet_sequence",
+            value: writeAckPacket.sequence
+          },
+          {
+            key: "write_acknowledgement.packet_dst_port",
+            value: destPortId
+          },
+          {
+            key: "write_acknowledgement.packet_dst_channel",
+            value: writeAckPacket.writerChannelId
+          }
+        ])
+      } catch (e) {
+        console.error('Error searching txs', e)
+        return
+      }
 
       if (txs.length > 1) {
         throw new Error(`Multiple txs found for writePacketId: ${writeAckPacket.id}`);
