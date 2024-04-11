@@ -17,6 +17,9 @@ export default createSchema((p) => ({
     maxFeePerGas: p.bigint().optional(),
     maxPriorityFeePerGas: p.bigint().optional(),
     from: p.string(),
+    polymerTxHash: p.string().optional(),
+    polymerGas: p.int().optional(),
+    polymerBlockNumber: p.bigint().optional(),
   }),
   CloseIbcChannel: p.createTable({
     id: p.string(),
