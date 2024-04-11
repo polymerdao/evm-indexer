@@ -1,16 +1,13 @@
 import { Virtual } from "@ponder/core";
-import { config, schema } from "@/generated";
+import { config, Schema, schema } from "@/generated";
 import { TmClient } from "./client";
-import { DatabaseModel } from "@ponder/core/src/types/model";
-import { Infer } from "@ponder/core/src/schema/types";
-import { Prettify } from "viem/types/utils";
 import { IndexedTx } from "@cosmjs/stargate";
 import logger from "./logger";
 import retry from "async-retry";
 import { defaultRetryOpts } from "./retry";
 
 
-async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
+async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Schema["Packet"]) {
   if (packet.sendPacketId && !packet.sendToRecvPolymerGas) {
     const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
     if (sendPacket) {
@@ -70,7 +67,7 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
   }
 }
 
-async function updateSendToRecvTime<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
+async function updateSendToRecvTime<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Schema["Packet"]) {
   if (packet.sendPacketId && packet.recvPacketId && !packet.sendToRecvTime) {
     const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
     const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
@@ -88,7 +85,7 @@ async function updateSendToRecvTime<name extends Virtual.EventNames<config>>(con
   }
 }
 
-async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
+async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Schema["Packet"]) {
   if (packet.writeAckPacketId && !packet.sendToAckPolymerGas) {
     const writeAckPacket = await context.db.WriteAckPacket.findUnique({id: packet.writeAckPacketId});
     if (writeAckPacket) {
@@ -150,7 +147,7 @@ async function updateSendToAckPolymerGas<name extends Virtual.EventNames<config>
 }
 
 
-async function updateSendToAckTime<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Prettify<Infer<schema>["Packet"]>) {
+async function updateSendToAckTime<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Schema["Packet"]) {
   if (packet.sendPacketId && packet.ackPacketId && !packet.sendToAckTime) {
     const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
     const ackPacket = await context.db.Acknowledgement.findUnique({id: packet.ackPacketId});
@@ -166,7 +163,7 @@ async function updateSendToAckTime<name extends Virtual.EventNames<config>>(cont
   }
 }
 
-async function updateSendToAckGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: DatabaseModel<"Packet">) {
+async function updateSendToAckGas<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, packet: Schema["Packet"]) {
   if (packet.sendPacketId && packet.recvPacketId && packet.ackPacketId && !packet.sendToAckGas) {
     const sendPacket = await context.db.SendPacket.findUnique({id: packet.sendPacketId});
     const recvPacket = await context.db.RecvPacket.findUnique({id: packet.recvPacketId});
@@ -191,9 +188,9 @@ export async function updatePacket<name extends Virtual.EventNames<config>>(cont
     return;
   }
 
-  await updateSendToRecvTime(context, packet)
-  await updateSendToAckTime(context, packet)
-  await updateSendToAckGas(context, packet)
-  await updateSendToRecvPolymerGas(context, packet)
-  await updateSendToAckPolymerGas(context, packet)
+  await updateSendToRecvTime(context, packet!)
+  await updateSendToAckTime(context, packet!)
+  await updateSendToAckGas(context, packet!)
+  await updateSendToRecvPolymerGas(context, packet!)
+  await updateSendToAckPolymerGas(context, packet!)
 }

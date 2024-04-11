@@ -1,12 +1,10 @@
 import { Virtual } from "@ponder/core";
-import { config, schema } from "@/generated";
-import { Prettify } from "viem/types/utils";
-import { Infer } from "@ponder/core/src/schema/types";
+import { config, type Context, schema, type Schema } from "@/generated";
 import logger from "./logger";
 
-async function updateInitToTryTime<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, channel: Prettify<Infer<schema>["Channel"]>) {
+async function updateInitToTryTime<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, channel: Schema['Channel']) {
   if (channel.state == "INIT" && !channel.initToTryTime) {
-    const openInitChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openInitChannelId});
+    const openInitChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openInitChannelId!});
     if (!openInitChannel) {
       logger.error(`No openInitChannel found for channel with state INIT and id: ${channel.id}`);
       return;
@@ -63,7 +61,7 @@ async function updateInitToTryTime<name extends Virtual.EventNames<config>>(cont
   }
 
   if (channel.state == "TRY" && !channel.initToTryTime) {
-    const openTryChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openTryChannelId});
+    const openTryChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openTryChannelId!});
     const openInitChannel = await context.db.OpenIbcChannel.findMany({
       where: {
         portId: openTryChannel?.counterpartyPortId,
@@ -123,5 +121,5 @@ export async function updateChannel<name extends Virtual.EventNames<config>>(con
     return;
   }
 
-  await updateInitToTryTime(context, channel)
+  await updateInitToTryTime(context, channel!)
 }

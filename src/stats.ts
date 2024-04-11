@@ -1,5 +1,4 @@
-import { Infer } from "@ponder/core/src/schema/types";
-import { schema } from "@/generated";
+import { Context } from "@/generated";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -13,17 +12,16 @@ export enum StatName {
   ConnectIbcChannel = 'ConnectIbcChannel',
 }
 
-export async function updateStats<T extends Infer<schema>["Stat"]>(Stat: T, id: StatName) {
-  await Stat.upsert({
+export async function updateStats(context: Context, id: StatName) {
+  await context.db.Stat.upsert({
     id: id,
     create: {
       val: 1,
     },
-    update: ({current}: T) => {
+    update: ({current}) => {
       return {
         val: current.val + 1
       }
     }
   });
-
 }

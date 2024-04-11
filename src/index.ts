@@ -1,4 +1,4 @@
-import { config, ponder, schema } from "@/generated";
+import { config, Context, ponder } from "@/generated";
 import { ethers } from "ethers";
 import { DISPATCHER_CLIENT, TmClient } from "./client";
 import logger from './logger';
@@ -8,8 +8,11 @@ import retry from 'async-retry';
 import { updatePacket } from "./packet";
 import { defaultRetryOpts } from "./retry";
 import { updateChannel } from "./channel";
+import { default as ponderConfig } from '../ponder.config'
+import { Kysely, PostgresDialect } from "kysely";
+import pg from "pg";
 
-function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(contractName: "DispatcherSim" | "DispatcherProof", context: Virtual.Context<config, schema, name>) {
+function getAddressAndDispatcherType(contractName: "DispatcherSim" | "DispatcherProof", context: Context) {
   let address: `0x${string}` = "0x";
   let dispatcherType: string;
   if (contractName == "DispatcherSim") {
@@ -22,8 +25,8 @@ function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(co
   return {address, dispatcherType};
 }
 
-async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OpenIbcChannel" | "DispatcherProof:OpenIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  let {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OpenIbcChannel" | "DispatcherProof:OpenIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  let {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let counterpartyPortId = event.args.counterpartyPortId;
@@ -106,11 +109,11 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   })
 
   await updateChannel(context, event.log.id)
-  await updateStats(context.db.Stat, StatName.OpenIBCChannel)
+  await updateStats(context, StatName.OpenIBCChannel)
 }
 
-async function connectIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ConnectIbcChannel" | "DispatcherProof:ConnectIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function connectIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ConnectIbcChannel" | "DispatcherProof:ConnectIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let channelId = ethers.decodeBytes32String(event.args.channelId);
@@ -201,11 +204,11 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
       }
     })
   }
-  await updateStats(context.db.Stat, StatName.ConnectIbcChannel)
+  await updateStats(context, StatName.ConnectIbcChannel)
 }
 
-async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
 
@@ -227,11 +230,11 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stat, StatName.CloseIBCChannel)
+  await updateStats(context, StatName.CloseIBCChannel)
 }
 
-async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:SendPacket" | "DispatcherProof:SendPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:SendPacket" | "DispatcherProof:SendPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
@@ -281,11 +284,11 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
   });
 
   await updatePacket(context, key)
-  await updateStats(context.db.Stat, StatName.SendPackets)
+  await updateStats(context, StatName.SendPackets)
 }
 
-async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteAckPacket" | "DispatcherProof:WriteAckPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteAckPacket" | "DispatcherProof:WriteAckPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let writerPortAddress = event.args.writerPortAddress;
@@ -355,11 +358,11 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   });
 
   await updatePacket(context, key)
-  await updateStats(context.db.Stat, StatName.WriteAckPacket);
+  await updateStats(context, StatName.WriteAckPacket);
 }
 
-async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let destPortAddress = event.args.destPortAddress;
@@ -428,11 +431,11 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
   });
 
   await updatePacket(context, key)
-  await updateStats(context.db.Stat, StatName.RecvPackets)
+  await updateStats(context, StatName.RecvPackets)
 }
 
-async function acknowledgement<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Acknowledgement" | "DispatcherProof:Acknowledgement">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function acknowledgement<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Acknowledgement" | "DispatcherProof:Acknowledgement">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
@@ -481,11 +484,11 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
   });
 
   await updatePacket(context, key)
-  await updateStats(context.db.Stat, StatName.AckPackets)
+  await updateStats(context, StatName.AckPackets)
 }
 
-async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Timeout" | "DispatcherProof:Timeout">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Timeout" | "DispatcherProof:Timeout">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let transactionHash = event.transaction.hash;
@@ -514,11 +517,11 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stat, StatName.Timeout)
+  await updateStats(context, StatName.Timeout)
 }
 
-async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteTimeoutPacket" | "DispatcherProof:WriteTimeoutPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteTimeoutPacket" | "DispatcherProof:WriteTimeoutPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let transactionHash = event.transaction.hash;
@@ -552,7 +555,7 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
     },
   });
 
-  await updateStats(context.db.Stat, StatName.WriteTimeoutPacket)
+  await updateStats(context, StatName.WriteTimeoutPacket)
 }
 
 ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
