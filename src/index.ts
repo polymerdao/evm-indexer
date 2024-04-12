@@ -184,6 +184,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
+        openAckChannelId: event.log.id,
       }
     })
   }
@@ -201,6 +202,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
+        openConfirmChannelId: event.log.id,
       }
     })
   }
