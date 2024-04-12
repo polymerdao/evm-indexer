@@ -211,6 +211,7 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
   const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
+  const portId = `polyibc.${client}.${event.args.portAddress.slice(2)}`;
 
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
@@ -219,6 +220,7 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
       dispatcherType: dispatcherType,
       dispatcherClientName: client!,
       portAddress: event.args.portAddress,
+      portId: portId,
       channelId: ethers.decodeBytes32String(event.args.channelId),
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
@@ -616,6 +618,29 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "DispatcherProof");
 });
 
+ponder.on("DispatcherProof:setup", async ({context}) => {
+  let databaseConfig = ponderConfig.database!;
+  let common = {options: ponderConfig.options}
+  if (process.env.DATABASE_URL) {
+    let pool = new pg.Pool({
+      statement_timeout: 2 * 60 * 1000, // 2 minutes
+      connectionString: process.env.DATABASE_URL
+    });
+
+    let db = new Kysely({
+      dialect: new PostgresDialect({pool: pool}),
+      log(event) {
+        console.log(event);
+      },
+    });
+
+    await db.schema
+      .createIndex('channel')
+      .on('Channel')
+      .columns(["portId", "blockTimestamp", "openTryChannelId", "openInitChannelId", "state"])
+      .execute();
+  }
+});
 
 // ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
 //   await timeout(event, context, "DispatcherSim");
@@ -626,9 +651,4 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
 // });
 //
 // ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherProof");
-// });
+//   await writeTimeoutPacket(event, c

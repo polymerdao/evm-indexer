@@ -27,6 +27,7 @@ export default createSchema((p) => ({
     dispatcherType: p.string(),
     dispatcherClientName: p.string(),
     portAddress: p.string(),
+    portId: p.string(),
     channelId: p.string(),
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),

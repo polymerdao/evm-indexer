@@ -114,7 +114,7 @@ async function updateInitToTryTime<name extends Virtual.EventNames<config>>(cont
 
 }
 
-export async function updateChannel<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, id: string) {
+export async function updateChannel(context: Context, id: string) {
   let channel = await context.db.Channel.findUnique({id})
   if (!channel) {
     console.warn('No channel found with id', id)
