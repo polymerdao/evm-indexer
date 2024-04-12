@@ -5,7 +5,13 @@ import { GraphQLClient } from 'graphql-request';
 import { Table } from "console-table-printer";
 import { TmClient } from "../src/client";
 import { StargateClient } from "@cosmjs/stargate";
-import { GET_CHANNEL_BY_CHANNEL_ID, GET_CHANNELS, GET_PACKET_BY_SENT_TX, GET_SEND_PACKETS } from "./queries";
+import {
+  GET_CHANNEL_BY_CHANNEL_ID,
+  GET_CHANNELS,
+  GET_OPEN_CHANNEL_BY_CHANNEL_ID,
+  GET_PACKET_BY_SENT_TX,
+  GET_SEND_PACKETS
+} from "./queries";
 import * as fs from "fs";
 import ProgressBar from "progress";
 
@@ -14,14 +20,15 @@ program
   .description('A CLI for fetching packet and channel metrics.');
 
 const METRIC_STATE = "State";
+const METRIC_CLIENT_TYPE = "Client Type";
 
 // packet metrics
 const METRIC_TX_HASH = "Tx Hash";
 const METRIC_SEND_PACKET_L2_GAS = "Send Packet L2 gas";
-const METRIC_SEND_TO_RECV_TIME = "Send To Recv Time (secs)";
+const METRIC_SEND_TO_RECV_TIME = "Send To Recv Time";
 const METRIC_RECV_PACKET_L2_GAS = "Recv Packet L2 gas";
 const METRIC_SEND_TO_RECV_PACKET_L2_GAS = "Send To Recv Packet L2 gas";
-const METRIC_SEND_TO_ACK_TIME = "Send To Ack Time (secs)";
+const METRIC_SEND_TO_ACK_TIME = "Send To Ack Time";
 const METRIC_ACK_PACKET_L2_GAS = "Ack Packet L2 gas";
 const METRIC_SEND_TO_ACK_L2_GAS = "Send To Ack L2 Gas";
 const METRIC_SEND_POLYMER_GAS = "Send Polymer Gas";
@@ -70,6 +77,7 @@ program
         columns: [
           {name: METRIC_TX_HASH, alignment: "left", color: "blue"},
           {name: METRIC_STATE, alignment: "left", color: "blue"},
+          {name: METRIC_CLIENT_TYPE, alignment: "left", color: "blue"},
           {name: METRIC_SEND_PACKET_L2_GAS, alignment: "right", color: "green"},
           {name: METRIC_SEND_TO_RECV_TIME, alignment: "right", color: "green"},
           {name: METRIC_RECV_PACKET_L2_GAS, alignment: "right", color: "green"},
@@ -118,54 +126,79 @@ function generateCsvData(table: any): string {
   });
   return [columns.join(','), ...rows].join('\n');
 }
+async function getChannelGas(
+  stargateClient: StargateClient,
+  channel: any,
+  type: 'init' | 'try' | 'ack' | 'confirm'
+): Promise<number | null> {
+  const txs = await stargateClient.searchTx([
+    { key: `channel_open_${type}.port_id`, value: channel.portId },
+    { key: `channel_open_${type}.channel_id`, value: channel.channelId },
+    { key: `channel_open_${type}.counterparty_port_id`, value: channel.counterpartyPortId },
+  ]);
 
-async function getInitChannelGas(stargateClient: StargateClient, channel: any) {
-  // TODO: Implement this
-  return null;
+  if (txs.length > 1) {
+    console.error(`\nMultiple txs found for ${type}ChannelId: ${channel.id}`);
+    return null;
+  }
+
+  if (txs.length === 0) {
+    if (channel.channelId) {
+      console.error(`\nNo polymer txs found for ${type}ChannelId: ${channel.id}`);
+    }
+    return null;
+  }
+
+  return Number(txs[0]?.gasUsed);
 }
 
-async function getTryChannelGas(stargateClient: StargateClient, channel: any) {
-  //TODO: Implement this
-  return null;
-}
-async function getAckChannelGas(stargateClient: StargateClient, channel: any) {
-  //TODO: Implement this
-  return null;
-}
-async function getConfirmChannelGas(stargateClient: StargateClient, channel: any) {
-  //TODO: Implement this
-  return null;
-}
-
-async function addChannelMetrics(graphQLClient: GraphQLClient, stargateClient: StargateClient, table: Table, channelId: string) {
-  const res: any = await graphQLClient.request(GET_CHANNEL_BY_CHANNEL_ID, {limit: 1, openChannelIds: [channelId]});
+async function addChannelMetrics(
+  graphQLClient: GraphQLClient,
+  stargateClient: StargateClient,
+  table: Table,
+  channelId: string
+) {
+  const res: any = await graphQLClient.request(GET_CHANNEL_BY_CHANNEL_ID, {limit: 1, channelIds: [channelId]});
   let channels = res.channels.items;
+
   if (channels.length === 0) {
     console.log(`No channel found for the open channel id: ${channelId}`);
     return;
   }
 
   const channel = channels[0];
+
   table.addRow({
     [METRIC_CHANNEL_NAME]: channel.channelId,
     [METRIC_STATE]: channel.state,
+    [METRIC_CLIENT_TYPE]: channel.openInitChannel?.dispatcherType || null,
     [METRIC_INIT_L2_GAS]: channel.openInitChannel?.gas || null,
     [METRIC_TRY_L2_GAS]: channel.openTryChannel?.gas || null,
     [METRIC_ACK_L2_GAS]: channel.openAckChannel?.gas || null,
     [METRIC_CONFIRM_L2_GAS]: channel.openConfirmChannel?.gas || null,
-    [METRIC_INIT_TO_TRY_TIME]: channel.openTryChannel ? Number(channel.openTryChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp) : null,
-    [METRIC_INIT_TO_CONFIRM_TIME]: channel.openConfirmChannel ? Number(channel.openConfirmChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp) : null,
-    [METRIC_INIT_TO_ACK_TIME]: channel.openAckChannel ? Number(channel.openAckChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp) : null,
-    [METRIC_INIT_POLYMER_GAS]: channel.openInitChannel ? await getInitChannelGas(stargateClient, channel.openInitChannel) : null,
-    [METRIC_TRY_POLYMER_GAS]: channel.openTryChannel ? await getTryChannelGas(stargateClient, channel.openTryChannel) : null,
-    [METRIC_ACK_POLYMER_GAS]: channel.openAckChannel ? await getAckChannelGas(stargateClient, channel.openAckChannel) : null,
-    [METRIC_CONFIRM_POLYMER_GAS]: channel.openConfirmChannel ? await getConfirmChannelGas(stargateClient, channel.openConfirmChannel) : null,
-  })
+    [METRIC_INIT_TO_TRY_TIME]: channel.openTryChannel
+      ? Number(channel.openTryChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp)
+      : null,
+    [METRIC_INIT_TO_ACK_TIME]: channel.openAckChannel
+      ? Number(channel.openAckChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp)
+      : null,
+    [METRIC_INIT_TO_CONFIRM_TIME]: channel.openConfirmChannel
+      ? Number(channel.openConfirmChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp)
+      : null,
+    [METRIC_INIT_POLYMER_GAS]: channel.openInitChannel ? await getChannelGas(stargateClient, channel.openInitChannel, 'init') : null,
+    [METRIC_TRY_POLYMER_GAS]: channel.openTryChannel ? await getChannelGas(stargateClient, channel.openTryChannel, 'try') : null,
+    [METRIC_ACK_POLYMER_GAS]: channel.openAckChannel ? await getChannelGas(stargateClient, channel.openAckChannel, 'ack') : null,
+    [METRIC_CONFIRM_POLYMER_GAS]: channel.openConfirmChannel ? await getChannelGas(stargateClient, channel.openConfirmChannel, 'confirm') : null
+  });
 }
-
 async function getLastNChannelIds(graphQLClient: GraphQLClient, n: number) {
   const res: any = await graphQLClient.request(GET_CHANNELS, {limit: n});
-  return res.openIbcChannels.items.map((item: any) => item.id);
+  return res.openIbcChannels.items.map((item: any) => item.channelId);
+}
+
+async function getChannelById(graphQLClient: GraphQLClient, channel: string) {
+  const res: any = await graphQLClient.request(GET_OPEN_CHANNEL_BY_CHANNEL_ID, {channelId: channel});
+  return res.openIbcChannels.items.map((item: any) => item.channelId);
 }
 
 program
@@ -183,13 +216,14 @@ program
       columns: [
         {name: METRIC_CHANNEL_NAME, alignment: "left", color: "blue"},
         {name: METRIC_STATE, alignment: "left", color: "blue"},
+        {name: METRIC_CLIENT_TYPE, alignment: "left", color: "blue"},
         {name: METRIC_INIT_L2_GAS, alignment: "right", color: "green"},
         {name: METRIC_TRY_L2_GAS, alignment: "right", color: "green"},
         {name: METRIC_ACK_L2_GAS, alignment: "right", color: "green"},
         {name: METRIC_CONFIRM_L2_GAS, alignment: "right", color: "green"},
         {name: METRIC_INIT_TO_TRY_TIME, alignment: "right", color: "green"},
-        {name: METRIC_INIT_TO_CONFIRM_TIME, alignment: "right", color: "green"},
         {name: METRIC_INIT_TO_ACK_TIME, alignment: "right", color: "green"},
+        {name: METRIC_INIT_TO_CONFIRM_TIME, alignment: "right", color: "green"},
         {name: METRIC_INIT_POLYMER_GAS, alignment: "right", color: "green"},
         {name: METRIC_TRY_POLYMER_GAS, alignment: "right", color: "green"},
         {name: METRIC_ACK_POLYMER_GAS, alignment: "right", color: "green"},
@@ -198,20 +232,23 @@ program
     });
 
     if (channelNameOrN.startsWith('channel-')) {
-      await addChannelMetrics(graphQLClient, stargateClient, table, channelNameOrN);
+      const channelIds = await getChannelById(graphQLClient, channelNameOrN);
+      for (const channelId of channelIds) {
+        await addChannelMetrics(graphQLClient, stargateClient, table, channelId);
+      }
     } else {
       const n = parseInt(channelNameOrN);
       if (isNaN(n)) {
         console.error('Invalid input. Please provide either a channel name or a number.');
         return;
       }
-      const channelNames = await getLastNChannelIds(graphQLClient, n);
+      const channelIds = await getLastNChannelIds(graphQLClient, n);
       const progress = new ProgressBar('fetching channels [:bar] :current/:total', {
-        total: channelNames.length,
+        total: channelIds.length,
         width: 20
       });
 
-      for (const channelId of channelNames) {
+      for (const channelId of channelIds) {
         progress.tick();
         await addChannelMetrics(graphQLClient, stargateClient, table, channelId);
       }
@@ -245,6 +282,7 @@ async function addPacketMetrics(
   table.addRow({
     [METRIC_TX_HASH]: txHash,
     [METRIC_STATE]: packet.state,
+    [METRIC_CLIENT_TYPE]: packet.sendPacket?.dispatcherType || null,
     [METRIC_SEND_PACKET_L2_GAS]: packet.sendPacket?.gas || null,
     [METRIC_SEND_TO_RECV_TIME]: packet.recvPacket ? Number(packet.recvPacket.blockTimestamp) - Number(packet.sendPacket.blockTimestamp) : null,
     [METRIC_RECV_PACKET_L2_GAS]: packet.recvPacket?.gas || null,
