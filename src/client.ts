@@ -19,7 +19,7 @@ export class TmClient {
 
   public static async getStargate(): Promise<StargateClient> {
     if (!TmClient.stargate) {
-      TmClient.stargate = StargateClient.connect(process.env.API_URL!);
+      TmClient.stargate = StargateClient.connect(process.env.API_URL ?? "http://localhost:26657");
     }
     return TmClient.stargate;
   }

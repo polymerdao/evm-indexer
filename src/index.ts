@@ -211,6 +211,7 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
   const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
+  const portId = `polyibc.${client}.${event.args.portAddress.slice(2)}`;
 
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
@@ -219,6 +220,7 @@ async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: V
       dispatcherType: dispatcherType,
       dispatcherClientName: client!,
       portAddress: event.args.portAddress,
+      portId: portId,
       channelId: ethers.decodeBytes32String(event.args.channelId),
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
@@ -626,9 +628,4 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
 // });
 //
 // ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherSim");
-// });
-//
-// ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
-//   await writeTimeoutPacket(event, context, "DispatcherProof");
-// });
+//   await writeTimeoutPacket(event, c
