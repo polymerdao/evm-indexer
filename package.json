@@ -12,7 +12,7 @@
   "dependencies": {
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",
-    "@ponder/core": "^0.3.2",
+    "@ponder/core": "^0.4.2",
     "async-retry": "^1.3.3",
     "ethers": "^6.11.1",
     "viem": "^1.19.9",
@@ -27,7 +27,7 @@
     "commander": "^12.0.0",
     "console-table-printer": "^2.12.0",
     "eslint": "^8.54.0",
-    "eslint-config-ponder": "^0.3.2",
+    "eslint-config-ponder": "^0.4.2",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",
     "progress": "^2.0.3",
