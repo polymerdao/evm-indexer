@@ -298,9 +298,6 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
   let sequence = event.args.sequence;
   let transactionHash = event.transaction.hash;
 
-  logger.debug('writeAckPacket', writerChannelId, sequence)
-  logger.debug("ackTx", transactionHash)
-
   await context.db.WriteAckPacket.create({
     id: event.log.id,
     data: {
@@ -373,9 +370,6 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
   let sequence = event.args.sequence;
   let recvTx = event.transaction.hash;
 
-  logger.debug('recvPacket', destPortAddress, destChannelId, sequence)
-  logger.debug("recvTx", recvTx)
-
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
@@ -444,9 +438,6 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
   let sequence = event.args.sequence;
   let srcPortAddress = event.args.sourcePortAddress;
   let transactionHash = event.transaction.hash;
-
-  logger.debug('acknowledgement', sourceChannelId, sequence)
-  logger.debug("ackTx", transactionHash)
 
   await context.db.Acknowledgement.create({
     id: event.log.id,
@@ -618,29 +609,29 @@ ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "DispatcherProof");
 });
 
-ponder.on("DispatcherProof:setup", async ({context}) => {
-  let databaseConfig = ponderConfig.database!;
-  let common = {options: ponderConfig.options}
-  if (process.env.DATABASE_URL) {
-    let pool = new pg.Pool({
-      statement_timeout: 2 * 60 * 1000, // 2 minutes
-      connectionString: process.env.DATABASE_URL
-    });
-
-    let db = new Kysely({
-      dialect: new PostgresDialect({pool: pool}),
-      log(event) {
-        console.log(event);
-      },
-    });
-
-    await db.schema
-      .createIndex('channel')
-      .on('Channel')
-      .columns(["portId", "blockTimestamp", "openTryChannelId", "openInitChannelId", "state"])
-      .execute();
-  }
-});
+// ponder.on("DispatcherProof:setup", async ({context}) => {
+//   let databaseConfig = ponderConfig.database!;
+//   let common = {options: ponderConfig.options}
+//   if (process.env.DATABASE_URL) {
+//     let pool = new pg.Pool({
+//       statement_timeout: 2 * 60 * 1000, // 2 minutes
+//       connectionString: process.env.DATABASE_URL
+//     });
+//
+//     let db = new Kysely({
+//       dialect: new PostgresDialect({pool: pool}),
+//       log(event) {
+//         console.log(event);
+//       },
+//     });
+//
+//     await db.schema
+//       .createIndex('channel')
+//       .on('Channel')
+//       .columns(["portId", "blockTimestamp", "openTryChannelId", "openInitChannelId", "state"])
+//       .execute();
+//   }
+// });
 
 // ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
 //   await timeout(event, context, "DispatcherSim");
