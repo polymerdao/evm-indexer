@@ -36,32 +36,6 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
   let portId = `polyibc.${client}.${portAddress.slice(2)}`;
   let version = event.args.version;
 
-  await context.db.OpenIbcChannel.create({
-    id: event.log.id,
-    data: {
-      dispatcherAddress: address,
-      dispatcherType: dispatcherType,
-      dispatcherClientName: client!,
-      portAddress: portAddress,
-      portId: portId,
-      version: version,
-      ordering: event.args.ordering,
-      feeEnabled: event.args.feeEnabled,
-      // @ts-ignore
-      connectionHops: connectionHops,
-      counterpartyPortId: counterpartyPortId,
-      counterpartyChannelId: counterpartyChannelId,
-      blockNumber: event.block.number,
-      blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
-      chainId: chainId,
-      gas: Number(event.transaction.gas),
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
-      from: event.transaction.from.toString(),
-    },
-  });
-
   let channelId = '';
   let state: "INIT" | "TRY" = counterpartyChannelId == "" ? "INIT" : "TRY";
   let openInitChannelId, openTryChannelId;
@@ -90,6 +64,34 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       logger.warn('Skipping packet for channel in openIbcChannel after all retry attempts');
     });
   }
+
+
+  await context.db.OpenIbcChannel.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address,
+      dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
+      portAddress: portAddress,
+      portId: portId,
+      channelId: channelId,
+      version: version,
+      ordering: event.args.ordering,
+      feeEnabled: event.args.feeEnabled,
+      // @ts-ignore
+      connectionHops: connectionHops,
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: counterpartyChannelId,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      chainId: chainId,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
 
   await context.db.Channel.create({
     id: event.log.id,
@@ -142,8 +144,6 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     // This catch block is executed if retries are exhausted or bail was called
     logger.warn('Skipping packet for connectIbcChannel after all retry attempts');
   });
-
-
 
   await context.db.ConnectIbcChannel.create({
     id: event.log.id,
@@ -199,6 +199,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
       id: channel.id,
       data: {
         state: "OPEN",
+        channelId: channelId,
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
