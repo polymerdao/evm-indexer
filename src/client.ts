@@ -1,4 +1,3 @@
-import process from "process";
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
 import { IbcExtension, QueryClient, setupIbcExtension, StargateClient } from '@cosmjs/stargate';
 

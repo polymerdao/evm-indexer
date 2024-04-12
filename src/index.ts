@@ -8,9 +8,7 @@ import retry from 'async-retry';
 import { updatePacket } from "./packet";
 import { defaultRetryOpts } from "./retry";
 import { updateChannel } from "./channel";
-import { default as ponderConfig } from '../ponder.config'
-import { Kysely, PostgresDialect } from "kysely";
-import pg from "pg";
+import { QueryChannelResponse } from "cosmjs-types/ibc/core/channel/v1/query";
 
 function getAddressAndDispatcherType(contractName: "DispatcherSim" | "DispatcherProof", context: Context) {
   let address: `0x${string}` = "0x";
@@ -46,17 +44,17 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
 
   if (state == "TRY") {
     openTryChannelId = event.log.id;
+    let initChannel: QueryChannelResponse;
     const tmClient = await TmClient.getInstance();
-    await retry(async bail => {
-        // If anything throws within this function, it will retry
-        let channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
 
-        if (!channel.channel) {
-          logger.warn('No channel found for write ack: ', counterpartyChannelId, counterpartyPortId);
-          // Optionally, you can bail out on certain conditions if retrying is futile
-          bail(new Error('No channel found, giving up'));
+    await retry(async bail => {
+        initChannel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
+
+        if (!initChannel.channel) {
+          logger.warn('No initChannel found for write ack: ', counterpartyChannelId, counterpartyPortId);
+          bail(new Error('No initChannel found, giving up'));
         } else {
-          channelId = channel.channel.counterparty.channelId;
+          channelId = initChannel.channel.counterparty.channelId;
         }
       },
       defaultRetryOpts
@@ -168,12 +166,35 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
   });
 
   // update earliest INIT state record that have incomplete id
-  let channels = await context.db.Channel.findMany({
-    where: {portId: portId, channelId: ""},
+  let initChannels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: "", state: "INIT"},
     orderBy: {blockTimestamp: "asc"},
     limit: 1
   });
-  for (let channel of channels.items) {
+
+  // find the earliest channel in TRY state
+  let tryChannels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: channelId, state: "TRY"},
+    orderBy: {blockTimestamp: "asc"},
+    limit: 1
+  });
+
+  let cpChannels = await context.db.ConnectIbcChannel.findMany({
+    where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
+    orderBy: {blockTimestamp: "asc"},
+    limit: 1
+  });
+
+  for (let channel of initChannels.items) {
+    // update a channel with INIT state that has incomplete channel id and counterparty channel id
+    await context.db.OpenIbcChannel.update({
+      id: channel.openInitChannelId!,
+      data: {
+        channelId: channelId,
+        counterpartyChannelId: counterpartyChannelId,
+      }
+    })
+
     await context.db.Channel.update({
       id: channel.id,
       data: {
@@ -185,16 +206,20 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
         openAckChannelId: event.log.id,
+        openConfirmChannelId: cpChannels.items[0]?.id,
+      }
+    })
+
+    await context.db.Channel.updateMany({
+      where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
+      data: {
+        openAckChannelId: event.log.id,
+        openConfirmChannelId: cpChannels.items[0]?.id,
       }
     })
   }
 
-  channels = await context.db.Channel.findMany({
-    where: {portId: portId, channelId: channelId},
-    orderBy: {blockTimestamp: "asc"},
-    limit: 1
-  });
-  for (let channel of channels.items) {
+  for (let channel of tryChannels.items) {
     await context.db.Channel.update({
       id: channel.id,
       data: {
@@ -203,6 +228,15 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
+        openAckChannelId: cpChannels.items[0]?.id,
+        openConfirmChannelId: event.log.id,
+      }
+    })
+
+    await context.db.Channel.updateMany({
+      where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
+      data: {
+        openAckChannelId: cpChannels.items[0]?.id,
         openConfirmChannelId: event.log.id,
       }
     })
