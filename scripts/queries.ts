@@ -51,3 +51,53 @@ export const GET_PACKET_BY_SENT_TX = `
     }
   }
 `;
+
+export const GET_CHANNELS = `
+query Channels($limit: Int!) {
+  openIbcChannels(orderDirection: "desc", limit: $limit, orderBy: "blockTimestamp", where: {counterpartyChannelId: ""}) {
+    items {
+      id
+      blockTimestamp
+      portId      
+      counterpartyPortId
+    }
+  }
+}
+`
+
+export const GET_CHANNEL_BY_CHANNEL_ID = `
+query Channels($openChannelIds: [String!]!) {
+  channels(
+    orderDirection: "desc"
+    limit: 100
+    orderBy: "blockTimestamp"
+    where: {openInitChannelId_in: $openChannelIds}
+  ) {
+    items {
+      blockTimestamp
+      state
+      channelId
+      portId
+      counterpartyChannelId
+      counterpartyPortId
+      state
+      openInitChannel {
+        blockTimestamp
+        gas
+      }
+      openTryChannel {
+        blockTimestamp
+        gas
+      }
+      openAckChannel {
+        blockTimestamp
+        gas
+      }
+      openConfirmChannel {
+        blockTimestamp
+        gas
+      }
+    }
+  }
+}
+`

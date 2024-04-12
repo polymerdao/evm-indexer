@@ -1,12 +1,11 @@
 #!/usr/bin/env ts-node
 
 import { program } from 'commander';
-import axios from 'axios';
 import { GraphQLClient } from 'graphql-request';
 import { Table } from "console-table-printer";
 import { TmClient } from "../src/client";
 import { StargateClient } from "@cosmjs/stargate";
-import { GET_PACKET_BY_SENT_TX, GET_SEND_PACKETS } from "./queries";
+import { GET_CHANNEL_BY_CHANNEL_ID, GET_CHANNELS, GET_PACKET_BY_SENT_TX, GET_SEND_PACKETS } from "./queries";
 import * as fs from "fs";
 import ProgressBar from "progress";
 
@@ -15,6 +14,9 @@ program
   .description('A CLI for fetching packet and channel metrics.');
 
 const METRIC_STATE = "State";
+
+// packet metrics
+const METRIC_TX_HASH = "Tx Hash";
 const METRIC_SEND_PACKET_L2_GAS = "Send Packet L2 gas";
 const METRIC_SEND_TO_RECV_TIME = "Send To Recv Time (secs)";
 const METRIC_RECV_PACKET_L2_GAS = "Recv Packet L2 gas";
@@ -25,37 +27,63 @@ const METRIC_SEND_TO_ACK_L2_GAS = "Send To Ack L2 Gas";
 const METRIC_SEND_POLYMER_GAS = "Send Polymer Gas";
 const METRIC_WRITE_ACK_POLYMER_GAS = "Write Ack Polymer Gas";
 
+// channel metrics
+const METRIC_CHANNEL_NAME = "Channel Name";
+const METRIC_INIT_L2_GAS = "Init L2 Gas";
+const METRIC_TRY_L2_GAS = "Try L2 Gas";
+const METRIC_ACK_L2_GAS = "Ack L2 Gas";
+const METRIC_CONFIRM_L2_GAS = "Confirm L2 Gas";
+const METRIC_INIT_TO_TRY_TIME = "Init To Try Time";
+const METRIC_INIT_TO_CONFIRM_TIME = "Init To Confirm Time";
+const METRIC_INIT_TO_ACK_TIME = "Init To Ack Time";
+const METRIC_INIT_POLYMER_GAS = "Init Poly Gas";
+const METRIC_TRY_POLYMER_GAS = "Try Poly Gas";
+const METRIC_ACK_POLYMER_GAS = "Ack Poly Gas";
+const METRIC_CONFIRM_POLYMER_GAS = "Confirm Poly Gas";
+
+
+function getGQClient() {
+  return new GraphQLClient('https://index.sepolia.polymer.zone');
+}
+
+async function getStargateClient() {
+  try {
+    return await TmClient.getStargate();
+  } catch (e) {
+    return;
+  }
+}
+
 program
   .command('packet <txHashOrN>')
   .description('Show packet metrics given a sent tx hash or for the last N sent transactions')
   .action(async (txHashOrN: string) => {
     try {
-      const graphQLClient = new GraphQLClient('https://index.sepolia.polymer.zone');
-      let stargateClient: StargateClient;
-      try {
-        stargateClient = await TmClient.getStargate();
-      } catch (e) {
+      const graphQLClient = getGQClient();
+      let stargateClient = await getStargateClient();
+      if (!stargateClient) {
         console.error('Unable to connect to Peptide. Did you port forward?');
         return;
       }
 
       const table = new Table({
         columns: [
-          { name: METRIC_STATE, alignment: "left", color: "blue" },
-          { name: METRIC_SEND_PACKET_L2_GAS, alignment: "right", color: "green" },
-          { name: METRIC_SEND_TO_RECV_TIME, alignment: "right", color: "green" },
-          { name: METRIC_RECV_PACKET_L2_GAS, alignment: "right", color: "green" },
-          { name: METRIC_SEND_TO_RECV_PACKET_L2_GAS, alignment: "right", color: "green" },
-          { name: METRIC_SEND_TO_ACK_TIME, alignment: "right", color: "green" },
-          { name: METRIC_ACK_PACKET_L2_GAS, alignment: "right", color: "green" },
-          { name: METRIC_SEND_TO_ACK_L2_GAS, alignment: "right", color: "green" },
-          { name: METRIC_SEND_POLYMER_GAS, alignment: "right", color: "green" },
-          { name: METRIC_WRITE_ACK_POLYMER_GAS, alignment: "right", color: "green" },
+          {name: METRIC_TX_HASH, alignment: "left", color: "blue"},
+          {name: METRIC_STATE, alignment: "left", color: "blue"},
+          {name: METRIC_SEND_PACKET_L2_GAS, alignment: "right", color: "green"},
+          {name: METRIC_SEND_TO_RECV_TIME, alignment: "right", color: "green"},
+          {name: METRIC_RECV_PACKET_L2_GAS, alignment: "right", color: "green"},
+          {name: METRIC_SEND_TO_RECV_PACKET_L2_GAS, alignment: "right", color: "green"},
+          {name: METRIC_SEND_TO_ACK_TIME, alignment: "right", color: "green"},
+          {name: METRIC_ACK_PACKET_L2_GAS, alignment: "right", color: "green"},
+          {name: METRIC_SEND_TO_ACK_L2_GAS, alignment: "right", color: "green"},
+          {name: METRIC_SEND_POLYMER_GAS, alignment: "right", color: "green"},
+          {name: METRIC_WRITE_ACK_POLYMER_GAS, alignment: "right", color: "green"},
         ],
       });
 
       if (txHashOrN.startsWith('0x')) {
-        await fetchAndAddPacketMetrics(graphQLClient, stargateClient, table, txHashOrN);
+        await addPacketMetrics(graphQLClient, stargateClient, table, txHashOrN);
       } else {
         const n = parseInt(txHashOrN);
         if (isNaN(n)) {
@@ -68,8 +96,8 @@ program
           width: 20
         });
         for (const txHash of sendTxHashes) {
-          progress.tick(); // Increment the progress bar
-          await fetchAndAddPacketMetrics(graphQLClient, stargateClient, table, txHash);
+          progress.tick();
+          await addPacketMetrics(graphQLClient, stargateClient, table, txHash);
         }
       }
 
@@ -90,29 +118,119 @@ function generateCsvData(table: any): string {
   });
   return [columns.join(','), ...rows].join('\n');
 }
+
+async function getInitChannelGas(stargateClient: StargateClient, channel: any) {
+  // TODO: Implement this
+  return null;
+}
+
+async function getTryChannelGas(stargateClient: StargateClient, channel: any) {
+  //TODO: Implement this
+  return null;
+}
+async function getAckChannelGas(stargateClient: StargateClient, channel: any) {
+  //TODO: Implement this
+  return null;
+}
+async function getConfirmChannelGas(stargateClient: StargateClient, channel: any) {
+  //TODO: Implement this
+  return null;
+}
+
+async function addChannelMetrics(graphQLClient: GraphQLClient, stargateClient: StargateClient, table: Table, channelId: string) {
+  const res: any = await graphQLClient.request(GET_CHANNEL_BY_CHANNEL_ID, {limit: 1, openChannelIds: [channelId]});
+  let channels = res.channels.items;
+  if (channels.length === 0) {
+    console.log(`No channel found for the open channel id: ${channelId}`);
+    return;
+  }
+
+  const channel = channels[0];
+  table.addRow({
+    [METRIC_CHANNEL_NAME]: channel.channelId,
+    [METRIC_STATE]: channel.state,
+    [METRIC_INIT_L2_GAS]: channel.openInitChannel?.gas || null,
+    [METRIC_TRY_L2_GAS]: channel.openTryChannel?.gas || null,
+    [METRIC_ACK_L2_GAS]: channel.openAckChannel?.gas || null,
+    [METRIC_CONFIRM_L2_GAS]: channel.openConfirmChannel?.gas || null,
+    [METRIC_INIT_TO_TRY_TIME]: channel.openTryChannel ? Number(channel.openTryChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp) : null,
+    [METRIC_INIT_TO_CONFIRM_TIME]: channel.openConfirmChannel ? Number(channel.openConfirmChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp) : null,
+    [METRIC_INIT_TO_ACK_TIME]: channel.openAckChannel ? Number(channel.openAckChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp) : null,
+    [METRIC_INIT_POLYMER_GAS]: channel.openInitChannel ? await getInitChannelGas(stargateClient, channel.openInitChannel) : null,
+    [METRIC_TRY_POLYMER_GAS]: channel.openTryChannel ? await getTryChannelGas(stargateClient, channel.openTryChannel) : null,
+    [METRIC_ACK_POLYMER_GAS]: channel.openAckChannel ? await getAckChannelGas(stargateClient, channel.openAckChannel) : null,
+    [METRIC_CONFIRM_POLYMER_GAS]: channel.openConfirmChannel ? await getConfirmChannelGas(stargateClient, channel.openConfirmChannel) : null,
+  })
+}
+
+async function getLastNChannelIds(graphQLClient: GraphQLClient, n: number) {
+  const res: any = await graphQLClient.request(GET_CHANNELS, {limit: n});
+  return res.openIbcChannels.items.map((item: any) => item.id);
+}
+
 program
-  .command('channel-metrics <channelName>')
+  .command('channel <channelName>')
   .description('Show channel metrics given a channel name')
-  .action(async (channelName: string) => {
-    try {
-      // Make API call to fetch channel metrics using the provided channel name
-      const response = await axios.get(`https://api.example.com/channels/${channelName}`);
-      console.log('Channel Metrics:', response.data.packets.items);
-    } catch (error) {
-      console.error('Error fetching channel metrics', error);
+  .action(async (channelNameOrN: string) => {
+    const graphQLClient = getGQClient();
+    let stargateClient = await getStargateClient();
+    if (!stargateClient) {
+      console.error('Unable to connect to Peptide. Did you port forward?');
+      return;
     }
+
+    const table = new Table({
+      columns: [
+        {name: METRIC_CHANNEL_NAME, alignment: "left", color: "blue"},
+        {name: METRIC_STATE, alignment: "left", color: "blue"},
+        {name: METRIC_INIT_L2_GAS, alignment: "right", color: "green"},
+        {name: METRIC_TRY_L2_GAS, alignment: "right", color: "green"},
+        {name: METRIC_ACK_L2_GAS, alignment: "right", color: "green"},
+        {name: METRIC_CONFIRM_L2_GAS, alignment: "right", color: "green"},
+        {name: METRIC_INIT_TO_TRY_TIME, alignment: "right", color: "green"},
+        {name: METRIC_INIT_TO_CONFIRM_TIME, alignment: "right", color: "green"},
+        {name: METRIC_INIT_TO_ACK_TIME, alignment: "right", color: "green"},
+        {name: METRIC_INIT_POLYMER_GAS, alignment: "right", color: "green"},
+        {name: METRIC_TRY_POLYMER_GAS, alignment: "right", color: "green"},
+        {name: METRIC_ACK_POLYMER_GAS, alignment: "right", color: "green"},
+        {name: METRIC_CONFIRM_POLYMER_GAS, alignment: "right", color: "green"},
+      ],
+    });
+
+    if (channelNameOrN.startsWith('channel-')) {
+      await addChannelMetrics(graphQLClient, stargateClient, table, channelNameOrN);
+    } else {
+      const n = parseInt(channelNameOrN);
+      if (isNaN(n)) {
+        console.error('Invalid input. Please provide either a channel name or a number.');
+        return;
+      }
+      const channelNames = await getLastNChannelIds(graphQLClient, n);
+      const progress = new ProgressBar('fetching channels [:bar] :current/:total', {
+        total: channelNames.length,
+        width: 20
+      });
+
+      for (const channelId of channelNames) {
+        progress.tick();
+        await addChannelMetrics(graphQLClient, stargateClient, table, channelId);
+      }
+    }
+
+    table.printTable();
+
+    const csvFilePath = 'channel_metrics.csv';
+    const csvData = generateCsvData(table);
+    fs.writeFileSync(csvFilePath, csvData);
   });
 
-// Parse command line arguments
-program.parse(process.argv);
-
-async function fetchAndAddPacketMetrics(
+async function addPacketMetrics(
   client: GraphQLClient,
   stargateClient: StargateClient,
   table: Table,
   txHash: string
 ) {
-  const res: any = await client.request(GET_PACKET_BY_SENT_TX, { sentTxHash: [txHash] });
+  const res: any = await client.request(GET_PACKET_BY_SENT_TX, {sentTxHash: [txHash]});
   let packets = res.packets.items;
   if (packets.length === 0) {
     console.log(`No packets found for the tx hash: ${txHash}`);
@@ -125,6 +243,7 @@ async function fetchAndAddPacketMetrics(
 
   const packet = packets[0];
   table.addRow({
+    [METRIC_TX_HASH]: txHash,
     [METRIC_STATE]: packet.state,
     [METRIC_SEND_PACKET_L2_GAS]: packet.sendPacket?.gas || null,
     [METRIC_SEND_TO_RECV_TIME]: packet.recvPacket ? Number(packet.recvPacket.blockTimestamp) - Number(packet.sendPacket.blockTimestamp) : null,
@@ -133,8 +252,8 @@ async function fetchAndAddPacketMetrics(
     [METRIC_SEND_TO_ACK_TIME]: packet.ackPacket ? Number(packet.ackPacket.blockTimestamp) - Number(packet.sendPacket.blockTimestamp) : null,
     [METRIC_ACK_PACKET_L2_GAS]: packet.ackPacket?.gas || null,
     [METRIC_SEND_TO_ACK_L2_GAS]: packet.ackPacket ? packet.sendPacket.gas + packet.recvPacket.gas + packet.ackPacket.gas : null,
-    [METRIC_SEND_POLYMER_GAS]: packet.sendPacket ? await getSendPacketGas(stargateClient, packet.sendPacket): null,
-    [METRIC_WRITE_ACK_POLYMER_GAS]: packet.writeAckPacket ? await getWriteAckPacketGas(stargateClient, packet.writeAckPacket): null
+    [METRIC_SEND_POLYMER_GAS]: packet.sendPacket ? await getSendPacketGas(stargateClient, packet.sendPacket) : null,
+    [METRIC_WRITE_ACK_POLYMER_GAS]: packet.writeAckPacket ? await getWriteAckPacketGas(stargateClient, packet.writeAckPacket) : null
   });
 }
 
@@ -197,6 +316,8 @@ async function getWriteAckPacketGas(stargateClient: StargateClient, writeAckPack
 }
 
 async function getLastNSendTxHashes(graphQLClient: GraphQLClient, n: number): Promise<string[]> {
-  const res: any = await graphQLClient.request(GET_SEND_PACKETS, { limit: n });
+  const res: any = await graphQLClient.request(GET_SEND_PACKETS, {limit: n});
   return res.sendPackets.items.map((item: any) => item.transactionHash);
 }
+
+program.parse(process.argv);
