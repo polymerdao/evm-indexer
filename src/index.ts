@@ -91,7 +91,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
     },
   });
 
-  await context.db.Channel.create({
+  const channel = await context.db.Channel.create({
     id: event.log.id,
     data: {
       channelId: channelId,
@@ -108,7 +108,7 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
     }
   })
 
-  await updateChannel(context, event.log.id)
+  await updateChannel(context, channel.id)
   await updateStats(context, StatName.OpenIBCChannel)
 }
 
@@ -166,7 +166,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
   });
 
   // update earliest INIT state record that have incomplete id
-  let initChannels = await context.db.Channel.findMany({
+  let incompleteInitChannels = await context.db.Channel.findMany({
     where: {portId: portId, channelId: "", state: "INIT"},
     orderBy: {blockTimestamp: "asc"},
     limit: 1
@@ -179,13 +179,13 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     limit: 1
   });
 
-  let cpChannels = await context.db.ConnectIbcChannel.findMany({
+  let cpConnectIbcChannels = await context.db.ConnectIbcChannel.findMany({
     where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
     orderBy: {blockTimestamp: "asc"},
     limit: 1
   });
 
-  for (let channel of initChannels.items) {
+  for (let channel of incompleteInitChannels.items) {
     // update a channel with INIT state that has incomplete channel id and counterparty channel id
     await context.db.OpenIbcChannel.update({
       id: channel.openInitChannelId!,
@@ -205,16 +205,18 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
+        // openTryChannelId: cpConnectIbcChannels.items[0]?.id,
         openAckChannelId: event.log.id,
-        openConfirmChannelId: cpChannels.items[0]?.id,
+        openConfirmChannelId: cpConnectIbcChannels.items[0]?.id,
       }
     })
 
     await context.db.Channel.updateMany({
       where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
       data: {
+        openInitChannelId: channel.openInitChannelId,
         openAckChannelId: event.log.id,
-        openConfirmChannelId: cpChannels.items[0]?.id,
+        openConfirmChannelId: cpConnectIbcChannels.items[0]?.id,
       }
     })
   }
@@ -228,7 +230,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
-        openAckChannelId: cpChannels.items[0]?.id,
+        openAckChannelId: cpConnectIbcChannels.items[0]?.id,
         openConfirmChannelId: event.log.id,
       }
     })
@@ -236,12 +238,15 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     await context.db.Channel.updateMany({
       where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
       data: {
-        openAckChannelId: cpChannels.items[0]?.id,
+        openTryChannelId: channel.id,
+        openAckChannelId: cpConnectIbcChannels.items[0]?.id,
         openConfirmChannelId: event.log.id,
       }
     })
   }
+
   await updateStats(context, StatName.ConnectIbcChannel)
+  await updateChannel(context, incompleteInitChannels.items[0]?.id || tryChannels.items[0]?.id)
 }
 
 async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {

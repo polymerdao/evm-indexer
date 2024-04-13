@@ -233,9 +233,11 @@ export default createSchema((p) => ({
     closeChannel: p.one('closeChannelId'),
     closeChannelId: p.string().optional().references('CloseIbcChannel.id'),
     initToTryTime: p.int().optional(),
-    initToOpenTime: p.int().optional(),
     initToAckTime: p.int().optional(),
     initToConfirmTime: p.int().optional(),
+    initToTryPolymerGas: p.int().optional(),
+    initToAckPolymerGas: p.int().optional(),
+    initToConfirmPolymerGas: p.int().optional(),
   }),
   Stat: p.createTable({
     id: p.string(),
