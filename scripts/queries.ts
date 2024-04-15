@@ -14,6 +14,12 @@ export const GET_PACKET_BY_SENT_TX = `
     items {
         id
         state
+        sendToRecvGas
+        sendToAckGas      
+        sendToRecvTime
+        sendToAckTime
+        sendToRecvPolymerGas
+        sendToAckPolymerGas        
         sendPacket {
           id
           sequence
@@ -23,6 +29,7 @@ export const GET_PACKET_BY_SENT_TX = `
           blockTimestamp
           gas
           dispatcherType
+          polymerGas
         }
         recvPacket {
           id
@@ -41,12 +48,14 @@ export const GET_PACKET_BY_SENT_TX = `
           dispatcherClientName
           blockTimestamp
           gas
+          polymerGas
         }
         ackPacket {
           id
           sequence
           blockTimestamp
           gas
+          polymerGas
         }
       }
     }

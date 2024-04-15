@@ -67,11 +67,6 @@ program
   .action(async (txHashOrN: string) => {
     try {
       const graphQLClient = getGQClient();
-      let stargateClient = await getStargateClient();
-      if (!stargateClient) {
-        console.error('Unable to connect to Peptide. Did you port forward?');
-        return;
-      }
 
       const table = new Table({
         columns: [
@@ -91,7 +86,7 @@ program
       });
 
       if (txHashOrN.startsWith('0x')) {
-        await addPacketMetrics(graphQLClient, stargateClient, table, txHashOrN);
+        await addPacketMetrics(graphQLClient, table, txHashOrN);
       } else {
         const n = parseInt(txHashOrN);
         if (isNaN(n)) {
@@ -105,7 +100,7 @@ program
         });
         for (const txHash of sendTxHashes) {
           progress.tick();
-          await addPacketMetrics(graphQLClient, stargateClient, table, txHash);
+          await addPacketMetrics(graphQLClient, table, txHash);
         }
       }
 
@@ -263,7 +258,6 @@ program
 
 async function addPacketMetrics(
   client: GraphQLClient,
-  stargateClient: StargateClient,
   table: Table,
   txHash: string
 ) {
@@ -282,16 +276,16 @@ async function addPacketMetrics(
   table.addRow({
     [METRIC_TX_HASH]: txHash,
     [METRIC_STATE]: packet.state,
-    [METRIC_CLIENT_TYPE]: packet.sendPacket?.dispatcherType || null,
-    [METRIC_SEND_PACKET_L2_GAS]: packet.sendPacket?.gas || null,
-    [METRIC_SEND_TO_RECV_TIME]: packet.recvPacket ? Number(packet.recvPacket.blockTimestamp) - Number(packet.sendPacket.blockTimestamp) : null,
-    [METRIC_RECV_PACKET_L2_GAS]: packet.recvPacket?.gas || null,
-    [METRIC_SEND_TO_RECV_PACKET_L2_GAS]: packet.recvPacket ? packet.recvPacket.gas + packet.sendPacket.gas : null,
-    [METRIC_SEND_TO_ACK_TIME]: packet.ackPacket ? Number(packet.ackPacket.blockTimestamp) - Number(packet.sendPacket.blockTimestamp) : null,
-    [METRIC_ACK_PACKET_L2_GAS]: packet.ackPacket?.gas || null,
-    [METRIC_SEND_TO_ACK_L2_GAS]: packet.ackPacket ? packet.sendPacket.gas + packet.recvPacket.gas + packet.ackPacket.gas : null,
-    [METRIC_SEND_POLYMER_GAS]: packet.sendPacket ? await getSendPacketGas(stargateClient, packet.sendPacket) : null,
-    [METRIC_WRITE_ACK_POLYMER_GAS]: packet.writeAckPacket ? await getWriteAckPacketGas(stargateClient, packet.writeAckPacket) : null
+    [METRIC_CLIENT_TYPE]: packet.sendPacket.dispatcherType,
+    [METRIC_SEND_PACKET_L2_GAS]: packet.sendPacket.gas,
+    [METRIC_SEND_TO_RECV_TIME]: packet.sendToRecvTime,
+    [METRIC_RECV_PACKET_L2_GAS]: packet.recvPacket?.gas,
+    [METRIC_SEND_TO_RECV_PACKET_L2_GAS]: packet.sendToRecvGas,
+    [METRIC_SEND_TO_ACK_TIME]: packet.sendToAckTime,
+    [METRIC_ACK_PACKET_L2_GAS]: packet.ackPacket?.gas,
+    [METRIC_SEND_TO_ACK_L2_GAS]: packet.sendToAckGas,
+    [METRIC_SEND_POLYMER_GAS]: packet.sendPacket.polymerGas,
+    [METRIC_WRITE_ACK_POLYMER_GAS]: packet.writeAckPacket?.polymerGas
   });
 }
 
