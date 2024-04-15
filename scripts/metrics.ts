@@ -149,7 +149,6 @@ async function getChannelGas(
 
 async function addChannelMetrics(
   graphQLClient: GraphQLClient,
-  stargateClient: StargateClient,
   table: Table,
   channelId: string
 ) {
@@ -166,24 +165,18 @@ async function addChannelMetrics(
   table.addRow({
     [METRIC_CHANNEL_NAME]: channel.channelId,
     [METRIC_STATE]: channel.state,
-    [METRIC_CLIENT_TYPE]: channel.openInitChannel?.dispatcherType || null,
-    [METRIC_INIT_L2_GAS]: channel.openInitChannel?.gas || null,
-    [METRIC_TRY_L2_GAS]: channel.openTryChannel?.gas || null,
-    [METRIC_ACK_L2_GAS]: channel.openAckChannel?.gas || null,
-    [METRIC_CONFIRM_L2_GAS]: channel.openConfirmChannel?.gas || null,
-    [METRIC_INIT_TO_TRY_TIME]: channel.openTryChannel
-      ? Number(channel.openTryChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp)
-      : null,
-    [METRIC_INIT_TO_ACK_TIME]: channel.openAckChannel
-      ? Number(channel.openAckChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp)
-      : null,
-    [METRIC_INIT_TO_CONFIRM_TIME]: channel.openConfirmChannel
-      ? Number(channel.openConfirmChannel.blockTimestamp) - Number(channel.openInitChannel.blockTimestamp)
-      : null,
-    [METRIC_INIT_POLYMER_GAS]: channel.openInitChannel ? await getChannelGas(stargateClient, channel.openInitChannel, 'init') : null,
-    [METRIC_TRY_POLYMER_GAS]: channel.openTryChannel ? await getChannelGas(stargateClient, channel.openTryChannel, 'try') : null,
-    [METRIC_ACK_POLYMER_GAS]: channel.openAckChannel ? await getChannelGas(stargateClient, channel.openAckChannel, 'ack') : null,
-    [METRIC_CONFIRM_POLYMER_GAS]: channel.openConfirmChannel ? await getChannelGas(stargateClient, channel.openConfirmChannel, 'confirm') : null
+    [METRIC_CLIENT_TYPE]: channel.openInitChannel?.dispatcherType,
+    [METRIC_INIT_L2_GAS]: channel.openInitChannel?.gas,
+    [METRIC_TRY_L2_GAS]: channel.openTryChannel?.gas,
+    [METRIC_ACK_L2_GAS]: channel.openAckChannel?.gas,
+    [METRIC_CONFIRM_L2_GAS]: channel.openConfirmChannel?.gas,
+    [METRIC_INIT_TO_TRY_TIME]: channel.initToTryTime,
+    [METRIC_INIT_TO_ACK_TIME]: channel.initToAckTime,
+    [METRIC_INIT_TO_CONFIRM_TIME]: channel.initToConfirmTime,
+    [METRIC_INIT_POLYMER_GAS]: channel.openInitChannel?.polymerGas,
+    [METRIC_TRY_POLYMER_GAS]: channel.openTryChannel?.polymerGas,
+    [METRIC_ACK_POLYMER_GAS]: channel.openAckChannel?.polymerGas,
+    [METRIC_CONFIRM_POLYMER_GAS]: channel.openConfirmChannel?.polymerGas
   });
 }
 async function getLastNChannelIds(graphQLClient: GraphQLClient, n: number) {
@@ -201,11 +194,6 @@ program
   .description('Show channel metrics given a channel name')
   .action(async (channelNameOrN: string) => {
     const graphQLClient = getGQClient();
-    let stargateClient = await getStargateClient();
-    if (!stargateClient) {
-      console.error('Unable to connect to Peptide. Did you port forward?');
-      return;
-    }
 
     const table = new Table({
       columns: [
@@ -229,7 +217,7 @@ program
     if (channelNameOrN.startsWith('channel-')) {
       const channelIds = await getChannelById(graphQLClient, channelNameOrN);
       for (const channelId of channelIds) {
-        await addChannelMetrics(graphQLClient, stargateClient, table, channelId);
+        await addChannelMetrics(graphQLClient, table, channelId);
       }
     } else {
       const n = parseInt(channelNameOrN);
@@ -245,7 +233,7 @@ program
 
       for (const channelId of channelIds) {
         progress.tick();
-        await addChannelMetrics(graphQLClient, stargateClient, table, channelId);
+        await addChannelMetrics(graphQLClient, table, channelId);
       }
     }
 

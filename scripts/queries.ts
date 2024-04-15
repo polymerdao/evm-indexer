@@ -89,6 +89,12 @@ query Channels($channelIds: [String!]!) {
       counterpartyChannelId
       counterpartyPortId
       state
+      initToTryTime
+      initToTryPolymerGas
+      initToAckPolymerGas
+      initToConfirmPolymerGas
+      initToAckTime
+      initToConfirmTime
       openInitChannel {
         blockTimestamp
         dispatcherType
@@ -97,6 +103,7 @@ query Channels($channelIds: [String!]!) {
         channelId
         counterpartyPortId
         counterpartyChannelId
+        polymerGas
       }
       openTryChannel {
         blockTimestamp
@@ -105,6 +112,7 @@ query Channels($channelIds: [String!]!) {
         channelId
         counterpartyPortId
         counterpartyChannelId
+        polymerGas
       }
       openAckChannel {
         blockTimestamp
@@ -113,6 +121,7 @@ query Channels($channelIds: [String!]!) {
         channelId
         counterpartyPortId
         counterpartyChannelId
+        polymerGas
       }
       openConfirmChannel {
         blockTimestamp
@@ -121,6 +130,7 @@ query Channels($channelIds: [String!]!) {
         channelId
         counterpartyPortId
         counterpartyChannelId
+        polymerGas
       }
     }
   }

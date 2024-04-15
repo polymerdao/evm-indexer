@@ -229,10 +229,6 @@ async function updateInitToConfirmMetrics<name extends Virtual.EventNames<config
   }
 }
 
-
-
-
-
 async function getChannelTx(
   stargateClient: StargateClient,
   channel: Schema["OpenIbcChannel" | "ConnectIbcChannel"],
