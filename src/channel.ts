@@ -251,13 +251,6 @@ async function getChannelTx(
     return null;
   }
 
-  // console.log(`FOUND for channel_open_${type}: ${channel.id} tx`)
-  // txs[0]!.events.filter((event) => event.type === 'channel_open_init').forEach((event) => {
-  //   event.attributes.forEach((attr) => {
-  //     console.log(attr.key, attr.value)
-  //   });
-  // });
-
   return txs[0]!;
 }
 

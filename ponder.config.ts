@@ -43,7 +43,7 @@ export default createConfig({
     },
   },
   contracts: {
-    DispatcherSim: {
+    sim: {
       abi: DispatcherAbi,
       network: {
         base: {
@@ -56,7 +56,7 @@ export default createConfig({
         },
       },
     },
-    DispatcherProof: {
+    proof: {
       abi: DispatcherAbi,
       network: {
         base: {

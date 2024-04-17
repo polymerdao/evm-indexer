@@ -28,11 +28,3 @@ export class TmClient {
     return QueryClient.withExtensions(tmClient, setupIbcExtension);
   }
 }
-
-export const DISPATCHER_CLIENT = {
-  [process.env.DISPATCHER_ADDRESS_OPTIMISM!]: process.env.OPTIMISM_CLIENT_NAME,
-  [process.env.DISPATCHER_ADDRESS_BASE!]: process.env.BASE_CLIENT_NAME,
-  [process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT!]: process.env.OPTIMISM_CLIENT_SIMCLIENT_NAME,
-  [process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!]: process.env.BASE_CLIENT_SIMCLIENT_NAME,
-  [process.env.DISPATCHER_ADDRESS_MOLTEN_SIMCLIENT!]: process.env.MOLTEN_CLIENT_SIMCLIENT_NAME,
-}
