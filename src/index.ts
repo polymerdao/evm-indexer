@@ -23,48 +23,98 @@ function getAddressAndDispatcherType(contractName: "DispatcherSim" | "Dispatcher
   return {address, dispatcherType};
 }
 
-async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OpenIbcChannel" | "DispatcherProof:OpenIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+async function channelOpenInit<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ChannelOpenInit" | "DispatcherProof:ChannelOpenInit">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  let {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
+  const chainId = context.network.chainId as number;
+  let counterpartyPortId = event.args.counterpartyPortId;
+  let connectionHops = event.args.connectionHops;
+  let portAddress = event.args.recevier;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
+  let version = event.args.version;
+
+  let openInitChannelId;
+
+  openInitChannelId = event.log.id;
+
+  await context.db.OpenIbcChannel.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address,
+      dispatcherType: dispatcherType,
+      dispatcherClientName: client!,
+      portAddress: portAddress,
+      channelId: "",
+      portId: portId,
+      version: version,
+      ordering: event.args.ordering,
+      feeEnabled: event.args.feeEnabled,
+      // @ts-ignore
+      connectionHops: connectionHops,
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: "",
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      chainId: chainId,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
+
+  const channel = await context.db.Channel.create({
+    id: event.log.id,
+    data: {
+      channelId: '',
+      portId: portId,
+      connectionHops: [...connectionHops],
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: "",
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      state: "INIT",
+      openInitChannelId: openInitChannelId,
+    }
+  })
+
+  await updateStats(context, StatName.OpenIBCChannel)
+}
+async function channelOpenTry<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ChannelOpenTry" | "DispatcherProof:ChannelOpenTry">, context: Context, contractName: Virtual.ExtractContractName<name>) {
   let {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let counterpartyPortId = event.args.counterpartyPortId;
   let counterpartyChannelId = ethers.decodeBytes32String(event.args.counterpartyChannelId);
   let connectionHops = event.args.connectionHops;
-  let portAddress = event.args.portAddress;
+  let portAddress = event.args.receiver;
   let portId = `polyibc.${client}.${portAddress.slice(2)}`;
   let version = event.args.version;
 
   let channelId = '';
-  let state: "INIT" | "TRY" = counterpartyChannelId == "" ? "INIT" : "TRY";
-  let openInitChannelId, openTryChannelId;
+  let openTryChannelId = event.log.id;
+  let initChannel: QueryChannelResponse;
+  const tmClient = await TmClient.getInstance();
 
-  if (state == "INIT") {
-    openInitChannelId = event.log.id;
-  }
+  await retry(async bail => {
+      initChannel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
 
-  if (state == "TRY") {
-    openTryChannelId = event.log.id;
-    let initChannel: QueryChannelResponse;
-    const tmClient = await TmClient.getInstance();
-
-    await retry(async bail => {
-        initChannel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
-
-        if (!initChannel.channel) {
-          logger.warn('No initChannel found for write ack: ', counterpartyChannelId, counterpartyPortId);
-          bail(new Error('No initChannel found, giving up'));
-        } else {
-          channelId = initChannel.channel.counterparty.channelId;
-        }
-      },
-      defaultRetryOpts
-    ).catch(e => {
-      logger.warn('Skipping packet for channel in openIbcChannel after all retry attempts');
-    });
-  }
+      if (!initChannel.channel) {
+        logger.warn('No initChannel found for open try: ', counterpartyChannelId, counterpartyPortId);
+        bail(new Error('No initChannel found, giving up'));
+      } else {
+        channelId = initChannel.channel.counterparty.channelId;
+      }
+    },
+    defaultRetryOpts
+  ).catch(e => {
+    logger.warn('Skipping packet for channel in channelOpenTry after all retry attempts');
+  });
 
 
-  await context.db.OpenIbcChannel.create({
+  await context.db.TryIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address,
@@ -102,22 +152,125 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
-      state: state,
-      openInitChannelId: openInitChannelId,
+      state: "TRY",
       openTryChannelId: openTryChannelId,
     }
   })
 
   await updateChannel(context, channel.id)
-  await updateStats(context, StatName.OpenIBCChannel)
+  await updateStats(context, StatName.TryIBCChannel)
 }
 
-async function connectIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ConnectIbcChannel" | "DispatcherProof:ConnectIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+async function channelOpenAck<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ChannelOpenAck" | "DispatcherProof:ChannelOpenAck">, context: Context, contractName: Virtual.ExtractContractName<name>) {
   const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
   let client = DISPATCHER_CLIENT[address!];
   const chainId = context.network.chainId as number;
   let channelId = ethers.decodeBytes32String(event.args.channelId);
-  let portAddress = event.args.portAddress;
+  let portAddress = event.args.receiver;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
+
+  let counterpartyPortId = '';
+  let counterpartyChannelId = '';
+
+  const tmClient = await TmClient.getInstance();
+
+  await retry(async bail => {
+      const channel = await tmClient.ibc.channel.channel(portId, channelId);
+
+      if (!channel.channel) {
+        logger.warn('No channel found for write ack: ', portId, channelId);
+        // Use bail to immediately stop retrying under certain conditions
+        bail(new Error('No channel found, giving up'));
+      } else {
+        counterpartyChannelId = channel.channel.counterparty.channelId;
+        counterpartyPortId = channel.channel.counterparty.portId;
+      }
+    },
+    defaultRetryOpts
+  ).catch(e => {
+    // This catch block is executed if retries are exhausted or bail was called
+    logger.warn('Skipping packet for AckIbcChannel after all retry attempts');
+  });
+
+  await context.db.AckIbcChannel.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address || "0x",
+      dispatcherType,
+      dispatcherClientName: client!,
+      portId,
+      counterpartyPortId,
+      counterpartyChannelId,
+      portAddress,
+      channelId,
+      chainId,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
+
+  // update earliest INIT state record that have incomplete id
+  let incompleteInitChannels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: "", state: "INIT", blockTimestamp: {lt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
+    limit: 1
+  });
+
+  let cpConfirmIbcChannels = await context.db.ConfirmIbcChannel.findMany({
+    where: {portId: counterpartyPortId, channelId: counterpartyChannelId, blockTimestamp: {gt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
+    limit: 1
+  });
+
+  for (let channel of incompleteInitChannels.items) {
+    // update a channel with INIT state that has incomplete channel id and counterparty channel id
+    await context.db.OpenIbcChannel.update({
+      id: channel.openInitChannelId!,
+      data: {
+        channelId: channelId,
+        counterpartyChannelId: counterpartyChannelId,
+      }
+    })
+
+    await context.db.Channel.update({
+      id: channel.id,
+      data: {
+        channelId: channelId,
+        counterpartyChannelId: counterpartyChannelId,
+        counterpartyPortId: counterpartyPortId,
+        state: "OPEN",
+        blockNumber: event.block.number,
+        blockTimestamp: event.block.timestamp,
+        transactionHash: event.transaction.hash,
+        openAckChannelId: event.log.id,
+        openConfirmChannelId: cpConfirmIbcChannels.items[0]?.id,
+      }
+    })
+
+    await context.db.Channel.updateMany({
+      where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
+      data: {
+        openInitChannelId: channel.openInitChannelId,
+        openAckChannelId: event.log.id,
+        openConfirmChannelId: cpConfirmIbcChannels.items[0]?.id,
+      }
+    })
+  }
+
+  await updateStats(context, StatName.AckIbcChannel)
+  await updateChannel(context, incompleteInitChannels.items[0]?.id)
+}
+async function confirmIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ChannelOpenConfirm" | "DispatcherProof:ChannelOpenConfirm">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, dispatcherType} = getAddressAndDispatcherType(contractName, context);
+  let client = DISPATCHER_CLIENT[address!];
+  const chainId = context.network.chainId as number;
+  let channelId = ethers.decodeBytes32String(event.args.channelId);
+  let portAddress = event.args.receiver;
   let portId = `polyibc.${client}.${portAddress.slice(2)}`;
 
   let counterpartyPortId = '';
@@ -143,7 +296,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     logger.warn('Skipping packet for connectIbcChannel after all retry attempts');
   });
 
-  await context.db.ConnectIbcChannel.create({
+  await context.db.ConfirmIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
@@ -165,61 +318,18 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
     },
   });
 
-  // update earliest INIT state record that have incomplete id
-  let incompleteInitChannels = await context.db.Channel.findMany({
-    where: {portId: portId, channelId: "", state: "INIT"},
-    orderBy: {blockTimestamp: "asc"},
-    limit: 1
-  });
-
   // find the earliest channel in TRY state
   let tryChannels = await context.db.Channel.findMany({
-    where: {portId: portId, channelId: channelId, state: "TRY"},
-    orderBy: {blockTimestamp: "asc"},
+    where: {portId: portId, channelId: channelId, state: "TRY", blockTimestamp: {lt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
     limit: 1
   });
 
-  let cpConnectIbcChannels = await context.db.ConnectIbcChannel.findMany({
-    where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
-    orderBy: {blockTimestamp: "asc"},
+  let cpAckIbcChannels = await context.db.AckIbcChannel.findMany({
+    where: {portId: counterpartyPortId, channelId: counterpartyChannelId, blockTimestamp: {lt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
     limit: 1
   });
-
-  for (let channel of incompleteInitChannels.items) {
-    // update a channel with INIT state that has incomplete channel id and counterparty channel id
-    await context.db.OpenIbcChannel.update({
-      id: channel.openInitChannelId!,
-      data: {
-        channelId: channelId,
-        counterpartyChannelId: counterpartyChannelId,
-      }
-    })
-
-    await context.db.Channel.update({
-      id: channel.id,
-      data: {
-        channelId: channelId,
-        counterpartyChannelId: counterpartyChannelId,
-        counterpartyPortId: counterpartyPortId,
-        state: "OPEN",
-        blockNumber: event.block.number,
-        blockTimestamp: event.block.timestamp,
-        transactionHash: event.transaction.hash,
-        // openTryChannelId: cpConnectIbcChannels.items[0]?.id,
-        openAckChannelId: event.log.id,
-        openConfirmChannelId: cpConnectIbcChannels.items[0]?.id,
-      }
-    })
-
-    await context.db.Channel.updateMany({
-      where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
-      data: {
-        openInitChannelId: channel.openInitChannelId,
-        openAckChannelId: event.log.id,
-        openConfirmChannelId: cpConnectIbcChannels.items[0]?.id,
-      }
-    })
-  }
 
   for (let channel of tryChannels.items) {
     await context.db.Channel.update({
@@ -230,7 +340,7 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
-        openAckChannelId: cpConnectIbcChannels.items[0]?.id,
+        openAckChannelId: cpAckIbcChannels.items[0]?.id,
         openConfirmChannelId: event.log.id,
       }
     })
@@ -239,14 +349,14 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
       where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
       data: {
         openTryChannelId: channel.id,
-        openAckChannelId: cpConnectIbcChannels.items[0]?.id,
+        openAckChannelId: cpAckIbcChannels.items[0]?.id,
         openConfirmChannelId: event.log.id,
       }
     })
   }
 
-  await updateStats(context, StatName.ConnectIbcChannel)
-  await updateChannel(context, incompleteInitChannels.items[0]?.id || tryChannels.items[0]?.id)
+  await updateStats(context, StatName.ConfirmIbcChannel)
+  await updateChannel(context, tryChannels.items[0]?.id)
 }
 
 async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
@@ -593,22 +703,38 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
   await updateStats(context, StatName.WriteTimeoutPacket)
 }
 
-ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
-  await openIbcChannel(event, context, "DispatcherSim");
+ponder.on("DispatcherSim:ChannelOpenInit", async ({event, context}) => {
+  await channelOpenInit(event, context, "DispatcherSim");
 });
 
-ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
-  await openIbcChannel(event, context, "DispatcherProof");
+ponder.on("DispatcherProof:ChannelOpenInit", async ({event, context}) => {
+  await channelOpenInit(event, context, "DispatcherProof");
 });
 
-
-ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
-  await connectIbcChannel(event, context, "DispatcherSim");
+ponder.on("DispatcherSim:ChannelOpenTry", async ({event, context}) => {
+  await channelOpenTry(event, context, "DispatcherSim");
 });
 
-ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
-  await connectIbcChannel(event, context, "DispatcherProof");
+ponder.on("DispatcherProof:ChannelOpenTry", async ({event, context}) => {
+  await channelOpenTry(event, context, "DispatcherProof");
 });
+
+ponder.on("DispatcherSim:ChannelOpenAck", async ({event, context}) => {
+  await channelOpenAck(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:ChannelOpenAck", async ({event, context}) => {
+  await channelOpenAck(event, context, "DispatcherProof");
+});
+
+ponder.on("DispatcherSim:ChannelOpenConfirm", async ({event, context}) => {
+  await confirmIbcChannel(event, context, "DispatcherSim");
+});
+
+ponder.on("DispatcherProof:ChannelOpenConfirm", async ({event, context}) => {
+  await confirmIbcChannel(event, context, "DispatcherProof");
+});
+
 ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
   await closeIbcChannel(event, context, "DispatcherSim");
 });

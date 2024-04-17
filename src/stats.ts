@@ -8,8 +8,10 @@ export enum StatName {
   WriteTimeoutPacket = 'WriteTimeoutPacket',
   Timeout = 'Timeout',
   OpenIBCChannel = 'OpenIBCChannel',
+  TryIBCChannel = 'TryIBCChannel',
   CloseIBCChannel = 'CloseIBCChannel',
-  ConnectIbcChannel = 'ConnectIbcChannel',
+  AckIbcChannel = 'AckIbcChannel',
+  ConfirmIbcChannel = 'ConfirmIbcChannel',
 }
 
 export async function updateStats(context: Context, id: StatName) {

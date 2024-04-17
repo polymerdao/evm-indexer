@@ -3,21 +3,19 @@ import { config, type Context, schema, type Schema } from "@/generated";
 import logger from "./logger";
 import { TmClient } from "./client";
 import { IndexedTx, StargateClient } from "@cosmjs/stargate";
-import retry from "async-retry";
-import { defaultRetryOpts } from "./retry";
 
 async function updateInitToTryMetrics<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, channel: Schema['Channel']) {
   const stargateClient = await TmClient.getStargate();
 
   if (channel.openInitChannelId && channel.openTryChannelId && !channel.initToTryTime) {
     const openInitChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openInitChannelId!});
-    const openTryChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openTryChannelId!});
+    const openTryChannel = await context.db.TryIbcChannel.findUnique({id: channel.openTryChannelId!});
     if (!openInitChannel) {
-      logger.error(`No openInitChannel found for channel with state INIT and id: ${channel.id}`);
+      logger.error(`No openInitChannel found for channel id: ${channel.id}`);
       return;
     }
     if (!openTryChannel) {
-      logger.error(`No openTryChannel found for channel with state TRY and id: ${channel.id}`);
+      logger.error(`No openTryChannel found for channel id: ${channel.id}`);
       return;
     }
 
@@ -34,7 +32,7 @@ async function updateInitToTryMetrics<name extends Virtual.EventNames<config>>(c
       },
     });
 
-    await context.db.OpenIbcChannel.update({
+    await context.db.TryIbcChannel.update({
       id: openTryChannel.id,
       data: {
         polymerGas: tryTx ? Number(tryTx.gasUsed) : undefined,
@@ -83,8 +81,8 @@ async function updateInitToAckMetrics<name extends Virtual.EventNames<config>>(c
 
   if (channel.openInitChannelId && channel.openTryChannelId && channel.openAckChannelId && !channel.initToAckTime) {
     const openInitChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openInitChannelId!});
-    const openTryChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openTryChannelId!});
-    const openAckChannel = await context.db.ConnectIbcChannel.findUnique({id: channel.openAckChannelId!});
+    const openTryChannel = await context.db.TryIbcChannel.findUnique({id: channel.openTryChannelId!});
+    const openAckChannel = await context.db.AckIbcChannel.findUnique({id: channel.openAckChannelId!});
     if (!openInitChannel) {
       logger.error(`No openInitChannel found for channel with state INIT and id: ${channel.id}`);
       return;
@@ -111,7 +109,7 @@ async function updateInitToAckMetrics<name extends Virtual.EventNames<config>>(c
       },
     });
 
-    await context.db.ConnectIbcChannel.update({
+    await context.db.AckIbcChannel.update({
       id: openAckChannel.id,
       data: {
         polymerGas: ackTx ? Number(ackTx.gasUsed) : undefined,
@@ -162,7 +160,7 @@ async function updateInitToConfirmMetrics<name extends Virtual.EventNames<config
 
   if (channel.openInitChannelId && channel.openConfirmChannelId && !channel.initToConfirmTime) {
     const openInitChannel = await context.db.OpenIbcChannel.findUnique({id: channel.openInitChannelId!});
-    const openConfirmChannel = await context.db.ConnectIbcChannel.findUnique({id: channel.openConfirmChannelId!});
+    const openConfirmChannel = await context.db.ConfirmIbcChannel.findUnique({id: channel.openConfirmChannelId!});
     if (!openInitChannel) {
       logger.error(`No openInitChannel found for channel with state INIT and id: ${channel.id}`);
       return;
@@ -185,7 +183,7 @@ async function updateInitToConfirmMetrics<name extends Virtual.EventNames<config
       },
     });
 
-    await context.db.ConnectIbcChannel.update({
+    await context.db.ConfirmIbcChannel.update({
       id: openConfirmChannel.id,
       data: {
         polymerGas: confirmTx ? Number(confirmTx.gasUsed) : undefined,
@@ -231,7 +229,7 @@ async function updateInitToConfirmMetrics<name extends Virtual.EventNames<config
 
 async function getChannelTx(
   stargateClient: StargateClient,
-  channel: Schema["OpenIbcChannel" | "ConnectIbcChannel"],
+  channel: Schema["OpenIbcChannel" | "TryIbcChannel" | "AckIbcChannel" | "ConfirmIbcChannel"],
   type: 'init' | 'try' | 'ack' | 'confirm'
 ): Promise<IndexedTx | null> {
   const txs = await stargateClient.searchTx([
@@ -241,17 +239,24 @@ async function getChannelTx(
   ]);
 
   if (txs.length > 1) {
-    console.error(`\nMultiple txs found for ${type}ChannelId: ${channel.id}`);
+    console.error(`\nMultiple txs found for channel_open_${type} with channel id: ${channel.id}`);
     return null;
   }
 
   if (txs.length === 0) {
-    console.error(`\nNo txs found for ${type}ChannelId: ${channel.portId} ${channel.channelId} ${channel.counterpartyPortId}`);
+    console.error(`\nNo txs found for channel_open_${type}: channel_open_${type}.port_id=${channel.portId} channel_open_${type}.channel_id=${channel.channelId} channel_open_${type}.counterparty_port_id=${channel.counterpartyPortId}`);
     if (channel.channelId) {
-      console.error(`\nNo polymer txs found for ${type}ChannelId: ${channel.id}`);
+      console.error(`\nNo polymer txs found for channel_open_${type}: ${channel.id}`);
     }
     return null;
   }
+
+  // console.log(`FOUND for channel_open_${type}: ${channel.id} tx`)
+  // txs[0]!.events.filter((event) => event.type === 'channel_open_init').forEach((event) => {
+  //   event.attributes.forEach((attr) => {
+  //     console.log(attr.key, attr.value)
+  //   });
+  // });
 
   return txs[0]!;
 }
