@@ -427,10 +427,12 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
       state: "SENT",
       sendPacketId: event.log.id,
       sendTx: transactionHash,
+      sendBlockTimestamp: event.block.timestamp,
     },
     update: {
       sendPacketId: event.log.id,
       sendTx: transactionHash,
+      sendBlockTimestamp: event.block.timestamp,
     }
   });
 

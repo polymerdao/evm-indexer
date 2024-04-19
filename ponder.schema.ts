@@ -242,6 +242,7 @@ export default createSchema((p) => ({
     sendPacketId: p.string().optional().references('SendPacket.id'),
     sendPacket: p.one('sendPacketId'),
     sendTx: p.string().optional(),
+    sendBlockTimestamp: p.bigint().optional(),
     recvPacketId: p.string().optional().references('RecvPacket.id'),
     recvPacket: p.one('recvPacketId'),
     recvTx: p.string().optional(),
