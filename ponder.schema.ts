@@ -265,6 +265,8 @@ export default createSchema((p) => ({
     portId: p.string(),
     counterpartyPortId: p.string(),
     counterpartyChannelId: p.string(),
+    version: p.string(),
+    ordering: p.int(),
     connectionHops: p.string().list(),
     blockNumber: p.bigint(),
     blockTimestamp: p.bigint(),
