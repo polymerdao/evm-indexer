@@ -25,6 +25,7 @@ function mustInt(val?: string) {
 }
 
 let RANGE = parseInt(process.env.RANGE ?? "100000");
+let maxBlockRange = parseInt(process.env.MAX_BLOCK_RANGE ?? "1000");
 
 export default createConfig({
   networks: {
@@ -46,7 +47,7 @@ export default createConfig({
   },
   contracts: {
     sim: {
-      maxBlockRange: 2000,
+      maxBlockRange: maxBlockRange,
       abi: DispatcherAbi,
       network: {
         base: {
@@ -63,7 +64,7 @@ export default createConfig({
     },
     proof: {
       abi: DispatcherAbi,
-      maxBlockRange: 2000,
+      maxBlockRange: maxBlockRange,
       network: {
         base: {
           address: mustAddress(process.env.DISPATCHER_ADDRESS_BASE),
