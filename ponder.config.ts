@@ -30,7 +30,7 @@ let maxBlockRange = parseInt(process.env.MAX_BLOCK_RANGE ?? "1000");
 export default createConfig({
   database: {
     kind: "postgres",
-    publishSchema: "public", // Default: undefined
+    publishSchema: "indexer"
   },
   networks: {
     base: {
