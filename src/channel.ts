@@ -255,6 +255,7 @@ async function getChannelTx(
 }
 
 export async function updateChannel(context: Context, channelPk?: string) {
+  return
   if (!channelPk) {
     logger.error('No channelPk provided');
     return;

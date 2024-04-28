@@ -181,6 +181,7 @@ async function updateSendToAckGas<name extends Virtual.EventNames<config>>(conte
 }
 
 export async function updatePacket<name extends Virtual.EventNames<config>>(context: Virtual.Context<config, schema, name>, id: string) {
+  return
   let packet = await context.db.Packet.findUnique({id})
   if (!packet) {
     console.warn('No packet found with id', id)
