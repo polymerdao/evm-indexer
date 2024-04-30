@@ -190,6 +190,6 @@ export async function updatePacket<name extends Virtual.EventNames<config>>(cont
   await updateSendToRecvTime(context, packet!)
   await updateSendToAckTime(context, packet!)
   await updateSendToAckGas(context, packet!)
-  await updateSendToRecvPolymerGas(context, packet!)
-  await updateSendToAckPolymerGas(context, packet!)
+  // await updateSendToRecvPolymerGas(context, packet!)
+  // await updateSendToAckPolymerGas(context, packet!)
 }
