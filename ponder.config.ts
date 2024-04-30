@@ -24,14 +24,11 @@ function mustInt(val?: string) {
   return parseInt(val);
 }
 
-let RANGE = parseInt(process.env.RANGE ?? "100000");
-let maxBlockRange = parseInt(process.env.MAX_BLOCK_RANGE ?? "2000");
+const RANGE = parseInt(process.env.RANGE ?? "100000");
+const maxBlockRange = parseInt(process.env.MAX_BLOCK_RANGE ?? "2000");
+const schema = process.env.SCHEMA ?? "public";
 
 export default createConfig({
-  database: {
-    kind: "postgres",
-    publishSchema: "indexer"
-  },
   networks: {
     base: {
       chainId: 84532,
