@@ -15,7 +15,7 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
       const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
 
       let txs: IndexedTx[] = []
-      await retry(async bail => {
+      try {
         txs = await stargateClient.searchTx([
           {
             key: "send_packet.packet_sequence",
@@ -30,10 +30,10 @@ async function updateSendToRecvPolymerGas<name extends Virtual.EventNames<config
             value: sendPacket.sourceChannelId
           }
         ])
-      }, defaultRetryOpts).catch(e => {
-        logger.error('Error searching txs in SendPacket', e)
+      } catch (e) {
+        logger.error(`Error searching txs in SendPacket for portId ${srcPortId}`, e)
         return
-      });
+      }
 
       if (txs.length > 1) {
         throw new Error(`Multiple txs found for sendPacketId: ${sendPacket.id}`);
