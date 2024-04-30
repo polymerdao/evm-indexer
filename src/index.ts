@@ -771,30 +771,6 @@ ponder.on("proof:Acknowledgement", async ({event, context}) => {
   await acknowledgement(event, context, "proof");
 });
 
-// ponder.on("proof:setup", async ({context}) => {
-//   let databaseConfig = ponderConfig.database!;
-//   let common = {options: ponderConfig.options}
-//   if (process.env.DATABASE_URL) {
-//     let pool = new pg.Pool({
-//       statement_timeout: 2 * 60 * 1000, // 2 minutes
-//       connectionString: process.env.DATABASE_URL
-//     });
-//
-//     let db = new Kysely({
-//       dialect: new PostgresDialect({pool: pool}),
-//       log(event) {
-//         console.log(event);
-//       },
-//     });
-//
-//     await db.schema
-//       .createIndex('channel')
-//       .on('Channel')
-//       .columns(["portId", "blockTimestamp", "openTryChannelId", "openInitChannelId", "state"])
-//       .execute();
-//   }
-// });
-
 // ponder.on("sim:Timeout", async ({event, context}) => {
 //   await timeout(event, context, "sim");
 // });
