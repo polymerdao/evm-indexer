@@ -1,39 +1,125 @@
-import { config, ponder, schema } from "@/generated";
+import { config, Context, ponder } from "@/generated";
 import { ethers } from "ethers";
-import { DISPATCHER_CLIENT, TmClient } from "./client";
+import { TmClient } from "./client";
 import logger from './logger';
 import { StatName, updateStats } from "./stats";
 import { Virtual } from "@ponder/core";
 import retry from 'async-retry';
+import { updatePacket } from "./packet";
+import { defaultRetryOpts } from "./retry";
+import { updateChannel } from "./channel";
+import { QueryChannelResponse } from "cosmjs-types/ibc/core/channel/v1/query";
+import { DispatcherAbi } from "../abis/Dispatcher";
 
-function getAddressAndDispatcherType<name extends Virtual.EventNames<config>>(contractName: "DispatcherSim" | "DispatcherProof", context: Virtual.Context<config, schema, name>) {
-  let address: `0x${string}` = "0x";
-  let dispatcherType: string;
-  if (contractName == "DispatcherSim") {
-    address = context.contracts.DispatcherSim.address!;
-    dispatcherType = "sim";
-  } else {
-    address = context.contracts.DispatcherProof.address!;
-    dispatcherType = "proof";
-  }
-  return {address, dispatcherType};
+async function getAddressAndClient(contractName: "sim" | "proof", context: Context) {
+  const {client} = context;
+  let address: `0x${string}` = context.contracts[contractName].address!;
+  const portPrefix = await client.readContract({
+    abi: DispatcherAbi,
+    address: address,
+    functionName: "portPrefix",
+  });
+
+  return {address, client: portPrefix.split('.')[1]};
 }
 
-async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OpenIbcChannel" | "DispatcherProof:OpenIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  let {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function channelOpenInit<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:ChannelOpenInit" | "proof:ChannelOpenInit">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let counterpartyPortId = event.args.counterpartyPortId;
-  let counterpartyChannelId = ethers.decodeBytes32String(event.args.counterpartyChannelId);
   let connectionHops = event.args.connectionHops;
-  let portAddress = event.args.portAddress;
+  let portAddress = event.args.recevier;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
   let version = event.args.version;
 
   await context.db.OpenIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address,
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       portAddress: portAddress,
+      channelId: "",
+      portId: portId,
+      version: version,
+      ordering: event.args.ordering,
+      feeEnabled: event.args.feeEnabled,
+      // @ts-ignore
+      connectionHops: connectionHops,
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: "",
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      chainId: chainId,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
+
+  await context.db.Channel.create({
+    id: event.log.id,
+    data: {
+      channelId: '',
+      portId: portId,
+      connectionHops: [...connectionHops],
+      version: version,
+      ordering: event.args.ordering,
+      counterpartyPortId: counterpartyPortId,
+      counterpartyChannelId: "",
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      state: "INIT",
+      openInitChannelId: event.log.id,
+    }
+  })
+
+  await updateStats(context, StatName.OpenIBCChannel)
+}
+
+async function channelOpenTry<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:ChannelOpenTry" | "proof:ChannelOpenTry">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
+  const chainId = context.network.chainId as number;
+  let counterpartyPortId = event.args.counterpartyPortId;
+  let counterpartyChannelId = ethers.decodeBytes32String(event.args.counterpartyChannelId);
+  let connectionHops = event.args.connectionHops;
+  let portAddress = event.args.receiver;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
+  let version = event.args.version;
+
+  let channelId = '';
+  let openTryChannelId = event.log.id;
+  let initChannel: QueryChannelResponse;
+  const tmClient = await TmClient.getInstance();
+
+  await retry(async bail => {
+      initChannel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
+
+      if (!initChannel.channel) {
+        logger.warn('No initChannel found for open try: ', counterpartyChannelId, counterpartyPortId);
+        bail(new Error('No initChannel found, giving up'));
+      } else {
+        channelId = initChannel.channel.counterparty.channelId;
+      }
+    },
+    defaultRetryOpts
+  ).catch(e => {
+    logger.warn('Skipping packet for channel in channelOpenTry after all retry attempts');
+  });
+
+
+  await context.db.TryIbcChannel.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
+      portAddress: portAddress,
+      portId: portId,
+      channelId: channelId,
       version: version,
       ordering: event.args.ordering,
       feeEnabled: event.args.feeEnabled,
@@ -45,127 +131,111 @@ async function openIbcChannel<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let channelId = '';
-  let client = DISPATCHER_CLIENT[address!];
-  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
-  let state: "INIT" | "TRY" = counterpartyChannelId == "" ? "INIT" : "TRY";
-
-  if (state == "TRY") {
-    const tmClient = await TmClient.getInstance();
-    await retry(async bail => {
-      // If anything throws within this function, it will retry
-      let channel = await tmClient.ibc.channel.channel(counterpartyPortId, counterpartyChannelId);
-
-      if (!channel.channel) {
-        logger.warn('No channel found for write ack: ', counterpartyChannelId, counterpartyPortId);
-        // Optionally, you can bail out on certain conditions if retrying is futile
-        bail(new Error('No channel found, giving up'));
-      } else {
-        channelId = channel.channel.counterparty.channelId;
-      }
-    }, {
-
-      retries: 3, // The maximum amount of times to retry the operation. Default is 10
-      factor: 2, // The exponential factor to use. Default is 2
-      minTimeout: 1000, // The number of milliseconds before starting the first retry. Default is 1000
-      maxTimeout: 5000, // The maximum number of milliseconds between two retries. Default is Infinity
-      // You can also specify a custom retry strategy
-      // onRetry: (err, attempt) => {},
-    }).catch(e => {
-      logger.warn('Skipping packet for channel in openIbcChannel: ', counterpartyPortId, counterpartyChannelId);
-    });
-  }
-
-
-  await context.db.Channel.create({
+  const channel = await context.db.Channel.create({
     id: event.log.id,
     data: {
       channelId: channelId,
       portId: portId,
-      connectionHops: [...connectionHops],
       counterpartyPortId: counterpartyPortId,
       counterpartyChannelId: counterpartyChannelId,
+      connectionHops: [...connectionHops],
+      version: version,
+      ordering: event.args.ordering,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
-      state: state,
+      state: "TRY",
+      openTryChannelId: openTryChannelId,
     }
   })
-  await updateStats(context.db.Stat, StatName.OpenIBCChannel)
+
+  await updateChannel(context, channel.id)
+  await updateStats(context, StatName.TryIBCChannel)
 }
 
-async function connectIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:ConnectIbcChannel" | "DispatcherProof:ConnectIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function channelOpenAck<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:ChannelOpenAck" | "proof:ChannelOpenAck">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let channelId = ethers.decodeBytes32String(event.args.channelId);
-  let portAddress = event.args.portAddress;
+  let portAddress = event.args.receiver;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
 
-  await context.db.ConnectIbcChannel.create({
+  let counterpartyPortId = '';
+  let counterpartyChannelId = '';
+
+  const tmClient = await TmClient.getInstance();
+
+  await retry(async bail => {
+      const channel = await tmClient.ibc.channel.channel(portId, channelId);
+
+      if (!channel.channel) {
+        logger.warn('No channel found for write ack: ', portId, channelId);
+        // Use bail to immediately stop retrying under certain conditions
+        bail(new Error('No channel found, giving up'));
+      } else {
+        counterpartyChannelId = channel.channel.counterparty.channelId;
+        counterpartyPortId = channel.channel.counterparty.portId;
+      }
+    },
+    defaultRetryOpts
+  ).catch(e => {
+    // This catch block is executed if retries are exhausted or bail was called
+    logger.warn('Skipping packet for AckIbcChannel after all retry attempts');
+  });
+
+  await context.db.AckIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
-      portAddress: portAddress,
-      channelId: channelId,
-      chainId: chainId,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
+      portId,
+      counterpartyPortId,
+      counterpartyChannelId,
+      portAddress,
+      channelId,
+      chainId,
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let counterpartyPortId = '';
-  let counterpartyChannelId = '';
-  let client = DISPATCHER_CLIENT[address!];
-  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
-
-  const tmClient = await TmClient.getInstance();
-
-  await retry(async bail => {
-    const channel = await tmClient.ibc.channel.channel(portId, channelId);
-
-    if (!channel.channel) {
-      logger.warn('No channel found for write ack: ', portId, channelId );
-      // Use bail to immediately stop retrying under certain conditions
-      bail(new Error('No channel found, giving up'));
-    } else {
-      counterpartyChannelId = channel.channel.counterparty.channelId;
-      counterpartyPortId = channel.channel.counterparty.portId;
-    }
-  }, {
-    retries: 3, // The maximum amount of times to retry the operation.
-    factor: 2, // The exponential factor to use.
-    minTimeout: 1000, // The number of milliseconds before starting the first retry.
-    maxTimeout: 5000, // The maximum number of milliseconds between two retries.
-    // Custom retry strategy or additional logging can be specified here
-    onRetry: (err, attempt) => {
-      // This is a good place to log retry attempts if needed
-      logger.info(`Retry attempt ${attempt} due to error: ${err.message}`);
-    },
-  }).catch(e => {
-    // This catch block is executed if retries are exhausted or bail was called
-    logger.warn('Skipping packet for connectIbcChannel: ', portId, channelId);
-  });
-
-
-  // update earliest INIT state record that have incomplete id
-  let channels = await context.db.Channel.findMany({
-    where: {portId: portId, channelId: ""},
-    orderBy: {blockTimestamp: "asc"},
+  // update latest INIT state record that have incomplete id
+  // NOTE: there is an assumption that the latest INIT event corresponds to the current event which is not 100% correct
+  let incompleteInitChannels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: "", state: "INIT", blockTimestamp: {lt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
     limit: 1
   });
-  for (let channel of channels.items) {
+
+  let cpConfirmIbcChannels = await context.db.ConfirmIbcChannel.findMany({
+    where: {portId: counterpartyPortId, channelId: counterpartyChannelId, blockTimestamp: {gt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
+    limit: 1
+  });
+
+  for (let channel of incompleteInitChannels.items) {
+    // update a channel with INIT state that has incomplete channel id and counterparty channel id
+    await context.db.OpenIbcChannel.update({
+      id: channel.openInitChannelId!,
+      data: {
+        channelId: channelId,
+        counterpartyChannelId: counterpartyChannelId,
+      }
+    })
+
     await context.db.Channel.update({
       id: channel.id,
       data: {
@@ -176,78 +246,147 @@ async function connectIbcChannel<name extends Virtual.EventNames<config>>(event:
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
+        openAckChannelId: event.log.id,
+        openConfirmChannelId: cpConfirmIbcChannels.items[0]?.id,
+      }
+    })
+
+    await context.db.Channel.updateMany({
+      where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
+      data: {
+        openInitChannelId: channel.openInitChannelId,
+        openAckChannelId: event.log.id,
+        openConfirmChannelId: cpConfirmIbcChannels.items[0]?.id,
       }
     })
   }
 
-  channels = await context.db.Channel.findMany({
-    where: {portId: portId, channelId: channelId},
-    orderBy: {blockTimestamp: "asc"},
+  await updateStats(context, StatName.AckIbcChannel)
+  await updateChannel(context, incompleteInitChannels.items[0]?.id)
+}
+
+async function confirmIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:ChannelOpenConfirm" | "proof:ChannelOpenConfirm">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
+  const chainId = context.network.chainId as number;
+  let channelId = ethers.decodeBytes32String(event.args.channelId);
+  let portAddress = event.args.receiver;
+  let portId = `polyibc.${client}.${portAddress.slice(2)}`;
+
+  let counterpartyPortId = '';
+  let counterpartyChannelId = '';
+
+  const tmClient = await TmClient.getInstance();
+
+  await retry(async bail => {
+      const channel = await tmClient.ibc.channel.channel(portId, channelId);
+
+      if (!channel.channel) {
+        logger.warn('No channel found for write ack: ', portId, channelId);
+        // Use bail to immediately stop retrying under certain conditions
+        bail(new Error('No channel found, giving up'));
+      } else {
+        counterpartyChannelId = channel.channel.counterparty.channelId;
+        counterpartyPortId = channel.channel.counterparty.portId;
+      }
+    },
+    defaultRetryOpts
+  ).catch(e => {
+    // This catch block is executed if retries are exhausted or bail was called
+    logger.warn('Skipping packet for connectIbcChannel after all retry attempts');
+  });
+
+  await context.db.ConfirmIbcChannel.create({
+    id: event.log.id,
+    data: {
+      dispatcherAddress: address || "0x",
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
+      portId,
+      counterpartyPortId,
+      counterpartyChannelId,
+      portAddress,
+      channelId,
+      chainId,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      transactionHash: event.transaction.hash,
+      gas: Number(event.transaction.gas),
+      maxFeePerGas: event.transaction.maxFeePerGas,
+      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
+      from: event.transaction.from.toString(),
+    },
+  });
+
+  // find the earliest channel in TRY state
+  let tryChannels = await context.db.Channel.findMany({
+    where: {portId: portId, channelId: channelId, state: "TRY", blockTimestamp: {lt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
     limit: 1
   });
-  for (let channel of channels.items) {
+
+  let cpAckIbcChannels = await context.db.AckIbcChannel.findMany({
+    where: {portId: counterpartyPortId, channelId: counterpartyChannelId, blockTimestamp: {lt: event.block.timestamp}},
+    orderBy: {blockTimestamp: "desc"},
+    limit: 1
+  });
+
+  for (let channel of tryChannels.items) {
     await context.db.Channel.update({
       id: channel.id,
       data: {
         state: "OPEN",
+        channelId: channelId,
         blockNumber: event.block.number,
         blockTimestamp: event.block.timestamp,
         transactionHash: event.transaction.hash,
+        openAckChannelId: cpAckIbcChannels.items[0]?.id,
+        openConfirmChannelId: event.log.id,
+      }
+    })
+
+    await context.db.Channel.updateMany({
+      where: {portId: counterpartyPortId, channelId: counterpartyChannelId},
+      data: {
+        openTryChannelId: channel.id,
+        openAckChannelId: cpAckIbcChannels.items[0]?.id,
+        openConfirmChannelId: event.log.id,
       }
     })
   }
-  await updateStats(context.db.Stat, StatName.ConnectIbcChannel)
+
+  await updateStats(context, StatName.ConfirmIbcChannel)
+  await updateChannel(context, tryChannels.items[0]?.id)
 }
 
-async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:CloseIbcChannel" | "DispatcherProof:CloseIbcChannel">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function closeIbcChannel<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:CloseIbcChannel" | "proof:CloseIbcChannel">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
+  const portId = `polyibc.${client}.${event.args.portAddress.slice(2)}`;
 
   await context.db.CloseIbcChannel.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       portAddress: event.args.portAddress,
+      portId: portId,
       channelId: ethers.decodeBytes32String(event.args.channelId),
       blockNumber: event.block.number,
       blockTimestamp: event.block.timestamp,
       transactionHash: event.transaction.hash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stat, StatName.CloseIBCChannel)
+  await updateStats(context, StatName.CloseIBCChannel)
 }
 
-async function ownershipTransferred<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:OwnershipTransferred" | "DispatcherProof:OwnershipTransferred">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
-  const chainId = context.network.chainId as number;
-
-  await context.db.OwnershipTransferred.create({
-    id: event.log.id,
-    data: {
-      dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
-      previousOwner: event.args.previousOwner,
-      newOwner: event.args.newOwner,
-      blockNumber: event.block.number,
-      blockTimestamp: event.block.timestamp,
-      transactionHash: event.transaction.hash,
-      chainId: chainId,
-      gas: event.transaction.gas,
-      maxFeePerGas: event.transaction.maxFeePerGas,
-      maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
-      from: event.transaction.from.toString(),
-    },
-  });
-}
-
-async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:SendPacket" | "DispatcherProof:SendPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:SendPacket" | "proof:SendPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
   let srcPortAddress = event.args.sourcePortAddress;
@@ -261,7 +400,8 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       sourcePortAddress: srcPortAddress,
       sourceChannelId: sourceChannelId,
       packet: event.args.packet,
@@ -271,14 +411,13 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const srcPortId = `polyibc.${client}.${srcPortAddress.slice(2)}`;
   const key = `${srcPortId}-${sourceChannelId}-${sequence}`;
 
@@ -288,32 +427,33 @@ async function sendPacket<name extends Virtual.EventNames<config>>(event: Virtua
       state: "SENT",
       sendPacketId: event.log.id,
       sendTx: transactionHash,
+      sendBlockTimestamp: Number(event.block.timestamp),
     },
     update: {
       sendPacketId: event.log.id,
       sendTx: transactionHash,
+      sendBlockTimestamp: Number(event.block.timestamp),
     }
   });
 
-  await updateStats(context.db.Stat, StatName.SendPackets)
+  await updatePacket(context, key)
+  await updateStats(context, StatName.SendPackets)
 }
 
-async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteAckPacket" | "DispatcherProof:WriteAckPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:WriteAckPacket" | "proof:WriteAckPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let writerPortAddress = event.args.writerPortAddress;
   let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
   let sequence = event.args.sequence;
   let transactionHash = event.transaction.hash;
 
-  logger.debug('writeAckPacket', writerChannelId, sequence)
-  logger.debug("ackTx", transactionHash)
-
   await context.db.WriteAckPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       writerPortAddress: writerPortAddress,
       writerChannelId: writerChannelId,
       sequence: sequence,
@@ -323,14 +463,13 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const destPortId = `polyibc.${client}.${writerPortAddress.slice(2)}`;
   const tmClient = await TmClient.getInstance();
   let channel;
@@ -367,11 +506,12 @@ async function writeAckPacket<name extends Virtual.EventNames<config>>(event: Vi
     },
   });
 
-  await updateStats(context.db.Stat, StatName.WriteAckPacket);
+  await updatePacket(context, key)
+  await updateStats(context, StatName.WriteAckPacket);
 }
 
-async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:RecvPacket" | "DispatcherProof:RecvPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:RecvPacket" | "proof:RecvPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let destPortAddress = event.args.destPortAddress;
 
@@ -379,14 +519,12 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
   let sequence = event.args.sequence;
   let recvTx = event.transaction.hash;
 
-  logger.debug('recvPacket', destPortAddress, destChannelId, sequence)
-  logger.debug("recvTx", recvTx)
-
   await context.db.RecvPacket.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       destPortAddress: destPortAddress,
       destChannelId: destChannelId,
       sequence: sequence,
@@ -394,21 +532,20 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
       blockTimestamp: event.block.timestamp,
       transactionHash: recvTx,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const destPortId = `polyibc.${client}.${destPortAddress.slice(2)}`;
   const tmClient = await TmClient.getInstance();
   let channel;
   try {
     channel = await tmClient.ibc.channel.channel(destPortId, destChannelId);
   } catch (e) {
-    logger.info('Skipping packet for channel in recvPacket: ', destPortId, destChannelId);
+    logger.info('Skipping packet for channel in recvPacket');
     return;
   }
 
@@ -438,26 +575,24 @@ async function recvPacket<name extends Virtual.EventNames<config>>(event: Virtua
     },
   });
 
-
-  await updateStats(context.db.Stat, StatName.RecvPackets)
+  await updatePacket(context, key)
+  await updateStats(context, StatName.RecvPackets)
 }
 
-async function acknowledgement<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Acknowledgement" | "DispatcherProof:Acknowledgement">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function acknowledgement<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:Acknowledgement" | "proof:Acknowledgement">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
   let sequence = event.args.sequence;
   let srcPortAddress = event.args.sourcePortAddress;
   let transactionHash = event.transaction.hash;
 
-  logger.debug('acknowledgement', sourceChannelId, sequence)
-  logger.debug("ackTx", transactionHash)
-
   await context.db.Acknowledgement.create({
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       sourcePortAddress: srcPortAddress,
       sourceChannelId: sourceChannelId,
       sequence: sequence,
@@ -465,14 +600,13 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  let client = DISPATCHER_CLIENT[address!];
   const srcPortId = `polyibc.${client}.${srcPortAddress.slice(2)}`;
   const key = `${srcPortId}-${sourceChannelId}-${sequence}`;
 
@@ -490,11 +624,12 @@ async function acknowledgement<name extends Virtual.EventNames<config>>(event: V
     }
   });
 
-  await updateStats(context.db.Stat, StatName.AckPackets)
+  await updatePacket(context, key)
+  await updateStats(context, StatName.AckPackets)
 }
 
-async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:Timeout" | "DispatcherProof:Timeout">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:Timeout" | "proof:Timeout">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let transactionHash = event.transaction.hash;
   let sourceChannelId = ethers.decodeBytes32String(event.args.sourceChannelId);
@@ -507,7 +642,8 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       sourcePortAddress: event.args.sourcePortAddress,
       sourceChannelId: sourceChannelId,
       sequence: sequence,
@@ -515,17 +651,17 @@ async function timeout<name extends Virtual.EventNames<config>>(event: Virtual.E
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
-  await updateStats(context.db.Stat, StatName.Timeout)
+  await updateStats(context, StatName.Timeout)
 }
 
-async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "DispatcherSim:WriteTimeoutPacket" | "DispatcherProof:WriteTimeoutPacket">, context: Virtual.Context<config, schema, name>, contractName: Virtual.ExtractContractName<name>) {
-  const {address, dispatcherType} = getAddressAndDispatcherType<name>(contractName, context);
+async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event: Virtual.Event<config, "sim:WriteTimeoutPacket" | "proof:WriteTimeoutPacket">, context: Context, contractName: Virtual.ExtractContractName<name>) {
+  const {address, client} = await getAddressAndClient(contractName, context);
   const chainId = context.network.chainId as number;
   let transactionHash = event.transaction.hash;
   let writerChannelId = ethers.decodeBytes32String(event.args.writerChannelId);
@@ -539,7 +675,8 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
     id: event.log.id,
     data: {
       dispatcherAddress: address || "0x",
-      dispatcherType: dispatcherType,
+      dispatcherType: contractName,
+      dispatcherClientName: client!,
       writerPortAddress: writerPortAddress,
       writerChannelId: writerChannelId,
       sequence: sequence,
@@ -550,96 +687,97 @@ async function writeTimeoutPacket<name extends Virtual.EventNames<config>>(event
       blockTimestamp: event.block.timestamp,
       transactionHash: transactionHash,
       chainId: chainId,
-      gas: event.transaction.gas,
+      gas: Number(event.transaction.gas),
       maxFeePerGas: event.transaction.maxFeePerGas,
       maxPriorityFeePerGas: event.transaction.maxPriorityFeePerGas,
       from: event.transaction.from.toString(),
     },
   });
 
-  await updateStats(context.db.Stat, StatName.WriteTimeoutPacket)
+  await updateStats(context, StatName.WriteTimeoutPacket)
 }
 
-ponder.on("DispatcherSim:OpenIbcChannel", async ({event, context}) => {
-  await openIbcChannel(event, context, "DispatcherSim");
+ponder.on("sim:ChannelOpenInit", async ({event, context}) => {
+  await channelOpenInit(event, context, "sim");
 });
 
-ponder.on("DispatcherProof:OpenIbcChannel", async ({event, context}) => {
-  await openIbcChannel(event, context, "DispatcherProof");
+ponder.on("proof:ChannelOpenInit", async ({event, context}) => {
+  await channelOpenInit(event, context, "proof");
 });
 
-
-ponder.on("DispatcherSim:ConnectIbcChannel", async ({event, context}) => {
-  await connectIbcChannel(event, context, "DispatcherSim");
+ponder.on("sim:ChannelOpenTry", async ({event, context}) => {
+  await channelOpenTry(event, context, "sim");
 });
 
-ponder.on("DispatcherProof:ConnectIbcChannel", async ({event, context}) => {
-  await connectIbcChannel(event, context, "DispatcherProof");
-});
-ponder.on("DispatcherSim:CloseIbcChannel", async ({event, context}) => {
-  await closeIbcChannel(event, context, "DispatcherSim");
+ponder.on("proof:ChannelOpenTry", async ({event, context}) => {
+  await channelOpenTry(event, context, "proof");
 });
 
-ponder.on("DispatcherProof:CloseIbcChannel", async ({event, context}) => {
-  await closeIbcChannel(event, context, "DispatcherProof");
+ponder.on("sim:ChannelOpenAck", async ({event, context}) => {
+  await channelOpenAck(event, context, "sim");
 });
 
-ponder.on("DispatcherSim:OwnershipTransferred", async ({event, context}) => {
-  await ownershipTransferred(event, context, "DispatcherSim");
+ponder.on("proof:ChannelOpenAck", async ({event, context}) => {
+  await channelOpenAck(event, context, "proof");
 });
 
-ponder.on("DispatcherProof:OwnershipTransferred", async ({event, context}) => {
-  await ownershipTransferred(event, context, "DispatcherProof");
+ponder.on("sim:ChannelOpenConfirm", async ({event, context}) => {
+  await confirmIbcChannel(event, context, "sim");
 });
 
-
-ponder.on("DispatcherSim:SendPacket", async ({event, context}) => {
-  await sendPacket(event, context, "DispatcherSim");
+ponder.on("proof:ChannelOpenConfirm", async ({event, context}) => {
+  await confirmIbcChannel(event, context, "proof");
 });
 
-ponder.on("DispatcherProof:SendPacket", async ({event, context}) => {
-  await sendPacket(event, context, "DispatcherProof");
+ponder.on("sim:CloseIbcChannel", async ({event, context}) => {
+  await closeIbcChannel(event, context, "sim");
 });
 
-ponder.on("DispatcherSim:WriteAckPacket", async ({event, context}) => {
-  await writeAckPacket(event, context, "DispatcherSim");
+ponder.on("proof:CloseIbcChannel", async ({event, context}) => {
+  await closeIbcChannel(event, context, "proof");
 });
 
-ponder.on("DispatcherProof:WriteAckPacket", async ({event, context}) => {
-  await writeAckPacket(event, context, "DispatcherProof");
+ponder.on("sim:SendPacket", async ({event, context}) => {
+  await sendPacket(event, context, "sim");
 });
 
-
-ponder.on("DispatcherSim:RecvPacket", async ({event, context}) => {
-  await recvPacket(event, context, "DispatcherSim");
+ponder.on("proof:SendPacket", async ({event, context}) => {
+  await sendPacket(event, context, "proof");
 });
 
-ponder.on("DispatcherProof:RecvPacket", async ({event, context}) => {
-  await recvPacket(event, context, "DispatcherProof");
+ponder.on("sim:WriteAckPacket", async ({event, context}) => {
+  await writeAckPacket(event, context, "sim");
 });
 
-
-ponder.on("DispatcherSim:Acknowledgement", async ({event, context}) => {
-  await acknowledgement(event, context, "DispatcherSim");
-});
-
-ponder.on("DispatcherProof:Acknowledgement", async ({event, context}) => {
-  await acknowledgement(event, context, "DispatcherProof");
+ponder.on("proof:WriteAckPacket", async ({event, context}) => {
+  await writeAckPacket(event, context, "proof");
 });
 
 
-ponder.on("DispatcherSim:Timeout", async ({event, context}) => {
-  await timeout(event, context, "DispatcherSim");
+ponder.on("sim:RecvPacket", async ({event, context}) => {
+  await recvPacket(event, context, "sim");
 });
 
-ponder.on("DispatcherProof:Timeout", async ({event, context}) => {
-  await timeout(event, context, "DispatcherProof");
+ponder.on("proof:RecvPacket", async ({event, context}) => {
+  await recvPacket(event, context, "proof");
 });
 
-ponder.on("DispatcherSim:WriteTimeoutPacket", async ({event, context}) => {
-  await writeTimeoutPacket(event, context, "DispatcherSim");
+
+ponder.on("sim:Acknowledgement", async ({event, context}) => {
+  await acknowledgement(event, context, "sim");
 });
 
-ponder.on("DispatcherProof:WriteTimeoutPacket", async ({event, context}) => {
-  await writeTimeoutPacket(event, context, "DispatcherProof");
+ponder.on("proof:Acknowledgement", async ({event, context}) => {
+  await acknowledgement(event, context, "proof");
 });
+
+// ponder.on("sim:Timeout", async ({event, context}) => {
+//   await timeout(event, context, "sim");
+// });
+//
+// ponder.on("proof:Timeout", async ({event, context}) => {
+//   await timeout(event, context, "proof");
+// });
+//
+// ponder.on("sim:WriteTimeoutPacket", async ({event, context}) => {
+//   await writeTimeoutPacket(event, c

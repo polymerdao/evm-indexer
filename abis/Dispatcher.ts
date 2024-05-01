@@ -1,164 +1,13 @@
 export const DispatcherAbi = [
   {
     "type": "constructor",
-    "inputs": [
-      {
-        "name": "initPortPrefix",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "_consensusStateManager",
-        "type": "address",
-        "internalType": "contract ConsensusStateManager"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "ackPacketCommitment",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "ackProofKey",
-    "inputs": [
-      {
-        "name": "packet",
-        "type": "tuple",
-        "internalType": "struct IbcPacket",
-        "components": [
-          {
-            "name": "src",
-            "type": "tuple",
-            "internalType": "struct IbcEndpoint",
-            "components": [
-              {
-                "name": "portId",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "channelId",
-                "type": "bytes32",
-                "internalType": "bytes32"
-              }
-            ]
-          },
-          {
-            "name": "dest",
-            "type": "tuple",
-            "internalType": "struct IbcEndpoint",
-            "components": [
-              {
-                "name": "portId",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "channelId",
-                "type": "bytes32",
-                "internalType": "bytes32"
-              }
-            ]
-          },
-          {
-            "name": "sequence",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          },
-          {
-            "name": "timeoutHeight",
-            "type": "tuple",
-            "internalType": "struct Height",
-            "components": [
-              {
-                "name": "revision_number",
-                "type": "uint64",
-                "internalType": "uint64"
-              },
-              {
-                "name": "revision_height",
-                "type": "uint64",
-                "internalType": "uint64"
-              }
-            ]
-          },
-          {
-            "name": "timeoutTimestamp",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "proofKey",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "ackProofValue",
-    "inputs": [
-      {
-        "name": "ack",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "proofValue",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "pure"
   },
   {
     "type": "function",
     "name": "acknowledgement",
     "inputs": [
-      {
-        "name": "receiver",
-        "type": "address",
-        "internalType": "contract IbcPacketReceiver"
-      },
       {
         "name": "packet",
         "type": "tuple",
@@ -294,110 +143,12 @@ export const DispatcherAbi = [
   },
   {
     "type": "function",
-    "name": "channelProofKey",
+    "name": "channelOpenAck",
     "inputs": [
-      {
-        "name": "portId",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "channelId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "proofKey",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "channelProofValue",
-    "inputs": [
-      {
-        "name": "state",
-        "type": "uint8",
-        "internalType": "enum ChannelState"
-      },
-      {
-        "name": "ordering",
-        "type": "uint8",
-        "internalType": "enum ChannelOrder"
-      },
-      {
-        "name": "version",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "connectionHops",
-        "type": "string[]",
-        "internalType": "string[]"
-      },
-      {
-        "name": "counterparty",
-        "type": "tuple",
-        "internalType": "struct CounterParty",
-        "components": [
-          {
-            "name": "portId",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "channelId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "internalType": "string"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "proofValue",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "closeIbcChannel",
-    "inputs": [
-      {
-        "name": "channelId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "connectIbcChannel",
-    "inputs": [
-      {
-        "name": "portAddress",
-        "type": "address",
-        "internalType": "contract IbcChannelReceiver"
-      },
       {
         "name": "local",
         "type": "tuple",
-        "internalType": "struct CounterParty",
+        "internalType": "struct ChannelEnd",
         "components": [
           {
             "name": "portId",
@@ -432,14 +183,9 @@ export const DispatcherAbi = [
         "internalType": "bool"
       },
       {
-        "name": "isChanConfirm",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
         "name": "counterparty",
         "type": "tuple",
-        "internalType": "struct CounterParty",
+        "internalType": "struct ChannelEnd",
         "components": [
           {
             "name": "portId",
@@ -515,16 +261,285 @@ export const DispatcherAbi = [
   },
   {
     "type": "function",
-    "name": "consensusStateManager",
-    "inputs": [],
-    "outputs": [
+    "name": "channelOpenConfirm",
+    "inputs": [
       {
-        "name": "",
-        "type": "address",
-        "internalType": "contract ConsensusStateManager"
+        "name": "local",
+        "type": "tuple",
+        "internalType": "struct ChannelEnd",
+        "components": [
+          {
+            "name": "portId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "channelId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      },
+      {
+        "name": "connectionHops",
+        "type": "string[]",
+        "internalType": "string[]"
+      },
+      {
+        "name": "ordering",
+        "type": "uint8",
+        "internalType": "enum ChannelOrder"
+      },
+      {
+        "name": "feeEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "counterparty",
+        "type": "tuple",
+        "internalType": "struct ChannelEnd",
+        "components": [
+          {
+            "name": "portId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "channelId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      },
+      {
+        "name": "proof",
+        "type": "tuple",
+        "internalType": "struct Ics23Proof",
+        "components": [
+          {
+            "name": "proof",
+            "type": "tuple[]",
+            "internalType": "struct OpIcs23Proof[]",
+            "components": [
+              {
+                "name": "path",
+                "type": "tuple[]",
+                "internalType": "struct OpIcs23ProofPath[]",
+                "components": [
+                  {
+                    "name": "prefix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  },
+                  {
+                    "name": "suffix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  }
+                ]
+              },
+              {
+                "name": "key",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "value",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "prefix",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "height",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
       }
     ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "channelOpenInit",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "ordering",
+        "type": "uint8",
+        "internalType": "enum ChannelOrder"
+      },
+      {
+        "name": "feeEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "connectionHops",
+        "type": "string[]",
+        "internalType": "string[]"
+      },
+      {
+        "name": "counterpartyPortId",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "channelOpenTry",
+    "inputs": [
+      {
+        "name": "local",
+        "type": "tuple",
+        "internalType": "struct ChannelEnd",
+        "components": [
+          {
+            "name": "portId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "channelId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      },
+      {
+        "name": "ordering",
+        "type": "uint8",
+        "internalType": "enum ChannelOrder"
+      },
+      {
+        "name": "feeEnabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "connectionHops",
+        "type": "string[]",
+        "internalType": "string[]"
+      },
+      {
+        "name": "counterparty",
+        "type": "tuple",
+        "internalType": "struct ChannelEnd",
+        "components": [
+          {
+            "name": "portId",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "channelId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "version",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      },
+      {
+        "name": "proof",
+        "type": "tuple",
+        "internalType": "struct Ics23Proof",
+        "components": [
+          {
+            "name": "proof",
+            "type": "tuple[]",
+            "internalType": "struct OpIcs23Proof[]",
+            "components": [
+              {
+                "name": "path",
+                "type": "tuple[]",
+                "internalType": "struct OpIcs23ProofPath[]",
+                "components": [
+                  {
+                    "name": "prefix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  },
+                  {
+                    "name": "suffix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  }
+                ]
+              },
+              {
+                "name": "key",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "value",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "prefix",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "height",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "closeIbcChannel",
+    "inputs": [
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -613,194 +628,17 @@ export const DispatcherAbi = [
   },
   {
     "type": "function",
-    "name": "nextSequenceAck",
+    "name": "initialize",
     "inputs": [
       {
-        "name": "",
+        "name": "initPortPrefix",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "lightClient",
         "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "nextSequenceRecv",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "nextSequenceSend",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "openIbcChannel",
-    "inputs": [
-      {
-        "name": "portAddress",
-        "type": "address",
-        "internalType": "contract IbcChannelReceiver"
-      },
-      {
-        "name": "local",
-        "type": "tuple",
-        "internalType": "struct CounterParty",
-        "components": [
-          {
-            "name": "portId",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "channelId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "internalType": "string"
-          }
-        ]
-      },
-      {
-        "name": "ordering",
-        "type": "uint8",
-        "internalType": "enum ChannelOrder"
-      },
-      {
-        "name": "feeEnabled",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
-        "name": "connectionHops",
-        "type": "string[]",
-        "internalType": "string[]"
-      },
-      {
-        "name": "counterparty",
-        "type": "tuple",
-        "internalType": "struct CounterParty",
-        "components": [
-          {
-            "name": "portId",
-            "type": "string",
-            "internalType": "string"
-          },
-          {
-            "name": "channelId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "version",
-            "type": "string",
-            "internalType": "string"
-          }
-        ]
-      },
-      {
-        "name": "proof",
-        "type": "tuple",
-        "internalType": "struct Ics23Proof",
-        "components": [
-          {
-            "name": "proof",
-            "type": "tuple[]",
-            "internalType": "struct OpIcs23Proof[]",
-            "components": [
-              {
-                "name": "path",
-                "type": "tuple[]",
-                "internalType": "struct OpIcs23ProofPath[]",
-                "components": [
-                  {
-                    "name": "prefix",
-                    "type": "bytes",
-                    "internalType": "bytes"
-                  },
-                  {
-                    "name": "suffix",
-                    "type": "bytes",
-                    "internalType": "bytes"
-                  }
-                ]
-              },
-              {
-                "name": "key",
-                "type": "bytes",
-                "internalType": "bytes"
-              },
-              {
-                "name": "value",
-                "type": "bytes",
-                "internalType": "bytes"
-              },
-              {
-                "name": "prefix",
-                "type": "bytes",
-                "internalType": "bytes"
-              }
-            ]
-          },
-          {
-            "name": "height",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
+        "internalType": "contract LightClient"
       }
     ],
     "outputs": [],
@@ -815,279 +653,6 @@ export const DispatcherAbi = [
         "name": "",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "packetCommitmentProofKey",
-    "inputs": [
-      {
-        "name": "packet",
-        "type": "tuple",
-        "internalType": "struct IbcPacket",
-        "components": [
-          {
-            "name": "src",
-            "type": "tuple",
-            "internalType": "struct IbcEndpoint",
-            "components": [
-              {
-                "name": "portId",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "channelId",
-                "type": "bytes32",
-                "internalType": "bytes32"
-              }
-            ]
-          },
-          {
-            "name": "dest",
-            "type": "tuple",
-            "internalType": "struct IbcEndpoint",
-            "components": [
-              {
-                "name": "portId",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "channelId",
-                "type": "bytes32",
-                "internalType": "bytes32"
-              }
-            ]
-          },
-          {
-            "name": "sequence",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          },
-          {
-            "name": "timeoutHeight",
-            "type": "tuple",
-            "internalType": "struct Height",
-            "components": [
-              {
-                "name": "revision_number",
-                "type": "uint64",
-                "internalType": "uint64"
-              },
-              {
-                "name": "revision_height",
-                "type": "uint64",
-                "internalType": "uint64"
-              }
-            ]
-          },
-          {
-            "name": "timeoutTimestamp",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "proofKey",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "packetCommitmentProofValue",
-    "inputs": [
-      {
-        "name": "packet",
-        "type": "tuple",
-        "internalType": "struct IbcPacket",
-        "components": [
-          {
-            "name": "src",
-            "type": "tuple",
-            "internalType": "struct IbcEndpoint",
-            "components": [
-              {
-                "name": "portId",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "channelId",
-                "type": "bytes32",
-                "internalType": "bytes32"
-              }
-            ]
-          },
-          {
-            "name": "dest",
-            "type": "tuple",
-            "internalType": "struct IbcEndpoint",
-            "components": [
-              {
-                "name": "portId",
-                "type": "string",
-                "internalType": "string"
-              },
-              {
-                "name": "channelId",
-                "type": "bytes32",
-                "internalType": "bytes32"
-              }
-            ]
-          },
-          {
-            "name": "sequence",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          },
-          {
-            "name": "timeoutHeight",
-            "type": "tuple",
-            "internalType": "struct Height",
-            "components": [
-              {
-                "name": "revision_number",
-                "type": "uint64",
-                "internalType": "uint64"
-              },
-              {
-                "name": "revision_height",
-                "type": "uint64",
-                "internalType": "uint64"
-              }
-            ]
-          },
-          {
-            "name": "timeoutTimestamp",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "proofValue",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "parseAckData",
-    "inputs": [
-      {
-        "name": "ack",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "ackData",
-        "type": "tuple",
-        "internalType": "struct AckPacket",
-        "components": [
-          {
-            "name": "success",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "data",
-            "type": "bytes",
-            "internalType": "bytes"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "portChannelMap",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "version",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "ordering",
-        "type": "uint8",
-        "internalType": "enum ChannelOrder"
-      },
-      {
-        "name": "feeEnabled",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
-        "name": "counterpartyPortId",
-        "type": "string",
-        "internalType": "string"
-      },
-      {
-        "name": "counterpartyChannelId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "portIdAddressMatch",
-    "inputs": [
-      {
-        "name": "addr",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "portId",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "isMatch",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -1120,13 +685,21 @@ export const DispatcherAbi = [
   },
   {
     "type": "function",
+    "name": "proxiableUUID",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "recvPacket",
     "inputs": [
-      {
-        "name": "receiver",
-        "type": "address",
-        "internalType": "contract IbcPacketReceiver"
-      },
       {
         "name": "packet",
         "type": "tuple",
@@ -1254,35 +827,6 @@ export const DispatcherAbi = [
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "recvPacketReceipt",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1316,35 +860,6 @@ export const DispatcherAbi = [
   },
   {
     "type": "function",
-    "name": "sendPacketCommitment",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "",
-        "type": "uint64",
-        "internalType": "uint64"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "setPortPrefix",
     "inputs": [
       {
@@ -1360,11 +875,6 @@ export const DispatcherAbi = [
     "type": "function",
     "name": "timeout",
     "inputs": [
-      {
-        "name": "receiver",
-        "type": "address",
-        "internalType": "contract IbcPacketReceiver"
-      },
       {
         "name": "packet",
         "type": "tuple",
@@ -1492,44 +1002,6 @@ export const DispatcherAbi = [
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "toStr",
-    "inputs": [
-      {
-        "name": "b",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "outStr",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "toStr",
-    "inputs": [
-      {
-        "name": "_number",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "outStr",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -1624,13 +1096,39 @@ export const DispatcherAbi = [
   },
   {
     "type": "function",
-    "name": "writeTimeoutPacket",
+    "name": "upgradeTo",
     "inputs": [
       {
-        "name": "receiver",
+        "name": "newImplementation",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "upgradeToAndCall",
+    "inputs": [
+      {
+        "name": "newImplementation",
         "type": "address",
         "internalType": "address"
       },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "writeTimeoutPacket",
+    "inputs": [
       {
         "name": "packet",
         "type": "tuple",
@@ -1703,6 +1201,57 @@ export const DispatcherAbi = [
             "internalType": "uint64"
           }
         ]
+      },
+      {
+        "name": "proof",
+        "type": "tuple",
+        "internalType": "struct Ics23Proof",
+        "components": [
+          {
+            "name": "proof",
+            "type": "tuple[]",
+            "internalType": "struct OpIcs23Proof[]",
+            "components": [
+              {
+                "name": "path",
+                "type": "tuple[]",
+                "internalType": "struct OpIcs23ProofPath[]",
+                "components": [
+                  {
+                    "name": "prefix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  },
+                  {
+                    "name": "suffix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  }
+                ]
+              },
+              {
+                "name": "key",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "value",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "prefix",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "height",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
       }
     ],
     "outputs": [],
@@ -1735,29 +1284,61 @@ export const DispatcherAbi = [
   },
   {
     "type": "event",
-    "name": "CloseIbcChannel",
+    "name": "AcknowledgementError",
     "inputs": [
       {
-        "name": "portAddress",
+        "name": "receiver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
       },
       {
-        "name": "channelId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "ConnectIbcChannel",
+    "name": "AdminChanged",
     "inputs": [
       {
-        "name": "portAddress",
+        "name": "previousAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "newAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BeaconUpgraded",
+    "inputs": [
+      {
+        "name": "beacon",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenAck",
+    "inputs": [
+      {
+        "name": "receiver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1773,10 +1354,129 @@ export const DispatcherAbi = [
   },
   {
     "type": "event",
-    "name": "OpenIbcChannel",
+    "name": "ChannelOpenAckError",
     "inputs": [
       {
-        "name": "portAddress",
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenConfirm",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenConfirmError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenInit",
+    "inputs": [
+      {
+        "name": "recevier",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "version",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "ordering",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum ChannelOrder"
+      },
+      {
+        "name": "feeEnabled",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "connectionHops",
+        "type": "string[]",
+        "indexed": false,
+        "internalType": "string[]"
+      },
+      {
+        "name": "counterpartyPortId",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenInitError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenTry",
+    "inputs": [
+      {
+        "name": "receiver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1816,6 +1516,76 @@ export const DispatcherAbi = [
         "type": "bytes32",
         "indexed": false,
         "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelOpenTryError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CloseIbcChannel",
+    "inputs": [
+      {
+        "name": "portAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CloseIbcChannelError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
       }
     ],
     "anonymous": false
@@ -1928,6 +1698,38 @@ export const DispatcherAbi = [
   },
   {
     "type": "event",
+    "name": "TimeoutError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Upgraded",
+    "inputs": [
+      {
+        "name": "implementation",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "WriteAckPacket",
     "inputs": [
       {
@@ -2030,17 +1832,7 @@ export const DispatcherAbi = [
   },
   {
     "type": "error",
-    "name": "invalidCounterParty",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "invalidCounterPartyPortId",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "invalidHexStringLength",
     "inputs": []
   },
   {
@@ -2061,16 +1853,6 @@ export const DispatcherAbi = [
   {
     "type": "error",
     "name": "packetReceiptAlreadyExists",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "receiverNotIntendedPacketDestination",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "receiverNotOriginPacketSender",
     "inputs": []
   },
   {

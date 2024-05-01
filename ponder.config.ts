@@ -24,48 +24,58 @@ function mustInt(val?: string) {
   return parseInt(val);
 }
 
+const RANGE = parseInt(process.env.RANGE ?? "100000");
+const maxBlockRange = parseInt(process.env.MAX_BLOCK_RANGE ?? "2000");
+const schema = process.env.SCHEMA ?? "public";
+
 export default createConfig({
   networks: {
     base: {
       chainId: 84532,
       transport: http(process.env.PONDER_RPC_URL_84532),
-      pollingInterval: 5_000,
+      pollingInterval: 2_000,
     },
     optimism: {
       chainId: 11155420,
       transport: http(process.env.PONDER_RPC_URL_11155420),
-      pollingInterval: 5_000,
+      pollingInterval: 2_000,
     },
-    molten: {
-      chainId: 49483,
-      transport: http(process.env.PONDER_RPC_URL_49483),
-      pollingInterval: 5_000,
-    },
+    // molten: {
+    //   chainId: 49483,
+    //   transport: http(process.env.PONDER_RPC_URL_49483),
+    //   pollingInterval: 2_000,
+    // },
   },
   contracts: {
-    DispatcherSim: {
+    sim: {
+      maxBlockRange: maxBlockRange,
       abi: DispatcherAbi,
       network: {
         base: {
           address: mustAddress(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT),
           startBlock: mustInt(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT_START_BLOCK),
+          // endBlock: mustInt(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT_START_BLOCK) + RANGE,
         },
         optimism: {
           address: mustAddress(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT),
           startBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK),
+          // endBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK)+RANGE,
         },
       },
     },
-    DispatcherProof: {
+    proof: {
       abi: DispatcherAbi,
+      maxBlockRange: maxBlockRange,
       network: {
         base: {
           address: mustAddress(process.env.DISPATCHER_ADDRESS_BASE),
           startBlock: mustInt(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK),
+          // endBlock: mustInt(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK)+RANGE,
         },
         optimism: {
           address: mustAddress(process.env.DISPATCHER_ADDRESS_OPTIMISM),
           startBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK),
+          // endBlock: mustInt(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK)+RANGE,
         },
       },
     },
