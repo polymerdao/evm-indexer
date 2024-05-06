@@ -1,0 +1,98 @@
+type Packet @entity {
+  id: ID!
+  state: PacketStates!
+  sendPacket: SendPacket @unique
+  sendBlockTimestamp: 
+  recvPacket: RecvPacket @unique
+  writeAckPacket: WriteAckPacket @unique
+  ackPacket: Acknowledgement @unique
+}
+
+enum PacketStates {
+  SENT
+  RECV
+  WRITE_ACK
+  ACK
+  TIMEOUT
+  WRITE_TIMEOUT
+}
+
+type SendPacket @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  sourcePortAddress: String!
+  dispatcherClientName: String!
+  sourceChannelId: String!
+  packet: String!
+  sequence: BigInt!
+  timeoutTimestamp: BigInt!
+  blockNumber: Int!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt!
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+  packetRelation: Packet @derivedFrom(field: "sendPacket")
+}
+
+type RecvPacket @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  destPortAddress: String!
+  destChannelId: String!
+  sequence: BigInt!
+  blockNumber: Int!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt!
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+  packetRelation: Packet @derivedFrom(field: "recvPacket")
+}
+
+type WriteAckPacket @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  writerPortAddress: String!
+  writerChannelId: String!
+  sequence: BigInt!
+  ackPacketSuccess: Boolean!
+  ackPacketData: String!
+  blockNumber: Int!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt!
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+  packetRelation: Packet @derivedFrom(field: "writeAckPacket")
+}
+
+type Acknowledgement @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  sourcePortAddress: String!
+  sourceChannelId: String!
+  sequence: BigInt!
+  blockNumber: Int!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt!
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+  packetRelation: Packet @derivedFrom(field: "ackPacket")
+}

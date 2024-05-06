@@ -1,0 +1,25 @@
+manifestVersion: subsquid.io/v0.1
+name: multi-squid
+version: 1
+description: A squid that indexes Polymer events
+build: 
+deploy:
+  addons:
+    postgres: 
+  processor:
+    - name: op-processor
+      cmd:
+        - sqd
+        - process:prod:op
+      env:
+        OPTIMISM_RPC: ${{ secrets.OPTIMISM_RPC }}
+    - name: bsc-processor
+      cmd:
+        - sqd
+        - process:prod:bsc
+      env:
+        RPC_ENDPOINT_BSC: ${{ secrets.RPC_ENDPOINT_BSC }}
+  api:
+    cmd:
+      - sqd
+      - serve:prod
