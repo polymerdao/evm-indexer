@@ -6,5 +6,5 @@ processor.run(new TypeormDatabase({
     supportHotBlocks: true,
     stateSchema: 'optimism_processor'}),
 async (ctx) => {
-    handler(ctx, DISPATCHERS)
+    await handler(ctx, DISPATCHERS)
 })

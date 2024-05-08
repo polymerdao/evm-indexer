@@ -8,6 +8,7 @@ import {
 } from '@subsquid/evm-processor'
 import { Store } from '@subsquid/typeorm-store'
 import { DispatcherInfo } from '../utils/types'
+import { IbcProcessor } from '../utils/ibc-processor'
 import { topics } from '../utils/topics'
 
 export const DISPATCHERS: DispatcherInfo[] = [
@@ -40,10 +41,11 @@ export const processor = new EvmBatchProcessor()
     }
   })
   .setBlockRange({
-    from: Math.min(
-      Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK!),
-      Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK!)
-    )
+    from: 11661442
+    // from: Math.min(
+    //   Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK!),
+    //   Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK!)
+    // )
   })
   .addLog({
     address: [...DISPATCHERS.map(d => d.address)],
