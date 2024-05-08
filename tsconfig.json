@@ -1,26 +1,20 @@
 {
   "compilerOptions": {
-    // Type checking
+    "module": "commonjs",
+    "target": "es2020",
+    "outDir": "lib",
+    "rootDir": "src",
     "strict": true,
-    "noUncheckedIndexedAccess": true,
-
-    // Interop constraints
-    "verbatimModuleSyntax": false,
+    "declaration": false,
+    "sourceMap": true,
     "esModuleInterop": true,
-    "isolatedModules": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-
-    // Language and environment
-    "moduleResolution": "bundler",
-    "module": "ESNext",
-    "noEmit": true,
-    "lib": ["ES2022"],
-    "target": "ES2022",
-
-    // Skip type checking for node modules
-    "skipLibCheck": true
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src"],
+  "exclude": [
+    "node_modules"
+  ]
 }
