@@ -1,22 +1,22 @@
 manifestVersion: subsquid.io/v0.1
-name: take-2
+name: evm-indexer
 version: 1
-description: A squid that indexes USDC transfers on ETH and BSC
+description: A squid that indexes IBC events across multiple chains
 build: 
 deploy:
   addons:
     postgres: 
   processor:
-    - name: eth-processor
+    - name: optimism-processor
       cmd:
         - sqd
-        - process:prod:eth
+        - process:prod:optimism
       env:
         RPC_ENDPOINT_ETH: ${{ secrets.RPC_ENDPOINT_ETH }}
-    - name: bsc-processor
+    - name: base-processor
       cmd:
         - sqd
-        - process:prod:bsc
+        - process:prod:base
       env:
         RPC_ENDPOINT_BSC: ${{ secrets.RPC_ENDPOINT_BSC }}
   api:

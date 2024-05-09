@@ -2,7 +2,8 @@ import { SendPacket, RecvPacket } from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { DispatcherInfo } from './types'
 import { topics } from './topics'
-import { Context, Log, Block } from '../optimism/processor'
+// import { Context, Log, Block } from '../optimism/processor'
+import { Context, Log, Block } from './types'
 import { ethers } from 'ethers'
 
 function handleSendPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): SendPacket {

@@ -44,25 +44,25 @@
         "description": "Generate data access classes for an ABI file(s) in the ./abi folder",
         "cmd": ["squid-evm-typegen", "./src/abi", {"glob": "./abi/*.json"}, "--multicall"]
       },
-      "process:op": {
+      "process:optimism": {
         "description": "Load .env and start the OP squid processor",
         "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/optimism/main.js"]
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/optimism.js"]
       },
-      "process:bsc": {
+      "process:base": {
         "description": "Load .env and start the BSC squid processor",
         "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/bsc/main.js"]
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/base.js"]
       },
-      "process:prod:op": {
+      "process:prod:optimism": {
         "description": "Start the squid processor",
         "deps": ["migration:apply"],
-        "cmd": ["node", "lib/optimism/main.js"],
+        "cmd": ["node", "lib/chains/optimism.js"],
         "hidden": true
       },
-      "process:prod:bsc": {
+      "process:prod:base": {
         "description": "Start the squid processor",
-        "cmd": ["node", "lib/bsc/main.js"],
+        "cmd": ["node", "lib/chains/base.js"],
         "hidden": true
       },
       "serve": {

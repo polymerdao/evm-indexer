@@ -1,17 +1,14 @@
 import {
-  BlockHeader,
-  DataHandlerContext,
-  EvmBatchProcessor,
-  EvmBatchProcessorFields,
   Log as _Log,
   Transaction as _Transaction,
 } from '@subsquid/evm-processor'
-import { Store } from '@subsquid/typeorm-store'
+import { TypeormDatabase } from '@subsquid/typeorm-store'
 import { DispatcherInfo } from '../utils/types'
 import { IbcProcessor } from '../utils/ibc-processor'
 import { topics } from '../utils/topics'
+import { handler } from '../utils/handlers'
 
-export const DISPATCHERS: DispatcherInfo[] = [
+const DISPATCHERS: DispatcherInfo[] = [
   {
     address: process.env.DISPATCHER_ADDRESS_OPTIMISM!.toLowerCase(),
     clientName: 'optimism-proofs-1',
@@ -24,24 +21,13 @@ export const DISPATCHERS: DispatcherInfo[] = [
   }
 ]
 
-export const processor = new EvmBatchProcessor()
-  // .setGateway(process.env.OPTIMISM_GATEWAY!)
+const processor = IbcProcessor()
   .setRpcEndpoint({
     url: process.env.OPTIMISM_RPC!,
     rateLimit: Number(process.env.RPC_RATE_LIMIT!)
   })
-  .setFinalityConfirmation(Number(process.env.FINALITY_CONFIRMATION!))
-  .setFields({
-    log: {
-      transactionHash: true
-    },
-    transaction: {
-      chainId: true,
-      gas: true,
-    }
-  })
   .setBlockRange({
-    from: 11661442
+    from: 11662566
     // from: Math.min(
     //   Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK!),
     //   Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK!)
@@ -52,8 +38,9 @@ export const processor = new EvmBatchProcessor()
     topic0: topics
   })
 
-export type Fields = EvmBatchProcessorFields<typeof processor>
-export type Context = DataHandlerContext<Store, Fields>
-export type Block = BlockHeader<Fields>
-export type Log = _Log<Fields>
-export type Transaction = _Transaction<Fields>
+processor.run(new TypeormDatabase({
+  supportHotBlocks: true,
+  stateSchema: 'optimism_processor'}),
+async (ctx) => {
+  await handler(ctx, DISPATCHERS)
+})
