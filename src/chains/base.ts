@@ -22,20 +22,22 @@ const DISPATCHERS: DispatcherInfo[] = [
 ]
 
 const processor = IbcProcessor()
+  .setGateway(process.env.BASE_GATEWAY!)
   .setRpcEndpoint({
     url: process.env.BASE_RPC!,
     rateLimit: Number(process.env.RPC_RATE_LIMIT!)
   })
   .setBlockRange({
-    from: 8261761
-    // from: Math.min(
-    //   Number(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK!),
-    //   Number(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT_START_BLOCK!)
-    // )
+    // from: 9676707
+    from: Math.min(
+      Number(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK!),
+      Number(process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT_START_BLOCK!)
+    )
   })
   .addLog({
     address: [...DISPATCHERS.map(d => d.address)],
-    topic0: topics
+    topic0: topics,
+    transaction: true
   })
 
 processor.run(new TypeormDatabase({

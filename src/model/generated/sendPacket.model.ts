@@ -34,8 +34,8 @@ export class SendPacket {
     @BigIntColumn_({nullable: false})
     timeoutTimestamp!: bigint
 
-    @IntColumn_({nullable: false})
-    blockNumber!: number
+    @BigIntColumn_({nullable: false})
+    blockNumber!: bigint
 
     @BigIntColumn_({nullable: false})
     blockTimestamp!: bigint
@@ -46,8 +46,8 @@ export class SendPacket {
     @IntColumn_({nullable: false})
     chainId!: number
 
-    @BigIntColumn_({nullable: false})
-    gas!: bigint
+    @BigIntColumn_({nullable: true})
+    gas!: bigint | undefined | null
 
     @BigIntColumn_({nullable: true})
     maxFeePerGas!: bigint | undefined | null

@@ -1,9 +1,8 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_, BooleanColumn as BooleanColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
-import {Packet} from "./packet.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_} from "@subsquid/typeorm-store"
 
 @Entity_()
-export class WriteAckPacket {
-    constructor(props?: Partial<WriteAckPacket>) {
+export class WriteTimeoutPacket {
+    constructor(props?: Partial<WriteTimeoutPacket>) {
         Object.assign(this, props)
     }
 
@@ -28,11 +27,14 @@ export class WriteAckPacket {
     @BigIntColumn_({nullable: false})
     sequence!: bigint
 
-    @BooleanColumn_({nullable: false})
-    ackPacketSuccess!: boolean
+    @BigIntColumn_({nullable: false})
+    timeoutHeightRevisionNumber!: bigint
 
-    @StringColumn_({nullable: false})
-    ackPacketData!: string
+    @BigIntColumn_({nullable: false})
+    timeoutHeightRevisionHeight!: bigint
+
+    @BigIntColumn_({nullable: false})
+    timeoutTimestamp!: bigint
 
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
@@ -57,7 +59,4 @@ export class WriteAckPacket {
 
     @StringColumn_({nullable: false})
     from!: string
-
-    @OneToOne_(() => Packet, e => e.writeAckPacket)
-    packet!: Packet | undefined | null
 }

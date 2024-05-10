@@ -26,11 +26,11 @@ type SendPacket @entity {
   packet: String!
   sequence: BigInt!
   timeoutTimestamp: BigInt!
-  blockNumber: Int!
+  blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt!
+  gas: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
@@ -45,11 +45,11 @@ type RecvPacket @entity {
   destPortAddress: String!
   destChannelId: String!
   sequence: BigInt!
-  blockNumber: Int!
+  blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt!
+  gas: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
@@ -66,11 +66,11 @@ type WriteAckPacket @entity {
   sequence: BigInt!
   ackPacketSuccess: Boolean!
   ackPacketData: String!
-  blockNumber: Int!
+  blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt!
+  gas: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
@@ -85,13 +85,52 @@ type Acknowledgement @entity {
   sourcePortAddress: String!
   sourceChannelId: String!
   sequence: BigInt!
-  blockNumber: Int!
+  blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt!
+  gas: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
   packet: Packet @derivedFrom(field: "ackPacket")
+}
+
+type Timeout @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  sourcePortAddress: String!
+  sourceChannelId: String!
+  sequence: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+}
+
+type WriteTimeoutPacket @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  writerPortAddress: String!
+  writerChannelId: String!
+  sequence: BigInt!
+  timeoutHeightRevisionNumber: BigInt!
+  timeoutHeightRevisionHeight: BigInt!
+  timeoutTimestamp: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
 }

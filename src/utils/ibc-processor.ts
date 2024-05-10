@@ -8,12 +8,22 @@ export function IbcProcessor() {
   return new EvmBatchProcessor()
     .setFinalityConfirmation(Number(process.env.FINALITY_CONFIRMATION!))
     .setFields({
+      block: {
+        timestamp: true
+      },
       log: {
+        transaction: true,
         transactionHash: true
       },
       transaction: {
         chainId: true,
         gas: true,
+        gasPrice: true,
+        maxFeePerGas: true,
+        maxPriorityFeePerGas: true,
+        gasUsed: true,
+        cumulativeGasUsed: true,
+        from: true
       }
     })
 }
