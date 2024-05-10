@@ -1,3 +1,4 @@
+# Packets
 type Packet @entity {
   id: ID!
   sendPacket: SendPacket @unique
@@ -139,6 +140,148 @@ type WriteTimeoutPacket @entity {
   timeoutHeightRevisionNumber: BigInt!
   timeoutHeightRevisionHeight: BigInt!
   timeoutTimestamp: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+}
+
+
+# Channels
+type Channel @entity{
+  id: ID!
+  channelId: String!
+  portId: String!
+  counterpartyPortId: String!
+  counterpartyChannelId: String!
+  version: String!
+  ordering: Int!
+  connectionHops: [String!]!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  state: ChannelStates!
+  channelOpenInit: ChannelOpenInit @unique
+  channelOpenTry: ChannelOpenTry @unique
+  channelOpenAck: ChannelOpenAck @unique
+  channelOpenConfirm: ChannelOpenConfirm @unique
+  closeIbcChannel: CloseIbcChannel @unique
+
+  initToTryTime: Int
+  initToAckTime: Int
+  initToConfirmTime: Int
+  initToTryPolymerGas: Int
+  initToAckPolymerGas: Int
+  initToConfirmPolymerGas: Int
+}
+
+enum ChannelStates {
+  INIT
+  TRY
+  OPEN
+  CLOSED
+}
+
+type ChannelOpenInit @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  portId: String!
+  channelId: String!
+  portAddress: String!
+  version: String!
+  ordering: Int!
+  feeEnabled: Boolean!
+  connectionHops: [String!]!
+  counterpartyPortId: String!
+  counterpartyChannelId: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  from: String!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+}
+
+type ChannelOpenTry @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  portId: String!
+  channelId: String!
+  portAddress: String!
+  version: String!
+  ordering: Int!
+  feeEnabled: Boolean!
+  connectionHops: [String!]!
+  counterpartyPortId: String!
+  counterpartyChannelId: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+}
+
+type ChannelOpenAck @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  portId: String!
+  channelId: String!
+  portAddress: String!
+  counterpartyPortId: String!
+  counterpartyChannelId: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+}
+
+type ChannelOpenConfirm @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  portId: String!
+  channelId: String!
+  portAddress: String!
+  counterpartyPortId: String!
+  counterpartyChannelId: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: String!
+  chainId: Int!
+  gas: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
+  from: String!
+}
+
+type CloseIbcChannel @entity {
+  id: ID!
+  dispatcherAddress: String!
+  dispatcherType: String!
+  dispatcherClientName: String!
+  portAddress: String!
+  portId: String!
+  channelId: String!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: String!

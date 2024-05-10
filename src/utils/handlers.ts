@@ -1,9 +1,16 @@
 import * as models from '../model'
 import * as dispatcher from '../abi/dispatcher'
-import { DispatcherInfo } from './types'
 import { topics } from './topics'
-import { Context, Log, Block } from './types'
 import { ethers } from 'ethers'
+import {
+  Context,
+  Log,
+  Block,
+  DispatcherInfo
+} from './types'
+import {
+  handleChannelOpenInit
+} from '../handlers/channels'
 
 function handleSendPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -241,30 +248,6 @@ async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Context) {
   await ctx.store.upsert(packet)
 }
 
-// function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.channelOpenI {
-//   let event = dispatcher.events.ChannelOpenInit.decode(log);
-// 
-//   const channelOpenInit = new models.ChannelOpenInit({
-//     id: log.id,
-//     dispatcherAddress: log.address,
-//     dispatcherType: dispatcherInfo.type,
-//     dispatcherClientName: dispatcherInfo.clientName,
-//     portId,
-//     channelId,
-//     counterpartyPortId: event.counterpartyPortId,
-//     counterpartyChannelId: event.counterpartyChannelId,
-//     connectionHops: event.connectionHops,
-//     portVersion: event.portVersion,
-//     signer: log.transaction?.from || '',
-//     blockNumber: BigInt(block.height),
-//     blockTimestamp: BigInt(log.block.timestamp),
-//     transactionHash: log.transactionHash,
-//     chainId: log.transaction?.chainId || 0
-//   });
-// 
-//   return channelOpenInit;
-// }
-
 export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
   for (let block of ctx.blocks) {
@@ -304,6 +287,10 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
         }
 
         // Channel events
+        else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
+          const channelOpenInit = handleChannelOpenInit(block.header, log, dispatcherInfo)
+          await ctx.store.upsert(channelOpenInit)
+        }
 
       }
     }
