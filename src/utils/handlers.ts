@@ -182,6 +182,89 @@ function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo: Dispat
   return writeTimeoutPacket;
 }
 
+async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context) {
+  let srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
+  let key = `${srcPortId}-${sendPacket.sourceChannelId}-${sendPacket.sequence}`;
+  let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
+  let state = existingPacket ? existingPacket.state : models.PacketStates.SENT
+
+  let sendToRecvTime = null
+  if (sendPacket.blockTimestamp && existingPacket?.recvPacket?.blockTimestamp && !existingPacket?.sendToRecvTime) {
+    sendToRecvTime = existingPacket.recvPacket.blockTimestamp - sendPacket.blockTimestamp
+  }
+
+  let sendToRecvGas = null
+  if (sendPacket.gas && existingPacket?.recvPacket?.gas && !existingPacket?.sendToRecvGas) {
+    sendToRecvGas = sendPacket.gas + existingPacket.recvPacket.gas
+  }
+
+  // TODO: add dest chain via channel
+  const packet = new models.Packet({
+    id: key,
+    state: state,
+    sendPacket: sendPacket,
+    sendTx: sendPacket.transactionHash,
+    sourceChain: sendPacket.dispatcherClientName,
+    sendBlockTimestamp: sendPacket.blockTimestamp,
+    sendToRecvTime,
+    sendToRecvGas: sendToRecvGas ? BigInt(sendToRecvGas) : null
+  });
+  
+  await ctx.store.upsert(packet)
+}
+
+async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Context) {
+  let srcPortId = `polyibc.${ackPacket.dispatcherClientName}.${ackPacket.sourcePortAddress.slice(2)}`;
+  let key = `${srcPortId}-${ackPacket.sourceChannelId}-${ackPacket.sequence}`;
+  let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
+  let state = existingPacket ? existingPacket.state : models.PacketStates.ACK
+
+  let sendToAckTime = null
+  if (ackPacket.blockTimestamp && existingPacket?.sendBlockTimestamp) {
+    sendToAckTime = ackPacket.blockTimestamp - existingPacket.sendBlockTimestamp
+  }
+
+  let sendToAckGas = null
+  if (ackPacket.gas && existingPacket?.sendPacket?.gas && existingPacket?.recvPacket?.gas && !existingPacket?.sendToAckGas) {
+    sendToAckGas = ackPacket.gas + existingPacket.sendPacket.gas + existingPacket.recvPacket.gas
+  }
+
+  const packet = new models.Packet({
+    id: key,
+    state: state,
+    ackPacket: ackPacket,
+    ackTx: ackPacket.transactionHash,
+    sendToAckTime,
+    sendToAckGas: sendToAckGas ? BigInt(sendToAckGas) : null
+  });
+
+  await ctx.store.upsert(packet)
+}
+
+// function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.channelOpenI {
+//   let event = dispatcher.events.ChannelOpenInit.decode(log);
+// 
+//   const channelOpenInit = new models.ChannelOpenInit({
+//     id: log.id,
+//     dispatcherAddress: log.address,
+//     dispatcherType: dispatcherInfo.type,
+//     dispatcherClientName: dispatcherInfo.clientName,
+//     portId,
+//     channelId,
+//     counterpartyPortId: event.counterpartyPortId,
+//     counterpartyChannelId: event.counterpartyChannelId,
+//     connectionHops: event.connectionHops,
+//     portVersion: event.portVersion,
+//     signer: log.transaction?.from || '',
+//     blockNumber: BigInt(block.height),
+//     blockTimestamp: BigInt(log.block.timestamp),
+//     transactionHash: log.transactionHash,
+//     chainId: log.transaction?.chainId || 0
+//   });
+// 
+//   return channelOpenInit;
+// }
+
 export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
   for (let block of ctx.blocks) {
@@ -192,9 +275,11 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
         const currTopic = log.topics[0]
         if (!topics.includes(currTopic)) continue
 
+        // Packet events
         if (currTopic === dispatcher.events.SendPacket.topic) {
           const sendPacket = handleSendPacket(block.header, log, dispatcherInfo)
           await ctx.store.upsert(sendPacket)
+          await sendPacketHook(sendPacket, ctx)
         }
         else if (currTopic === dispatcher.events.RecvPacket.topic) {
           const recvPacket = handleRecvPacket(block.header, log, dispatcherInfo)
@@ -207,6 +292,7 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
         else if (currTopic === dispatcher.events.Acknowledgement.topic) {
           const acknowledgement = handleAcknowledgement(block.header, log, dispatcherInfo)
           await ctx.store.upsert(acknowledgement)
+          await ackPacketHook(acknowledgement, ctx)
         }
         else if (currTopic === dispatcher.events.Timeout.topic) {
           const timeout = handleTimeout(block.header, log, dispatcherInfo)
@@ -216,6 +302,8 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
           const writeTimeoutPacket = handleWriteTimeoutPacket(block.header, log, dispatcherInfo)
           await ctx.store.upsert(writeTimeoutPacket)
         }
+
+        // Channel events
 
       }
     }

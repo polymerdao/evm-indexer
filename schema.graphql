@@ -1,10 +1,24 @@
 type Packet @entity {
   id: ID!
-  state: PacketStates!
   sendPacket: SendPacket @unique
   recvPacket: RecvPacket @unique
   writeAckPacket: WriteAckPacket @unique
   ackPacket: Acknowledgement @unique
+  state: PacketStates!
+
+  sourceChain: String
+  destChain: String
+  sendBlockTimestamp: BigInt
+
+  sendTx: String
+  recvTx: String
+  writeAckTx: String
+  ackTx: String
+
+  sendToRecvTime: BigInt
+  sendToRecvGas: BigInt
+  sendToAckTime: BigInt
+  sendToAckGas: BigInt
 }
 
 enum PacketStates {
