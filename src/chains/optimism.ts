@@ -6,7 +6,7 @@ import { TypeormDatabase } from '@subsquid/typeorm-store'
 import { DispatcherInfo } from '../utils/types'
 import { IbcProcessor } from '../utils/ibc-processor'
 import { topics } from '../utils/topics'
-import { handler } from '../utils/handlers'
+import { handler } from '../handlers'
 
 const DISPATCHERS: DispatcherInfo[] = [
   {

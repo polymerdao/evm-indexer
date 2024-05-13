@@ -165,6 +165,7 @@ type Channel @entity{
   blockTimestamp: BigInt!
   transactionHash: String!
   state: ChannelStates!
+
   channelOpenInit: ChannelOpenInit @unique
   channelOpenTry: ChannelOpenTry @unique
   channelOpenAck: ChannelOpenAck @unique
