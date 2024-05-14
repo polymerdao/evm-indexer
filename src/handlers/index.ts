@@ -23,6 +23,41 @@ import {
   ackChannelHook,
   confirmChannelHook
 } from './channels'
+import { Stat } from "../model";
+
+export enum StatName {
+  SendPackets = 'SendPackets',
+  RecvPackets = 'RecvPackets',
+  AckPackets = 'AckPackets',
+  WriteAckPacket = 'WriteAckPacket',
+  WriteTimeoutPacket = 'WriteTimeoutPacket',
+  Timeout = 'Timeout',
+  OpenIBCChannel = 'OpenIBCChannel',
+  CloseIBCChannel = 'CloseIBCChannel',
+  ConnectIbcChannel = 'ConnectIbcChannel',
+}
+
+async function updateStats(ctx: Context, statName: StatName, val: number = 1, chainId?: number) {
+  if (val == 0) {
+    return
+  }
+
+  const id = `${statName}:${chainId}`
+
+  const stat = await ctx.store.findOneBy(Stat, {id})
+  if (!stat) {
+    await ctx.store.insert(new Stat({
+      id: id,
+      name: statName,
+      val: 1,
+      chainId: chainId,
+    }))
+  } else {
+    stat.val += val
+    await ctx.store.upsert(stat)
+  }
+}
+
 
 export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
