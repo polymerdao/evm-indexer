@@ -292,3 +292,10 @@ type CloseIbcChannel @entity {
   maxPriorityFeePerGas: BigInt
   from: String!
 }
+
+type Stat @entity {
+  id: ID!
+  name: String!
+  val: Int!
+  chainId: Int!
+}
