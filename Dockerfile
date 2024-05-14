@@ -29,6 +29,7 @@ ADD package.json .
 ADD package-lock.json .
 
 RUN npm ci --production
+RUN npm install typescipt
 
 FROM node AS squid
 
