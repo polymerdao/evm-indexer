@@ -134,19 +134,15 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
         else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
           const channelOpenInit = handleChannelOpenInit(block.header, log, dispatcherInfo)
           entities.openInitIbcChannels.push(channelOpenInit)
-          await initChannelHook(channelOpenInit, ctx)
         } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
           const channelOpenTry = handleChannelOpenTry(block.header, log, dispatcherInfo)
           entities.openTryIbcChannels.push(channelOpenTry)
-          // await tryChannelHook(channelOpenTry, ctx)
         } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
           const channelOpenAck = handleChannelOpenAck(block.header, log, dispatcherInfo)
           entities.openAckIbcChannels.push(channelOpenAck)
-          // await ackChannelHook(channelOpenAck, ctx)
         } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
           const ChannelOpenConfirm = handleChannelOpenConfirm(block.header, log, dispatcherInfo)
           entities.openConfirmIbcChannels.push(ChannelOpenConfirm)
-          // await confirmChannelHook(ChannelOpenConfirm, ctx)
         }
       }
     }
@@ -155,10 +151,26 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
   await insertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities)
+  await postBlockPacketHook(ctx, entities)
   await updateAllStats(ctx, entities, chainId);
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
+  for (let channelOpenInit of entities.openInitIbcChannels) {
+    await initChannelHook(channelOpenInit, ctx)
+  }
+  for (let channelOpenTry of entities.openTryIbcChannels) {
+    await tryChannelHook(channelOpenTry, ctx)
+  }
+  for (let channelOpenAck of entities.openAckIbcChannels) {
+    await ackChannelHook(channelOpenAck, ctx)
+  }
+  for (let channelOpenConfirm of entities.openConfirmIbcChannels) {
+    await confirmChannelHook(channelOpenConfirm, ctx)
+  }
+}
+
+export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   for (let sendPacket of entities.sendPackets) {
     await sendPacketHook(sendPacket, ctx)
   }
