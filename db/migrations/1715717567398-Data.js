@@ -1,5 +1,5 @@
-module.exports = class Data1715637533852 {
-    name = 'Data1715637533852'
+module.exports = class Data1715717567398 {
+    name = 'Data1715717567398'
 
     async up(db) {
         await db.query(`CREATE TABLE "send_packet" ("id" character varying NOT NULL, "dispatcher_address" text NOT NULL, "dispatcher_type" text NOT NULL, "dispatcher_client_name" text NOT NULL, "source_port_address" text NOT NULL, "source_channel_id" text NOT NULL, "packet" text NOT NULL, "sequence" numeric NOT NULL, "timeout_timestamp" numeric NOT NULL, "block_number" numeric NOT NULL, "block_timestamp" numeric NOT NULL, "transaction_hash" text NOT NULL, "chain_id" integer NOT NULL, "gas" numeric, "max_fee_per_gas" numeric, "max_priority_fee_per_gas" numeric, "from" text NOT NULL, CONSTRAINT "PK_bc0d01e2854533c77c8b5e6260a" PRIMARY KEY ("id"))`)
@@ -24,6 +24,7 @@ module.exports = class Data1715637533852 {
         await db.query(`CREATE UNIQUE INDEX "IDX_fd7283007154f3bce9c47003db" ON "channel" ("channel_open_ack_id") `)
         await db.query(`CREATE UNIQUE INDEX "IDX_352367a7650dcc7360a8f57bc6" ON "channel" ("channel_open_confirm_id") `)
         await db.query(`CREATE UNIQUE INDEX "IDX_c0910695f51f7f856ed32a6fba" ON "channel" ("close_ibc_channel_id") `)
+        await db.query(`CREATE TABLE "stat" ("id" character varying NOT NULL, "name" text NOT NULL, "val" integer NOT NULL, "chain_id" integer NOT NULL, CONSTRAINT "PK_132de903d366f4c06cd586c43c0" PRIMARY KEY ("id"))`)
         await db.query(`ALTER TABLE "packet" ADD CONSTRAINT "FK_2f849cd746e0708773d46af527c" FOREIGN KEY ("send_packet_id") REFERENCES "send_packet"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "packet" ADD CONSTRAINT "FK_3aed1702c2c27f733c1c3c04601" FOREIGN KEY ("recv_packet_id") REFERENCES "recv_packet"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
         await db.query(`ALTER TABLE "packet" ADD CONSTRAINT "FK_08ed04d8e5b3a07dbc6468b7bcb" FOREIGN KEY ("write_ack_packet_id") REFERENCES "write_ack_packet"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`)
@@ -58,6 +59,7 @@ module.exports = class Data1715637533852 {
         await db.query(`DROP INDEX "public"."IDX_fd7283007154f3bce9c47003db"`)
         await db.query(`DROP INDEX "public"."IDX_352367a7650dcc7360a8f57bc6"`)
         await db.query(`DROP INDEX "public"."IDX_c0910695f51f7f856ed32a6fba"`)
+        await db.query(`DROP TABLE "stat"`)
         await db.query(`ALTER TABLE "packet" DROP CONSTRAINT "FK_2f849cd746e0708773d46af527c"`)
         await db.query(`ALTER TABLE "packet" DROP CONSTRAINT "FK_3aed1702c2c27f733c1c3c04601"`)
         await db.query(`ALTER TABLE "packet" DROP CONSTRAINT "FK_08ed04d8e5b3a07dbc6468b7bcb"`)

@@ -108,17 +108,17 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
         else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
           const channelOpenTry = handleChannelOpenTry(block.header, log, dispatcherInfo)
           await ctx.store.upsert(channelOpenTry)
-          // await tryChannelHook(channelOpenTry, ctx)
+          await tryChannelHook(channelOpenTry, ctx)
         }
         else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
           const channelOpenAck = handleChannelOpenAck(block.header, log, dispatcherInfo)
           await ctx.store.upsert(channelOpenAck)
-          // await ackChannelHook(channelOpenAck, ctx)
+          await ackChannelHook(channelOpenAck, ctx)
         }
         else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
           const ChannelOpenConfirm = handleChannelOpenConfirm(block.header, log, dispatcherInfo)
           await ctx.store.upsert(ChannelOpenConfirm)
-          // await confirmChannelHook(ChannelOpenConfirm, ctx)
+          await confirmChannelHook(ChannelOpenConfirm, ctx)
         }
       }
     }

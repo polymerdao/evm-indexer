@@ -75,7 +75,6 @@ export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: Dis
   let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
   let channelId = ethers.decodeBytes32String(event.channelId);
 
-  // TODO: Find counterPartyChannelId and counterPartyPortId via channelId and portId
   const channelOpenAck = new models.ChannelOpenAck({
     id: log.id,
     dispatcherAddress: log.address,
@@ -130,7 +129,7 @@ export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo:
 }
 
 export async function initChannelHook(channelOpenInit: models.ChannelOpenInit, ctx: Context) {
-  const packet = new models.Channel({
+  const channel = new models.Channel({
     id: channelOpenInit.id,
     portId: channelOpenInit.portId,
     channelId: channelOpenInit.channelId,
@@ -146,37 +145,74 @@ export async function initChannelHook(channelOpenInit: models.ChannelOpenInit, c
     channelOpenInit
   });
 
-  await ctx.store.upsert(packet)
+  await ctx.store.upsert(channel)
 }
 
 export async function tryChannelHook(channelOpenTry: models.ChannelOpenTry, ctx: Context) {
-  const existingChannel = await ctx.store.findOne(models.Channel, {where: {channelId: channelOpenTry.channelId }})
+  const counterPartyChannel = await ctx.store.findOne(models.Channel, {where: {
+    portId: channelOpenTry.counterpartyPortId,
+    channelId: ''
+  }})
+  if (counterPartyChannel) {
+    counterPartyChannel.channelId = channelOpenTry.counterpartyChannelId
+    await ctx.store.upsert(counterPartyChannel)
+  }
 
-  const packet = new models.Channel({
+  const channel = new models.Channel({
     id: channelOpenTry.id,
     portId: channelOpenTry.portId,
     channelId: channelOpenTry.channelId,
+    connectionHops: channelOpenTry.connectionHops,
+    version: channelOpenTry.version,
+    ordering: channelOpenTry.ordering,
+    counterpartyPortId: channelOpenTry.counterpartyPortId,
+    counterpartyChannelId: channelOpenTry.counterpartyChannelId,
+    blockNumber: channelOpenTry.blockNumber,
+    blockTimestamp: channelOpenTry.blockTimestamp,
+    transactionHash: channelOpenTry.transactionHash,
+    state: models.ChannelStates.TRY,
+    channelOpenTry
   });
   
-  await ctx.store.upsert(packet)
+  await ctx.store.upsert(channel)
 }
 
 export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx: Context) {
-  const packet = new models.Channel({
-    id: channelOpenAck.id,
-    portId: channelOpenAck.portId,
-    channelId: channelOpenAck.channelId,
-  });
-  
-  await ctx.store.upsert(packet)
+  const channel = await ctx.store.findOne(models.Channel, {where: { channelId: channelOpenAck.channelId }})
+  if (channel) {
+    channel.state = models.ChannelStates.OPEN
+    channel.channelOpenAck = channelOpenAck
+    channel.initToAckTime = Number(channelOpenAck.blockTimestamp) - Number(channel.channelOpenInit?.blockTimestamp)
+    channel.initToAckPolymerGas = Number(channelOpenAck.gas) + Number(channel.channelOpenInit?.gas)
+
+    if (channel.channelOpenInit) {
+      channel.initToConfirmTime = Number(channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp)
+      if (channel.channelOpenInit.gas && channelOpenAck.gas) {
+        channel.initToConfirmPolymerGas = Number(channelOpenAck.gas + channel.channelOpenInit.gas)
+      }
+    }
+
+    await ctx.store.upsert(channel)
+  }
 }
 
 export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenConfirm, ctx: Context) {
-  const packet = new models.Channel({
-    id: channelOpenConfirm.id,
+  const channel = await ctx.store.findOne(models.Channel, {where: {
     portId: channelOpenConfirm.portId,
-    channelId: channelOpenConfirm.channelId,
-  });
-  
-  await ctx.store.upsert(packet)
+    channelId: ''
+  }})
+  if (channel) {
+    channel.channelId = channelOpenConfirm.channelId
+    channel.state = models.ChannelStates.OPEN
+    channel.channelOpenConfirm = channelOpenConfirm
+
+    if (channel.channelOpenInit) {
+      channel.initToConfirmTime = Number(channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp)
+      if (channel.channelOpenInit.gas && channelOpenConfirm.gas) {
+        channel.initToConfirmPolymerGas = Number(channelOpenConfirm.gas + channel.channelOpenInit.gas)
+      }
+    }
+
+    await ctx.store.upsert(channel)
+  }
 }
