@@ -2,29 +2,34 @@ import * as dispatcher from '../abi/dispatcher'
 import { topics } from '../utils/topics'
 import { Context, DispatcherInfo } from '../utils/types'
 import {
-  handleSendPacket,
-  handleRecvPacket,
-  handleWriteAckPacket,
+  ackPacketHook,
   handleAcknowledgement,
+  handleRecvPacket,
+  handleSendPacket,
   handleTimeout,
+  handleWriteAckPacket,
   handleWriteTimeoutPacket,
-  sendPacketHook,
   recvPacketHook,
-  writeAckPacketHook,
-  ackPacketHook
+  sendPacketHook,
+  writeAckPacketHook
 } from './packets'
 import {
-  handleChannelOpenInit,
-  handleChannelOpenTry,
+  ackChannelHook,
+  confirmChannelHook,
   handleChannelOpenAck,
   handleChannelOpenConfirm,
+  handleChannelOpenInit,
+  handleChannelOpenTry,
   initChannelHook,
-  tryChannelHook,
-  ackChannelHook,
-  confirmChannelHook
+  tryChannelHook
 } from './channels'
 import {
-  Acknowledgement, Channel, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+  Acknowledgement,
+  Channel,
+  ChannelOpenAck,
+  ChannelOpenConfirm,
+  ChannelOpenInit,
+  ChannelOpenTry,
   CloseIbcChannel,
   RecvPacket,
   SendPacket,
@@ -111,42 +116,33 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
         // Packet events
         if (currTopic === dispatcher.events.SendPacket.topic) {
-          const sendPacket = handleSendPacket(block.header, log, dispatcherInfo)
-          entities.sendPackets.push(sendPacket)
+          entities.sendPackets.push(handleSendPacket(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.RecvPacket.topic) {
-          const recvPacket = handleRecvPacket(block.header, log, dispatcherInfo)
-          entities.recvPackets.push(recvPacket)
+          entities.recvPackets.push(handleRecvPacket(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
-          const writeAckPacket = handleWriteAckPacket(block.header, log, dispatcherInfo)
-          entities.writeAckPackets.push(writeAckPacket)
+          entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
-          const acknowledgement = handleAcknowledgement(block.header, log, dispatcherInfo)
-          entities.acknowledgements.push(acknowledgement)
+          entities.acknowledgements.push(handleAcknowledgement(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.Timeout.topic) {
-          const timeout = handleTimeout(block.header, log, dispatcherInfo)
-          entities.timeouts.push(timeout)
+          entities.timeouts.push(handleTimeout(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
-          const writeTimeoutPacket = handleWriteTimeoutPacket(block.header, log, dispatcherInfo)
-          entities.writeTimeoutPackets.push(writeTimeoutPacket)
+          entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, dispatcherInfo))
         }
 
         // Channel events
         else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
-          const channelOpenInit = handleChannelOpenInit(block.header, log, dispatcherInfo)
-          entities.openInitIbcChannels.push(channelOpenInit)
+          entities.openInitIbcChannels.push(handleChannelOpenInit(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
-          const channelOpenTry = handleChannelOpenTry(block.header, log, dispatcherInfo)
-          entities.openTryIbcChannels.push(channelOpenTry)
+          entities.openTryIbcChannels.push(handleChannelOpenTry(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
-          const channelOpenAck = handleChannelOpenAck(block.header, log, dispatcherInfo)
-          entities.openAckIbcChannels.push(channelOpenAck)
+          entities.openAckIbcChannels.push(handleChannelOpenAck(block.header, log, dispatcherInfo))
         } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
-          const ChannelOpenConfirm = handleChannelOpenConfirm(block.header, log, dispatcherInfo)
-          entities.openConfirmIbcChannels.push(ChannelOpenConfirm)
+          entities.openConfirmIbcChannels.push(handleChannelOpenConfirm(block.header, log, dispatcherInfo))
         }
       }
     }
   }
+
   let chainId = Number(await chainIdPromise);
 
   await insertNewEntities(ctx, entities);

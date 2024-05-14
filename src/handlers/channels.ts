@@ -1,6 +1,6 @@
 import * as models from '../model'
 import * as dispatcher from '../abi/dispatcher'
-import { Context, Log, Block, DispatcherInfo } from '../utils/types'
+import { Block, Context, DispatcherInfo, Log } from '../utils/types'
 import { ethers } from 'ethers'
 
 export function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenInit {
@@ -8,7 +8,7 @@ export function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: Di
   let portAddress = event.recevier
   let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
 
-  const channelOpenInit = new models.ChannelOpenInit({
+  return new models.ChannelOpenInit({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -31,8 +31,6 @@ export function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: Di
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas,
   });
-
-  return channelOpenInit;
 }
 
 export function handleChannelOpenTry(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenTry {
@@ -75,7 +73,7 @@ export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: Dis
   let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
   let channelId = ethers.decodeBytes32String(event.channelId);
 
-  const channelOpenAck = new models.ChannelOpenAck({
+  return new models.ChannelOpenAck({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -94,8 +92,6 @@ export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: Dis
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas
   })
-
-  return channelOpenAck
 }
 
 export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenConfirm {
@@ -105,7 +101,7 @@ export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo:
   let channelId = ethers.decodeBytes32String(event.channelId);
 
   // TODO: Find counterPartyChannelId and counterPartyPortId via channelId and portId
-  const ChannelOpenConfirm = new models.ChannelOpenConfirm({
+  return new models.ChannelOpenConfirm({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -124,8 +120,6 @@ export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo:
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas
   })
-
-  return ChannelOpenConfirm
 }
 
 export async function initChannelHook(channelOpenInit: models.ChannelOpenInit, ctx: Context) {

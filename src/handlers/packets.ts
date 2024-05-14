@@ -1,12 +1,7 @@
 import * as models from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
-import {
-  Context,
-  Log,
-  Block,
-  DispatcherInfo
-} from '../utils/types'
+import { Block, Context, DispatcherInfo, Log } from '../utils/types'
 import { logger } from '../utils/logger'
 
 export function handleSendPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.SendPacket {
@@ -17,7 +12,7 @@ export function handleSendPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
-  const sendPacket = new models.SendPacket({
+  return new models.SendPacket({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -36,8 +31,6 @@ export function handleSendPacket(block: Block, log: Log, dispatcherInfo: Dispatc
     maxPriorityFeePerGas,
     from: log.transaction?.from || '',
   })
-
-  return sendPacket
 }
 
 export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.RecvPacket {
@@ -47,7 +40,7 @@ export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
-  const recvPacket = new models.RecvPacket({
+  return new models.RecvPacket({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -64,8 +57,6 @@ export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: Dispatc
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
   })
-
-  return recvPacket
 }
 
 export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.WriteAckPacket {
@@ -76,7 +67,7 @@ export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: Dis
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
-  const writeAckPacket = new models.WriteAckPacket({
+  return new models.WriteAckPacket({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -95,8 +86,6 @@ export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: Dis
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
   });
-
-  return writeAckPacket;
 }
 
 export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.Acknowledgement { 
@@ -106,7 +95,7 @@ export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: Di
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
-  const acknowledgement = new models.Acknowledgement({
+  return new models.Acknowledgement({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -123,8 +112,6 @@ export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: Di
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
   });
-
-  return acknowledgement;
 }
 
 export function handleTimeout(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.Timeout {
@@ -134,7 +121,7 @@ export function handleTimeout(block: Block, log: Log, dispatcherInfo: Dispatcher
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
-  const timeout = new models.Timeout({
+  return new models.Timeout({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -151,8 +138,6 @@ export function handleTimeout(block: Block, log: Log, dispatcherInfo: Dispatcher
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
   });
-
-  return timeout;
 }
 
 export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.WriteTimeoutPacket {
@@ -162,7 +147,7 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo:
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
-  const writeTimeoutPacket = new models.WriteTimeoutPacket({
+  return new models.WriteTimeoutPacket({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
@@ -182,8 +167,6 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo:
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
   });
-
-  return writeTimeoutPacket;
 }
 
 export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context) {
