@@ -69,21 +69,36 @@ async function updateStats(ctx: Context, statName: StatName, val: number = 0, ch
   }
 }
 
+type Entities = {
+  openInitIbcChannels: ChannelOpenInit[],
+  openTryIbcChannels: ChannelOpenTry[],
+  openAckIbcChannels: ChannelOpenAck[],
+  openConfirmIbcChannels: ChannelOpenConfirm[],
+  closeIbcChannels: CloseIbcChannel[],
+  channels: Channel[],
+  sendPackets: SendPacket[],
+  writeAckPackets: WriteAckPacket[],
+  recvPackets: RecvPacket[],
+  acknowledgements: Acknowledgement[],
+  timeouts: Timeout[],
+  writeTimeoutPackets: WriteTimeoutPacket[],
+}
+
 export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
   let chainIdPromise = ctx._chain.client.call("eth_chainId")
-  const entities = {
-    openInitIbcChannels: [] as ChannelOpenInit[],
-    openTryIbcChannels: [] as ChannelOpenTry[],
-    openAckIbcChannels: [] as ChannelOpenAck[],
-    openConfirmIbcChannels: [] as ChannelOpenConfirm[],
-    closeIbcChannels: [] as CloseIbcChannel[],
-    channels: [] as Channel[],
-    sendPackets: [] as SendPacket[],
-    writeAckPackets: [] as WriteAckPacket[],
-    recvPackets: [] as RecvPacket[],
-    acknowledgements: [] as Acknowledgement[],
-    timeouts: [] as Timeout[],
-    writeTimeoutPackets: [] as WriteTimeoutPacket[],
+  const entities: Entities = {
+    openInitIbcChannels: [],
+    openTryIbcChannels: [],
+    openAckIbcChannels: [],
+    openConfirmIbcChannels: [],
+    closeIbcChannels: [],
+    channels: [],
+    sendPackets: [],
+    writeAckPackets: [],
+    recvPackets: [],
+    acknowledgements: [],
+    timeouts: [],
+    writeTimeoutPackets: [],
   };
 
   for (let block of ctx.blocks) {
@@ -98,61 +113,39 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
         if (currTopic === dispatcher.events.SendPacket.topic) {
           const sendPacket = handleSendPacket(block.header, log, dispatcherInfo)
           entities.sendPackets.push(sendPacket)
-          await ctx.store.upsert(sendPacket)
-          await sendPacketHook(sendPacket, ctx)
-        }
-        else if (currTopic === dispatcher.events.RecvPacket.topic) {
+        } else if (currTopic === dispatcher.events.RecvPacket.topic) {
           const recvPacket = handleRecvPacket(block.header, log, dispatcherInfo)
           entities.recvPackets.push(recvPacket)
-          await ctx.store.upsert(recvPacket)
-          await recvPacketHook(recvPacket, ctx)
-        }
-        else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
+        } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
           const writeAckPacket = handleWriteAckPacket(block.header, log, dispatcherInfo)
           entities.writeAckPackets.push(writeAckPacket)
-          await ctx.store.upsert(writeAckPacket)
-          await writeAckPacketHook(writeAckPacket, ctx)
-        }
-        else if (currTopic === dispatcher.events.Acknowledgement.topic) {
+        } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
           const acknowledgement = handleAcknowledgement(block.header, log, dispatcherInfo)
           entities.acknowledgements.push(acknowledgement)
-          await ctx.store.upsert(acknowledgement)
-          await ackPacketHook(acknowledgement, ctx)
-        }
-        else if (currTopic === dispatcher.events.Timeout.topic) {
+        } else if (currTopic === dispatcher.events.Timeout.topic) {
           const timeout = handleTimeout(block.header, log, dispatcherInfo)
           entities.timeouts.push(timeout)
-          await ctx.store.upsert(timeout)
-        }
-        else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
+        } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
           const writeTimeoutPacket = handleWriteTimeoutPacket(block.header, log, dispatcherInfo)
           entities.writeTimeoutPackets.push(writeTimeoutPacket)
-          await ctx.store.upsert(writeTimeoutPacket)
         }
 
         // Channel events
         else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
           const channelOpenInit = handleChannelOpenInit(block.header, log, dispatcherInfo)
           entities.openInitIbcChannels.push(channelOpenInit)
-          await ctx.store.upsert(channelOpenInit)
           await initChannelHook(channelOpenInit, ctx)
-        }
-        else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
+        } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
           const channelOpenTry = handleChannelOpenTry(block.header, log, dispatcherInfo)
           entities.openTryIbcChannels.push(channelOpenTry)
-          await ctx.store.upsert(channelOpenTry)
           // await tryChannelHook(channelOpenTry, ctx)
-        }
-        else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
+        } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
           const channelOpenAck = handleChannelOpenAck(block.header, log, dispatcherInfo)
           entities.openAckIbcChannels.push(channelOpenAck)
-          await ctx.store.upsert(channelOpenAck)
           // await ackChannelHook(channelOpenAck, ctx)
-        }
-        else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
+        } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
           const ChannelOpenConfirm = handleChannelOpenConfirm(block.header, log, dispatcherInfo)
           entities.openConfirmIbcChannels.push(ChannelOpenConfirm)
-          await ctx.store.upsert(ChannelOpenConfirm)
           // await confirmChannelHook(ChannelOpenConfirm, ctx)
         }
       }
@@ -160,15 +153,52 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
   }
   let chainId = Number(await chainIdPromise);
 
-  await updateStats(ctx, StatName.OpenInitIBCChannel, entities.openInitIbcChannels.length, chainId)
-  await updateStats(ctx, StatName.OpenTryIBCChannel, entities.openTryIbcChannels.length, chainId)
-  await updateStats(ctx, StatName.OpenAckIBCChannel, entities.openAckIbcChannels.length, chainId)
-  await updateStats(ctx, StatName.OpenConfirmIBCChannel, entities.openConfirmIbcChannels.length, chainId)
-  await updateStats(ctx, StatName.CloseIBCChannel, entities.closeIbcChannels.length, chainId)
-  await updateStats(ctx, StatName.SendPackets, entities.sendPackets.length, chainId)
-  await updateStats(ctx, StatName.WriteAckPacket, entities.writeAckPackets.length, chainId)
-  await updateStats(ctx, StatName.RecvPackets, entities.recvPackets.length, chainId)
-  await updateStats(ctx, StatName.AckPackets, entities.acknowledgements.length, chainId)
-  await updateStats(ctx, StatName.Timeout, entities.timeouts.length, chainId)
-  await updateStats(ctx, StatName.WriteTimeoutPacket, entities.writeTimeoutPackets.length, chainId)
+  await insertNewEntities(ctx, entities);
+  await postBlockChannelHook(ctx, entities)
+  await updateAllStats(ctx, entities, chainId);
 }
+
+export async function postBlockChannelHook(ctx: Context, entities: Entities) {
+  for (let sendPacket of entities.sendPackets) {
+    await sendPacketHook(sendPacket, ctx)
+  }
+  for (let recvPacket of entities.recvPackets) {
+    await recvPacketHook(recvPacket, ctx)
+  }
+  for (let writeAckPacket of entities.writeAckPackets) {
+    await writeAckPacketHook(writeAckPacket, ctx)
+  }
+  for (let acknowledgement of entities.acknowledgements) {
+    await ackPacketHook(acknowledgement, ctx)
+  }
+}
+
+async function insertNewEntities(ctx: Context, entities: Entities) {
+  await ctx.store.insert(entities.openInitIbcChannels);
+  await ctx.store.insert(entities.openTryIbcChannels);
+  await ctx.store.insert(entities.openAckIbcChannels);
+  await ctx.store.insert(entities.openConfirmIbcChannels);
+  await ctx.store.insert(entities.closeIbcChannels);
+  await ctx.store.insert(entities.channels);
+  await ctx.store.insert(entities.sendPackets);
+  await ctx.store.insert(entities.writeAckPackets);
+  await ctx.store.insert(entities.recvPackets);
+  await ctx.store.insert(entities.acknowledgements);
+  await ctx.store.insert(entities.timeouts);
+  await ctx.store.insert(entities.writeTimeoutPackets);
+}
+
+async function updateAllStats(ctx: Context, entities: Entities, chainId: number) {
+  await updateStats(ctx, StatName.OpenInitIBCChannel, entities.openInitIbcChannels.length, chainId);
+  await updateStats(ctx, StatName.OpenTryIBCChannel, entities.openTryIbcChannels.length, chainId);
+  await updateStats(ctx, StatName.OpenAckIBCChannel, entities.openAckIbcChannels.length, chainId);
+  await updateStats(ctx, StatName.OpenConfirmIBCChannel, entities.openConfirmIbcChannels.length, chainId);
+  await updateStats(ctx, StatName.CloseIBCChannel, entities.closeIbcChannels.length, chainId);
+  await updateStats(ctx, StatName.SendPackets, entities.sendPackets.length, chainId);
+  await updateStats(ctx, StatName.WriteAckPacket, entities.writeAckPackets.length, chainId);
+  await updateStats(ctx, StatName.RecvPackets, entities.recvPackets.length, chainId);
+  await updateStats(ctx, StatName.AckPackets, entities.acknowledgements.length, chainId);
+  await updateStats(ctx, StatName.Timeout, entities.timeouts.length, chainId);
+  await updateStats(ctx, StatName.WriteTimeoutPacket, entities.writeTimeoutPackets.length, chainId);
+}
+
