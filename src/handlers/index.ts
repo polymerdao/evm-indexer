@@ -20,7 +20,7 @@ import {
   handleChannelOpenConfirm,
   handleChannelOpenInit,
   handleChannelOpenTry,
-  initChannelHook,
+  createChannelInInitState,
   tryChannelHook
 } from './channels'
 import {
@@ -38,6 +38,7 @@ import {
   WriteAckPacket,
   WriteTimeoutPacket
 } from "../model";
+import { Entity } from "@subsquid/typeorm-store/lib/store";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -152,12 +153,15 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
-  for (let channelOpenInit of entities.openInitIbcChannels) {
-    await initChannelHook(channelOpenInit, ctx)
-  }
+  let channels = entities.openInitIbcChannels.map((channelOpenInit) => createChannelInInitState(channelOpenInit, ctx));
+  await ctx.store.upsert(channels)
+
+  let openTryEntities: Entity[] = []
   for (let channelOpenTry of entities.openTryIbcChannels) {
-    await tryChannelHook(channelOpenTry, ctx)
+    openTryEntities.push(...(await tryChannelHook(channelOpenTry, ctx)))
   }
+  await ctx.store.upsert(openTryEntities)
+
   for (let channelOpenAck of entities.openAckIbcChannels) {
     await ackChannelHook(channelOpenAck, ctx)
   }
