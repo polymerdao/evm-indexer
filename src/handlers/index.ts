@@ -91,6 +91,8 @@ type Entities = {
   writeTimeoutPackets: WriteTimeoutPacket[],
 }
 
+const portPrefixCache = new Map<string, string>();
+
 export async function handler(ctx: Context) {
   let chainIdPromise = ctx._chain.client.call("eth_chainId")
   const entities: Entities = {
@@ -110,8 +112,13 @@ export async function handler(ctx: Context) {
 
   for (let block of ctx.blocks) {
     for (let log of block.logs) {
-      const contract = new Contract(ctx, block.header, log.address)
-      const portPrefix = String(await contract.portPrefix())
+
+      let portPrefix = portPrefixCache.get(log.address)
+      if (!portPrefix) {
+        const contract = new Contract(ctx, block.header, log.address)
+        portPrefix = String(await contract.portPrefix())
+        portPrefixCache.set(log.address, portPrefix)
+      }
 
       const currTopic = log.topics[0]
       if (!topics.includes(currTopic)) continue
