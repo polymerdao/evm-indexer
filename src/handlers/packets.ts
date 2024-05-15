@@ -196,7 +196,7 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
       })
       destChain = channel.counterpartyPortId.split('.')[1]
     } catch (e) {
-      logger.info("Could not find channel for packet: ", key)
+      logger.info("Could not find channel for packet: " + key)
     }
   }
 
@@ -276,7 +276,7 @@ export async function writeAckPacketHook(writeAckPacket: models.WriteAckPacket, 
     })
     key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${writeAckPacket.sequence}`
   } catch (e) {
-    logger.warn("Could not find channel for writeAckPacket: ", writeAckPacket.transactionHash)
+    logger.warn("Could not find channel for writeAckPacket: " + writeAckPacket.transactionHash)
     return
   }
 
