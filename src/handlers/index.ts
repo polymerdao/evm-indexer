@@ -148,24 +148,35 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
   await insertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities)
-  await postBlockPacketHook(ctx, entities)
+  // await postBlockPacketHook(ctx, entities)
   await updateAllStats(ctx, entities, chainId);
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
-  let channels = entities.openInitIbcChannels.map((channelOpenInit) => createChannelInInitState(channelOpenInit, ctx));
-  await ctx.store.upsert(channels)
+  let channelUpdates: Channel[] = []
+  let initChannels = entities.openInitIbcChannels.map((channelOpenInit) => createChannelInInitState(channelOpenInit, ctx));
+  let openTryChannels = entities.openTryIbcChannels.map((channelOpenTry) => createChannelInTryState(channelOpenTry, ctx));
+  channelUpdates.push(...initChannels, ...openTryChannels);
+  await ctx.store.upsert(channelUpdates)
 
-  channels = entities.openTryIbcChannels.map((channelOpenTry) => createChannelInTryState(channelOpenTry, ctx));
-  await ctx.store.upsert(channels)
-
+  channelUpdates = []
+  let channelEventUpdates: Entity[] = []
   for (let channelOpenAck of entities.openAckIbcChannels) {
-    await ackChannelHook(channelOpenAck, ctx)
+    let {cpChannel, channelOpenInit} = await ackChannelHook(channelOpenAck, ctx)
+    if (cpChannel) {
+      channelUpdates.push(cpChannel)
+    }
+    channelEventUpdates.push(channelOpenInit)
   }
 
+  await ctx.store.upsert(channelUpdates)
+  await ctx.store.upsert(channelEventUpdates)
+
+  channelUpdates = []
   for (let channelOpenConfirm of entities.openConfirmIbcChannels) {
-    await confirmChannelHook(channelOpenConfirm, ctx)
+    channelUpdates.push(...await confirmChannelHook(channelOpenConfirm, ctx))
   }
+  await ctx.store.upsert(channelUpdates)
 }
 
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {

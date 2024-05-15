@@ -24,7 +24,8 @@ export function IbcProcessor() {
         maxPriorityFeePerGas: true,
         gasUsed: true,
         cumulativeGasUsed: true,
-        from: true
+        from: true,
+        type: true,
       }
     })
 }

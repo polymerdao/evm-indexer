@@ -32,7 +32,7 @@ const processor = IbcProcessor()
     from: Math.min(
       Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK!),
       Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_SIMCLIENT_START_BLOCK!)
-    )
+    ),
   })
   .addLog({
     address: [...DISPATCHERS.map(d => d.address)],

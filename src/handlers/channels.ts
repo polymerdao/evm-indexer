@@ -193,7 +193,6 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   if (cpChannel) {
     cpChannel.channelOpenInit = incompleteInitChannel.channelOpenInit
     cpChannel.channelOpenAck = channelOpenAck
-    await ctx.store.upsert(cpChannel)
   }
 
   incompleteInitChannel.channelId = channelId
@@ -205,8 +204,13 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   incompleteInitChannel.channelOpenAck = channelOpenAck
   incompleteInitChannel.initToAckTime = Number(channelOpenAck.blockTimestamp) - Number(incompleteInitChannel.channelOpenInit?.blockTimestamp)
   incompleteInitChannel.initToAckPolymerGas = Number(channelOpenAck.gas) + Number(incompleteInitChannel.channelOpenInit?.gas)
+
   await ctx.store.upsert(incompleteInitChannel)
-  await ctx.store.upsert(incompleteInitChannel.channelOpenInit!)
+
+  return {
+    cpChannel,
+    channelOpenInit: incompleteInitChannel.channelOpenInit!
+  }
 }
 
 export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenConfirm, ctx: Context) {
@@ -229,10 +233,11 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
     relations: {channelOpenInit: true, channelOpenAck: true, channelOpenTry: true, channelOpenConfirm: true}
   })
 
+  let entities: models.Channel[] = []
   if (cpChannel) {
     cpChannel.channelOpenTry = tryChannel.channelOpenTry
     cpChannel.channelOpenConfirm = channelOpenConfirm
-    await ctx.store.upsert(cpChannel)
+    entities.push(cpChannel)
 
     tryChannel.channelOpenInit = cpChannel.channelOpenInit
     tryChannel.channelOpenAck = cpChannel.channelOpenAck
@@ -248,5 +253,6 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
     tryChannel.initToConfirmPolymerGas = Number(channelOpenConfirm.gas + tryChannel.channelOpenInit.gas)
   }
 
-  await ctx.store.upsert(tryChannel)
+  entities.push(tryChannel)
+  return entities
 }
