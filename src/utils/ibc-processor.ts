@@ -16,6 +16,7 @@ export function IbcProcessor() {
         transactionHash: true
       },
       transaction: {
+        input: true,
         chainId: true,
         gas: true,
         gasPrice: true,

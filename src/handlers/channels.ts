@@ -39,18 +39,17 @@ export function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: Di
 export function handleChannelOpenTry(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenTry {
   let event = dispatcher.events.ChannelOpenTry.decode(log);
   let portAddress = event.receiver
-  let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
   let counterpartyPortId = event.counterpartyPortId;
   let counterpartyChannelId = ethers.decodeBytes32String(event.counterpartyChannelId);
+  const txParams = dispatcher.functions.channelOpenTry.decode(log.transaction!.input)
 
-  // TODO: Find channelId via counterpartPortId and counterpartyChannelId
-  const channelOpenTry = new models.ChannelOpenTry({
+  return new models.ChannelOpenTry({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
     dispatcherClientName: dispatcherInfo.clientName,
-    portId,
-    channelId: '',
+    portId: txParams.local.portId,
+    channelId: ethers.decodeBytes32String(txParams.local.channelId),
     portAddress,
     version: event.version,
     ordering: event.ordering,
@@ -67,12 +66,11 @@ export function handleChannelOpenTry(block: Block, log: Log, dispatcherInfo: Dis
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas,
   })
-
-  return channelOpenTry
 }
 
 export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenAck {
   let event = dispatcher.events.ChannelOpenAck.decode(log);
+  const txParams = dispatcher.functions.channelOpenAck.decode(log.transaction!.input)
   let portAddress = event.receiver
   let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
   let channelId = ethers.decodeBytes32String(event.channelId);
@@ -85,8 +83,8 @@ export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: Dis
     portId,
     channelId,
     portAddress,
-    counterpartyPortId: '',
-    counterpartyChannelId: '',
+    counterpartyPortId: txParams.counterparty.portId,
+    counterpartyChannelId: ethers.decodeBytes32String(txParams.counterparty.channelId),
     blockNumber: BigInt(block.height),
     blockTimestamp: BigInt(log.block.timestamp),
     transactionHash: log.transactionHash,
@@ -101,20 +99,18 @@ export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: Dis
 export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenConfirm {
   let event = dispatcher.events.ChannelOpenConfirm.decode(log);
   let portAddress = event.receiver
-  let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
-  let channelId = ethers.decodeBytes32String(event.channelId);
+  const txParams = dispatcher.functions.channelOpenConfirm.decode(log.transaction!.input)
 
-  // TODO: Find counterPartyChannelId and counterPartyPortId via channelId and portId
   return new models.ChannelOpenConfirm({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: dispatcherInfo.type,
     dispatcherClientName: dispatcherInfo.clientName,
-    portId,
-    channelId,
+    portId: txParams.local.portId,
+    channelId: ethers.decodeBytes32String(txParams.local.channelId),
     portAddress,
-    counterpartyPortId: '',
-    counterpartyChannelId: '',
+    counterpartyPortId: txParams.counterparty.portId,
+    counterpartyChannelId: ethers.decodeBytes32String(txParams.counterparty.channelId),
     blockNumber: BigInt(block.height),
     blockTimestamp: BigInt(log.block.timestamp),
     transactionHash: log.transactionHash,
@@ -144,28 +140,11 @@ export function createChannelInInitState(channelOpenInit: models.ChannelOpenInit
   });
 }
 
-export async function tryChannelHook(channelOpenTry: models.ChannelOpenTry, ctx: Context) {
-  const cpChannel = await ctx.store.findOne(models.Channel, {
-    where: {
-      portId: channelOpenTry.counterpartyPortId,
-      channelId: channelOpenTry.counterpartyChannelId,
-      state: In([ChannelStates.OPEN, ChannelStates.INIT])
-    },
-    order: {blockTimestamp: "desc"},
-    relations: {channelOpenInit: true}
-  })
-
-  let entities: Entity[] = []
-
-  if (channelOpenTry.channelId == '') {
-    channelOpenTry.channelId = cpChannel?.counterpartyChannelId || ''
-    entities.push(channelOpenTry)
-  }
-
-  entities.push(new models.Channel({
+export function createChannelInTryState(channelOpenTry: models.ChannelOpenTry, ctx: Context) {
+  return new models.Channel({
     id: channelOpenTry.id,
     portId: channelOpenTry.portId,
-    channelId: cpChannel?.counterpartyChannelId,
+    channelId: channelOpenTry.channelId,
     connectionHops: channelOpenTry.connectionHops,
     version: channelOpenTry.version,
     ordering: channelOpenTry.ordering,
@@ -176,12 +155,12 @@ export async function tryChannelHook(channelOpenTry: models.ChannelOpenTry, ctx:
     transactionHash: channelOpenTry.transactionHash,
     state: models.ChannelStates.TRY,
     channelOpenTry
-  }));
-  return entities;
+  })
 }
 
 export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx: Context) {
-  let portId = `polyibc.${channelOpenAck.dispatcherClientName}.${channelOpenAck.portAddress.slice(2)}`;
+  let portId = channelOpenAck.portId;
+  let channelId = channelOpenAck.channelId;
 
   // update latest INIT state record that have incomplete id
   // NOTE: there is an assumption that the latest INIT event corresponds to the current event which is not 100% correct
@@ -199,49 +178,64 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
     throw new Error(`ChannelOpenInit not found for channel ${incompleteInitChannel.id}`)
   }
 
+  // find counterparty channel
   let cpChannel = await ctx.store.findOne(models.Channel, {
-    where: {counterpartyPortId: portId, counterpartyChannelId: channelOpenAck.channelId}
+    where: {counterpartyPortId: portId, counterpartyChannelId: channelId}
   })
 
-  incompleteInitChannel.channelOpenInit.channelId = channelOpenAck.channelId
+  incompleteInitChannel.channelOpenInit.channelId = channelId
   incompleteInitChannel.initToConfirmTime = Number(channelOpenAck.blockTimestamp - incompleteInitChannel.channelOpenInit.blockTimestamp)
   // TODO: that should be l2 gas, not polymer gas
   // TODO: calculate polymer gas separately
   incompleteInitChannel.initToConfirmPolymerGas = Number(channelOpenAck.gas + incompleteInitChannel.channelOpenInit.gas)
 
   if (cpChannel) {
-    incompleteInitChannel.channelOpenInit!.counterpartyChannelId = cpChannel.channelId
-    incompleteInitChannel.channelOpenInit!.counterpartyPortId = cpChannel.portId
     cpChannel.channelOpenInit = incompleteInitChannel.channelOpenInit
+    cpChannel.channelOpenAck = channelOpenAck
     await ctx.store.upsert(cpChannel)
   }
 
-  await ctx.store.upsert(incompleteInitChannel.channelOpenInit!)
-
-  if (cpChannel) {
-    incompleteInitChannel.counterpartyPortId = cpChannel.portId
-    incompleteInitChannel.counterpartyChannelId = cpChannel.channelId
-  }
-
-  incompleteInitChannel.channelId = channelOpenAck.channelId
+  incompleteInitChannel.channelId = channelId
   incompleteInitChannel.state = models.ChannelStates.OPEN
+  incompleteInitChannel.counterpartyPortId = channelOpenAck.counterpartyPortId
+  incompleteInitChannel.counterpartyChannelId = channelOpenAck.counterpartyChannelId
+  incompleteInitChannel.channelOpenInit!.counterpartyChannelId = channelOpenAck.counterpartyChannelId
+  incompleteInitChannel.channelOpenInit!.counterpartyPortId = channelOpenAck.counterpartyPortId
   incompleteInitChannel.channelOpenAck = channelOpenAck
   incompleteInitChannel.initToAckTime = Number(channelOpenAck.blockTimestamp) - Number(incompleteInitChannel.channelOpenInit?.blockTimestamp)
   incompleteInitChannel.initToAckPolymerGas = Number(channelOpenAck.gas) + Number(incompleteInitChannel.channelOpenInit?.gas)
   await ctx.store.upsert(incompleteInitChannel)
+  await ctx.store.upsert(incompleteInitChannel.channelOpenInit!)
 }
 
 export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenConfirm, ctx: Context) {
+  let portId = channelOpenConfirm.portId;
+  let channelId = channelOpenConfirm.channelId;
+
   // find the earliest channel in TRY state
   const tryChannel = await ctx.store.findOneOrFail(models.Channel, {
     where: {
-      portId: channelOpenConfirm.portId,
-      channelId: channelOpenConfirm.channelId,
+      portId: portId,
+      channelId: channelId,
       state: models.ChannelStates.TRY
     },
     order: {blockTimestamp: "desc"},
     relations: {channelOpenTry: true, channelOpenInit: true}
   })
+
+  let cpChannel = await ctx.store.findOne(models.Channel, {
+    where: {counterpartyPortId: portId, counterpartyChannelId: channelId},
+    relations: {channelOpenInit: true, channelOpenAck: true, channelOpenTry: true, channelOpenConfirm: true}
+  })
+
+  if (cpChannel) {
+    cpChannel.channelOpenTry = tryChannel.channelOpenTry
+    cpChannel.channelOpenConfirm = tryChannel.channelOpenConfirm
+    await ctx.store.upsert(cpChannel)
+
+    tryChannel.channelOpenInit = cpChannel.channelOpenInit
+    tryChannel.channelOpenAck = cpChannel.channelOpenAck
+  }
 
   tryChannel.state = models.ChannelStates.OPEN
   tryChannel.channelOpenConfirm = channelOpenConfirm

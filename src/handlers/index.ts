@@ -21,7 +21,7 @@ import {
   handleChannelOpenInit,
   handleChannelOpenTry,
   createChannelInInitState,
-  tryChannelHook
+  createChannelInTryState
 } from './channels'
 import {
   Acknowledgement,
@@ -156,15 +156,13 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
   let channels = entities.openInitIbcChannels.map((channelOpenInit) => createChannelInInitState(channelOpenInit, ctx));
   await ctx.store.upsert(channels)
 
-  let openTryEntities: Entity[] = []
-  for (let channelOpenTry of entities.openTryIbcChannels) {
-    openTryEntities.push(...(await tryChannelHook(channelOpenTry, ctx)))
-  }
-  await ctx.store.upsert(openTryEntities)
+  channels = entities.openTryIbcChannels.map((channelOpenTry) => createChannelInTryState(channelOpenTry, ctx));
+  await ctx.store.upsert(channels)
 
   for (let channelOpenAck of entities.openAckIbcChannels) {
     await ackChannelHook(channelOpenAck, ctx)
   }
+
   for (let channelOpenConfirm of entities.openConfirmIbcChannels) {
     await confirmChannelHook(channelOpenConfirm, ctx)
   }
