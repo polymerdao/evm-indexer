@@ -39,14 +39,14 @@ export class Timeout {
     @IntColumn_({nullable: false})
     chainId!: number
 
-    @BigIntColumn_({nullable: true})
-    gas!: bigint | undefined | null
+    @BigIntColumn_({nullable: false})
+    gas!: bigint
 
-    @BigIntColumn_({nullable: true})
-    maxFeePerGas!: bigint | undefined | null
+    @BigIntColumn_({nullable: false})
+    maxFeePerGas!: bigint
 
-    @BigIntColumn_({nullable: true})
-    maxPriorityFeePerGas!: bigint | undefined | null
+    @BigIntColumn_({nullable: false})
+    maxPriorityFeePerGas!: bigint
 
     @StringColumn_({nullable: false})
     from!: string

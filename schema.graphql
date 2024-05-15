@@ -45,9 +45,9 @@ type SendPacket @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
   packetRelation: Packet @derivedFrom(field: "sendPacket")
 }
@@ -64,9 +64,9 @@ type RecvPacket @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
   packet: Packet @derivedFrom(field: "recvPacket")
 }
@@ -85,9 +85,9 @@ type WriteAckPacket @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
   packet: Packet @derivedFrom(field: "writeAckPacket")
 }
@@ -104,9 +104,9 @@ type Acknowledgement @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
   packet: Packet @derivedFrom(field: "ackPacket")
 }
@@ -123,9 +123,9 @@ type Timeout @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
 }
 
@@ -144,9 +144,9 @@ type WriteTimeoutPacket @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
 }
 
@@ -206,9 +206,9 @@ type ChannelOpenInit @entity {
   transactionHash: String!
   chainId: Int!
   from: String!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
 }
 
 type ChannelOpenTry @entity {
@@ -229,9 +229,9 @@ type ChannelOpenTry @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
 }
 
@@ -249,9 +249,9 @@ type ChannelOpenAck @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
 }
 
@@ -269,9 +269,9 @@ type ChannelOpenConfirm @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
 }
 
@@ -287,9 +287,9 @@ type CloseIbcChannel @entity {
   blockTimestamp: BigInt!
   transactionHash: String!
   chainId: Int!
-  gas: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
+  gas: BigInt!
+  maxFeePerGas: BigInt!
+  maxPriorityFeePerGas: BigInt!
   from: String!
 }
 
