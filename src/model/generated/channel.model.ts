@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, OneToOne as OneToOne_, Index as Index_, JoinColumn as JoinColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, Index as Index_} from "@subsquid/typeorm-store"
 import {ChannelStates} from "./_channelStates"
 import {ChannelOpenInit} from "./channelOpenInit.model"
 import {ChannelOpenTry} from "./channelOpenTry.model"
@@ -48,29 +48,24 @@ export class Channel {
     @Column_("varchar", {length: 6, nullable: false})
     state!: ChannelStates
 
-    @Index_({unique: true})
-    @OneToOne_(() => ChannelOpenInit, {nullable: true})
-    @JoinColumn_()
+    @Index_()
+    @ManyToOne_(() => ChannelOpenInit, {nullable: true})
     channelOpenInit!: ChannelOpenInit | undefined | null
 
-    @Index_({unique: true})
-    @OneToOne_(() => ChannelOpenTry, {nullable: true})
-    @JoinColumn_()
+    @Index_()
+    @ManyToOne_(() => ChannelOpenTry, {nullable: true})
     channelOpenTry!: ChannelOpenTry | undefined | null
 
-    @Index_({unique: true})
-    @OneToOne_(() => ChannelOpenAck, {nullable: true})
-    @JoinColumn_()
+    @Index_()
+    @ManyToOne_(() => ChannelOpenAck, {nullable: true})
     channelOpenAck!: ChannelOpenAck | undefined | null
 
-    @Index_({unique: true})
-    @OneToOne_(() => ChannelOpenConfirm, {nullable: true})
-    @JoinColumn_()
+    @Index_()
+    @ManyToOne_(() => ChannelOpenConfirm, {nullable: true})
     channelOpenConfirm!: ChannelOpenConfirm | undefined | null
 
-    @Index_({unique: true})
-    @OneToOne_(() => CloseIbcChannel, {nullable: true})
-    @JoinColumn_()
+    @Index_()
+    @ManyToOne_(() => CloseIbcChannel, {nullable: true})
     closeIbcChannel!: CloseIbcChannel | undefined | null
 
     @IntColumn_({nullable: true})

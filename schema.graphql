@@ -166,11 +166,11 @@ type Channel @entity{
   transactionHash: String!
   state: ChannelStates!
 
-  channelOpenInit: ChannelOpenInit @unique
-  channelOpenTry: ChannelOpenTry @unique
-  channelOpenAck: ChannelOpenAck @unique
-  channelOpenConfirm: ChannelOpenConfirm @unique
-  closeIbcChannel: CloseIbcChannel @unique
+  channelOpenInit: ChannelOpenInit @index
+  channelOpenTry: ChannelOpenTry @index
+  channelOpenAck: ChannelOpenAck @index
+  channelOpenConfirm: ChannelOpenConfirm @index
+  closeIbcChannel: CloseIbcChannel @index
 
   initToTryTime: Int
   initToAckTime: Int
