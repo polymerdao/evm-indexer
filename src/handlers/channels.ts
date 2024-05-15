@@ -180,7 +180,8 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
 
   // find counterparty channel
   let cpChannel = await ctx.store.findOne(models.Channel, {
-    where: {counterpartyPortId: portId, counterpartyChannelId: channelId}
+    where: {counterpartyPortId: portId, counterpartyChannelId: channelId},
+    relations: {channelOpenInit: true, channelOpenAck: true}
   })
 
   incompleteInitChannel.channelOpenInit.channelId = channelId
@@ -230,7 +231,7 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
 
   if (cpChannel) {
     cpChannel.channelOpenTry = tryChannel.channelOpenTry
-    cpChannel.channelOpenConfirm = tryChannel.channelOpenConfirm
+    cpChannel.channelOpenConfirm = channelOpenConfirm
     await ctx.store.upsert(cpChannel)
 
     tryChannel.channelOpenInit = cpChannel.channelOpenInit
