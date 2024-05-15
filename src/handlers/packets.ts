@@ -9,8 +9,9 @@ export function handleSendPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId)
   const packetHash = ethers.sha256(event.packet)
   const gas = BigInt(log.transaction!.gas)
-  const maxFeePerGas = BigInt(log.transaction!.maxFeePerGas!)
-  const maxPriorityFeePerGas = BigInt(log.transaction!.maxPriorityFeePerGas!)
+  const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
+  const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
+  const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
   return new models.SendPacket({
     id: log.id,
@@ -27,6 +28,7 @@ export function handleSendPacket(block: Block, log: Log, dispatcherInfo: Dispatc
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || '',
@@ -37,8 +39,9 @@ export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   let event = dispatcher.events.RecvPacket.decode(log)
   let destChannelId = ethers.decodeBytes32String(event.destChannelId)
   const gas = BigInt(log.transaction!.gas)
-  const maxFeePerGas = BigInt(log.transaction!.maxFeePerGas!)
-  const maxPriorityFeePerGas = BigInt(log.transaction!.maxPriorityFeePerGas!)
+  const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
+  const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
+  const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
   return new models.RecvPacket({
     id: log.id,
@@ -53,6 +56,7 @@ export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: Dispatc
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
@@ -64,8 +68,9 @@ export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: Dis
   let writerChannelId = ethers.decodeBytes32String(event.writerChannelId);
   const packetHash = ethers.sha256(event.ackPacket.data);
   const gas = BigInt(log.transaction!.gas)
-  const maxFeePerGas = BigInt(log.transaction!.maxFeePerGas!)
-  const maxPriorityFeePerGas = BigInt(log.transaction!.maxPriorityFeePerGas!)
+  const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
+  const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
+  const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
   return new models.WriteAckPacket({
     id: log.id,
@@ -82,6 +87,7 @@ export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: Dis
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
@@ -92,8 +98,9 @@ export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: Di
   let event = dispatcher.events.Acknowledgement.decode(log);
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId);
   const gas = BigInt(log.transaction!.gas)
-  const maxFeePerGas = BigInt(log.transaction!.maxFeePerGas!)
-  const maxPriorityFeePerGas = BigInt(log.transaction!.maxPriorityFeePerGas!)
+  const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
+  const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
+  const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
   return new models.Acknowledgement({
     id: log.id,
@@ -108,6 +115,7 @@ export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: Di
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
@@ -118,8 +126,9 @@ export function handleTimeout(block: Block, log: Log, dispatcherInfo: Dispatcher
   let event = dispatcher.events.Timeout.decode(log);
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId);
   const gas = BigInt(log.transaction!.gas)
-  const maxFeePerGas = BigInt(log.transaction!.maxFeePerGas!)
-  const maxPriorityFeePerGas = BigInt(log.transaction!.maxPriorityFeePerGas!)
+  const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
+  const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
+  const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
   return new models.Timeout({
     id: log.id,
@@ -134,6 +143,7 @@ export function handleTimeout(block: Block, log: Log, dispatcherInfo: Dispatcher
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''
@@ -144,8 +154,9 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo:
   let event = dispatcher.events.WriteTimeoutPacket.decode(log);
   let writerChannelId = ethers.decodeBytes32String(event.writerChannelId);
   const gas = BigInt(log.transaction!.gas)
-  const maxFeePerGas = BigInt(log.transaction!.maxFeePerGas!)
-  const maxPriorityFeePerGas = BigInt(log.transaction!.maxPriorityFeePerGas!)
+  const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
+  const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
+  const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
 
   return new models.WriteTimeoutPacket({
     id: log.id,
@@ -163,6 +174,7 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo:
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || ''

@@ -60,11 +60,11 @@ export class ChannelOpenTry {
     @BigIntColumn_({nullable: false})
     gas!: bigint
 
-    @BigIntColumn_({nullable: false})
-    maxFeePerGas!: bigint
+    @BigIntColumn_({nullable: true})
+    maxFeePerGas!: bigint | undefined | null
 
-    @BigIntColumn_({nullable: false})
-    maxPriorityFeePerGas!: bigint
+    @BigIntColumn_({nullable: true})
+    maxPriorityFeePerGas!: bigint | undefined | null
 
     @StringColumn_({nullable: false})
     from!: string

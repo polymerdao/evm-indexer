@@ -46,8 +46,9 @@ type SendPacket @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
   packetRelation: Packet @derivedFrom(field: "sendPacket")
 }
@@ -65,8 +66,9 @@ type RecvPacket @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
   packet: Packet @derivedFrom(field: "recvPacket")
 }
@@ -86,8 +88,9 @@ type WriteAckPacket @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
   packet: Packet @derivedFrom(field: "writeAckPacket")
 }
@@ -105,8 +108,9 @@ type Acknowledgement @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
   packet: Packet @derivedFrom(field: "ackPacket")
 }
@@ -124,8 +128,9 @@ type Timeout @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
 }
 
@@ -145,8 +150,9 @@ type WriteTimeoutPacket @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
 }
 
@@ -207,8 +213,9 @@ type ChannelOpenInit @entity {
   chainId: Int!
   from: String!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
 }
 
 type ChannelOpenTry @entity {
@@ -230,8 +237,8 @@ type ChannelOpenTry @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
 }
 
@@ -250,8 +257,9 @@ type ChannelOpenAck @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
 }
 
@@ -270,8 +278,9 @@ type ChannelOpenConfirm @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
 }
 
@@ -288,8 +297,9 @@ type CloseIbcChannel @entity {
   transactionHash: String!
   chainId: Int!
   gas: BigInt!
-  maxFeePerGas: BigInt!
-  maxPriorityFeePerGas: BigInt!
+  gasPrice: BigInt
+  maxFeePerGas: BigInt
+  maxPriorityFeePerGas: BigInt
   from: String!
 }
 
