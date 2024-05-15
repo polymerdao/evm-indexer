@@ -18,7 +18,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string): mo
     dispatcherAddress: log.address,
     dispatcherType: getDispatcherType(portPrefix),
     dispatcherClientName: getDispatcherClientName(portPrefix),
-    sourcePortAddress: event.sourcePortAddress,
+    sourcePortAddress: ethers.getAddress(event.sourcePortAddress),
     sourceChannelId,
     packet: packetHash,
     sequence: event.sequence,
