@@ -1,24 +1,11 @@
-import {
-  Log as _Log,
-  Transaction as _Transaction,
-} from '@subsquid/evm-processor'
 import { TypeormDatabase } from '@subsquid/typeorm-store'
-import { DispatcherInfo } from '../utils/types'
 import { IbcProcessor } from '../utils/ibc-processor'
 import { topics } from '../utils/topics'
 import { handler } from '../handlers'
 
-const DISPATCHERS: DispatcherInfo[] = [
-  {
-    address: process.env.DISPATCHER_ADDRESS_BASE!.toLowerCase(),
-    clientName: 'base-proofs-1',
-    type: 'proofs',
-  },
-  {
-    address: process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!.toLowerCase(),
-    clientName: 'base-sim',
-    type: 'sim',
-  }
+const DISPATCHERS: string[] = [
+    process.env.DISPATCHER_ADDRESS_BASE!,
+    process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!,
 ]
 
 const processor = IbcProcessor()
@@ -35,7 +22,7 @@ const processor = IbcProcessor()
     )
   })
   .addLog({
-    address: [...DISPATCHERS.map(d => d.address)],
+    address: DISPATCHERS,
     topic0: topics,
     transaction: true
   })
@@ -44,6 +31,6 @@ processor.run(new TypeormDatabase({
   supportHotBlocks: true,
   stateSchema: 'base_processor'}),
 async (ctx) => {
-  await handler(ctx, DISPATCHERS)
+  await handler(ctx)
 })
   

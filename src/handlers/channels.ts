@@ -1,21 +1,20 @@
 import * as models from '../model'
-import { ChannelStates } from '../model'
+import { ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelStates } from '../model'
 import * as dispatcher from '../abi/dispatcher'
-import { Block, Context, DispatcherInfo, Log } from '../utils/types'
+import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
-import { In } from "typeorm";
-import { Entity } from "@subsquid/typeorm-store/lib/store";
+import { getDispatcherClientName, getDispatcherType } from "./helpers";
 
-export function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenInit {
+export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
   let portAddress = event.recevier
-  let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
+  let portId = `${portPrefix}${portAddress.slice(2)}`
 
   return new models.ChannelOpenInit({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
+    dispatcherType: getDispatcherType(portId),
+    dispatcherClientName: getDispatcherClientName(portId),
     portAddress,
     portId,
     counterpartyPortId: event.counterpartyPortId,
@@ -36,7 +35,7 @@ export function handleChannelOpenInit(block: Block, log: Log, dispatcherInfo: Di
   });
 }
 
-export function handleChannelOpenTry(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenTry {
+export function handleChannelOpenTry(block: Block, log: Log): models.ChannelOpenTry {
   let event = dispatcher.events.ChannelOpenTry.decode(log);
   let portAddress = event.receiver
   let counterpartyPortId = event.counterpartyPortId;
@@ -46,8 +45,8 @@ export function handleChannelOpenTry(block: Block, log: Log, dispatcherInfo: Dis
   return new models.ChannelOpenTry({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
+    dispatcherType: getDispatcherType(txParams.local.portId),
+    dispatcherClientName: getDispatcherClientName(txParams.local.portId),
     portId: txParams.local.portId,
     channelId: ethers.decodeBytes32String(txParams.local.channelId),
     portAddress,
@@ -68,19 +67,18 @@ export function handleChannelOpenTry(block: Block, log: Log, dispatcherInfo: Dis
   })
 }
 
-export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenAck {
+export function handleChannelOpenAck(block: Block, log: Log): ChannelOpenAck {
   let event = dispatcher.events.ChannelOpenAck.decode(log);
   const txParams = dispatcher.functions.channelOpenAck.decode(log.transaction!.input)
   let portAddress = event.receiver
-  let portId = `polyibc.${dispatcherInfo.clientName}.${portAddress.slice(2)}`
   let channelId = ethers.decodeBytes32String(event.channelId);
 
   return new models.ChannelOpenAck({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
-    portId,
+    dispatcherType: getDispatcherType(txParams.local.portId),
+    dispatcherClientName: getDispatcherClientName(txParams.local.portId),
+    portId: txParams.local.portId,
     channelId,
     portAddress,
     counterpartyPortId: txParams.counterparty.portId,
@@ -96,7 +94,7 @@ export function handleChannelOpenAck(block: Block, log: Log, dispatcherInfo: Dis
   })
 }
 
-export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.ChannelOpenConfirm {
+export function handleChannelOpenConfirm(block: Block, log: Log): ChannelOpenConfirm {
   let event = dispatcher.events.ChannelOpenConfirm.decode(log);
   let portAddress = event.receiver
   const txParams = dispatcher.functions.channelOpenConfirm.decode(log.transaction!.input)
@@ -104,8 +102,8 @@ export function handleChannelOpenConfirm(block: Block, log: Log, dispatcherInfo:
   return new models.ChannelOpenConfirm({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
+    dispatcherType: getDispatcherType(txParams.local.portId),
+    dispatcherClientName: getDispatcherClientName(txParams.local.portId),
     portId: txParams.local.portId,
     channelId: ethers.decodeBytes32String(txParams.local.channelId),
     portAddress,

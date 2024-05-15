@@ -1,10 +1,10 @@
 import * as models from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
-import { Block, Context, DispatcherInfo, Log } from '../utils/types'
-import { logger } from '../utils/logger'
+import { Block, Context, Log } from '../utils/types'
+import { getDispatcherClientName, getDispatcherType } from "./helpers";
 
-export function handleSendPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.SendPacket {
+export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId)
   const packetHash = ethers.sha256(event.packet)
@@ -16,8 +16,8 @@ export function handleSendPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   return new models.SendPacket({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
+    dispatcherType: getDispatcherType(portPrefix),
+    dispatcherClientName: getDispatcherClientName(portPrefix),
     sourcePortAddress: event.sourcePortAddress,
     sourceChannelId,
     packet: packetHash,
@@ -35,7 +35,7 @@ export function handleSendPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   })
 }
 
-export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.RecvPacket {
+export function handleRecvPacket(block: Block, log: Log, portPrefix: string): models.RecvPacket {
   let event = dispatcher.events.RecvPacket.decode(log)
   let destChannelId = ethers.decodeBytes32String(event.destChannelId)
   const gas = BigInt(log.transaction!.gas)
@@ -46,9 +46,9 @@ export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   return new models.RecvPacket({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
-    destPortAddress: event.destPortAddress,
+    dispatcherType: getDispatcherType(portPrefix),
+    dispatcherClientName: getDispatcherClientName(portPrefix),
+    destPortAddress: ethers.getAddress(event.destPortAddress),
     destChannelId: destChannelId,
     sequence: event.sequence,
     blockNumber: BigInt(block.height),
@@ -63,7 +63,7 @@ export function handleRecvPacket(block: Block, log: Log, dispatcherInfo: Dispatc
   })
 }
 
-export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.WriteAckPacket {
+export function handleWriteAckPacket(block: Block, log: Log, portPrefix: string): models.WriteAckPacket {
   let event = dispatcher.events.WriteAckPacket.decode(log);
   let writerChannelId = ethers.decodeBytes32String(event.writerChannelId);
   const packetHash = ethers.sha256(event.ackPacket.data);
@@ -75,9 +75,9 @@ export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: Dis
   return new models.WriteAckPacket({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
-    writerPortAddress: event.writerPortAddress,
+    dispatcherType: getDispatcherType(portPrefix),
+    dispatcherClientName: getDispatcherClientName(portPrefix),
+    writerPortAddress: ethers.getAddress(event.writerPortAddress),
     writerChannelId: writerChannelId,
     sequence: event.sequence,
     ackPacketSuccess: event.ackPacket.success,
@@ -94,7 +94,7 @@ export function handleWriteAckPacket(block: Block, log: Log, dispatcherInfo: Dis
   });
 }
 
-export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.Acknowledgement {
+export function handleAcknowledgement(block: Block, log: Log, portPrefix: string): models.Acknowledgement {
   let event = dispatcher.events.Acknowledgement.decode(log);
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId);
   const gas = BigInt(log.transaction!.gas)
@@ -105,9 +105,9 @@ export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: Di
   return new models.Acknowledgement({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
-    sourcePortAddress: event.sourcePortAddress,
+    dispatcherType: getDispatcherType(portPrefix),
+    dispatcherClientName: getDispatcherClientName(portPrefix),
+    sourcePortAddress: ethers.getAddress(event.sourcePortAddress),
     sourceChannelId: sourceChannelId,
     sequence: event.sequence,
     blockNumber: BigInt(block.height),
@@ -122,7 +122,7 @@ export function handleAcknowledgement(block: Block, log: Log, dispatcherInfo: Di
   });
 }
 
-export function handleTimeout(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.Timeout {
+export function handleTimeout(block: Block, log: Log, portPrefix: string): models.Timeout {
   let event = dispatcher.events.Timeout.decode(log);
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId);
   const gas = BigInt(log.transaction!.gas)
@@ -133,9 +133,9 @@ export function handleTimeout(block: Block, log: Log, dispatcherInfo: Dispatcher
   return new models.Timeout({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
-    sourcePortAddress: event.sourcePortAddress,
+    dispatcherType: getDispatcherType(portPrefix),
+    dispatcherClientName: getDispatcherClientName(portPrefix),
+    sourcePortAddress: ethers.getAddress(event.sourcePortAddress),
     sourceChannelId: sourceChannelId,
     sequence: event.sequence,
     blockNumber: BigInt(block.height),
@@ -150,7 +150,7 @@ export function handleTimeout(block: Block, log: Log, dispatcherInfo: Dispatcher
   });
 }
 
-export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo: DispatcherInfo): models.WriteTimeoutPacket {
+export function handleWriteTimeoutPacket(block: Block, log: Log, portPrefix: string): models.WriteTimeoutPacket {
   let event = dispatcher.events.WriteTimeoutPacket.decode(log);
   let writerChannelId = ethers.decodeBytes32String(event.writerChannelId);
   const gas = BigInt(log.transaction!.gas)
@@ -161,9 +161,9 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, dispatcherInfo:
   return new models.WriteTimeoutPacket({
     id: log.id,
     dispatcherAddress: log.address,
-    dispatcherType: dispatcherInfo.type,
-    dispatcherClientName: dispatcherInfo.clientName,
-    writerPortAddress: event.writerPortAddress,
+    dispatcherType: getDispatcherType(portPrefix),
+    dispatcherClientName: getDispatcherClientName(portPrefix),
+    writerPortAddress: ethers.getAddress(event.writerPortAddress),
     writerChannelId,
     sequence: event.sequence,
     timeoutHeightRevisionHeight: event.timeoutHeight.revision_height,
@@ -199,20 +199,16 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
 
   let destChain = existingPacket?.recvPacket?.dispatcherClientName
   if (!destChain) {
-    try {
-      const channel = await ctx.store.findOneOrFail(models.Channel, {
-        where: {
-          portId: srcPortId,
-          channelId: sendPacket.sourceChannelId
-        }
-      })
-      destChain = channel.counterpartyPortId.split('.')[1]
-    } catch (e) {
-      logger.info("Could not find channel for packet: " + key)
-    }
+    const channel = await ctx.store.findOneOrFail(models.Channel, {
+      where: {
+        portId: srcPortId,
+        channelId: sendPacket.sourceChannelId
+      }
+    })
+    destChain = channel.counterpartyPortId.split('.')[1]
   }
 
-  const packet = new models.Packet({
+  return new models.Packet({
     id: key,
     state: state,
     sendPacket: sendPacket,
@@ -223,25 +219,18 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
     sendToRecvTime,
     sendToRecvGas: sendToRecvGas ? BigInt(sendToRecvGas) : null
   });
-
-  await ctx.store.upsert(packet)
 }
 
 export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context) {
   let destPortId = `polyibc.${recvPacket.dispatcherClientName}.${recvPacket.destPortAddress.slice(2)}`;
   let key
-  try {
-    const destChannel = await ctx.store.findOneOrFail(models.Channel, {
-      where: {
-        portId: destPortId,
-        channelId: recvPacket.destChannelId
-      }
-    })
-    key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${recvPacket.sequence}`
-  } catch (e) {
-    console.warn("Could not find channel for recvPacket: ", recvPacket.transactionHash)
-    return
-  }
+  const destChannel = await ctx.store.findOneOrFail(models.Channel, {
+    where: {
+      portId: destPortId,
+      channelId: recvPacket.destChannelId
+    }
+  })
+  key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${recvPacket.sequence}`
 
   let state
   let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
@@ -263,7 +252,7 @@ export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context
     sendToRecvGas = recvPacket.gas + existingPacket.sendPacket.gas
   }
 
-  const packet = new models.Packet({
+  return new models.Packet({
     id: key,
     state,
     destChain,
@@ -272,25 +261,18 @@ export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context
     sendToRecvTime,
     sendToRecvGas
   });
-
-  await ctx.store.upsert(packet)
 }
 
 export async function writeAckPacketHook(writeAckPacket: models.WriteAckPacket, ctx: Context) {
   let destPortId = `polyibc.${writeAckPacket.dispatcherClientName}.${writeAckPacket.writerPortAddress.slice(2)}`;
   let key
-  try {
-    const destChannel = await ctx.store.findOneOrFail(models.Channel, {
-      where: {
-        portId: destPortId,
-        channelId: writeAckPacket.writerChannelId
-      }
-    })
-    key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${writeAckPacket.sequence}`
-  } catch (e) {
-    logger.warn("Could not find channel for writeAckPacket: " + writeAckPacket.transactionHash)
-    return
-  }
+  const destChannel = await ctx.store.findOneOrFail(models.Channel, {
+    where: {
+      portId: destPortId,
+      channelId: writeAckPacket.writerChannelId
+    }
+  })
+  key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${writeAckPacket.sequence}`
 
   let state
   let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
@@ -300,14 +282,12 @@ export async function writeAckPacketHook(writeAckPacket: models.WriteAckPacket, 
     state = existingPacket.state
   }
 
-  const packet = new models.Packet({
+  return new models.Packet({
     id: key,
     state: state,
     writeAckPacket: writeAckPacket,
     writeAckTx: writeAckPacket.transactionHash
   })
-
-  await ctx.store.upsert(packet)
 }
 
 export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Context) {
@@ -332,7 +312,7 @@ export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Cont
     sendToAckGas = ackPacket.gas + existingPacket.sendPacket.gas + existingPacket.recvPacket.gas
   }
 
-  const packet = new models.Packet({
+  return new models.Packet({
     id: key,
     state: state,
     ackPacket: ackPacket,
@@ -340,6 +320,4 @@ export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Cont
     sendToAckTime,
     sendToAckGas: sendToAckGas ? BigInt(sendToAckGas) : null
   });
-
-  await ctx.store.upsert(packet)
 }

@@ -1,6 +1,7 @@
 import * as dispatcher from '../abi/dispatcher'
+import { Contract } from '../abi/dispatcher'
 import { topics } from '../utils/topics'
-import { Context, DispatcherInfo } from '../utils/types'
+import { Context } from '../utils/types'
 import {
   ackPacketHook,
   handleAcknowledgement,
@@ -16,12 +17,12 @@ import {
 import {
   ackChannelHook,
   confirmChannelHook,
+  createChannelInInitState,
+  createChannelInTryState,
   handleChannelOpenAck,
   handleChannelOpenConfirm,
   handleChannelOpenInit,
-  handleChannelOpenTry,
-  createChannelInInitState,
-  createChannelInTryState
+  handleChannelOpenTry
 } from './channels'
 import {
   Acknowledgement,
@@ -90,7 +91,7 @@ type Entities = {
   writeTimeoutPackets: WriteTimeoutPacket[],
 }
 
-export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
+export async function handler(ctx: Context) {
   let chainIdPromise = ctx._chain.client.call("eth_chainId")
   const entities: Entities = {
     openInitIbcChannels: [],
@@ -109,37 +110,36 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
   for (let block of ctx.blocks) {
     for (let log of block.logs) {
-      for (let dispatcherInfo of dispatcherInfos) {
-        if (log.address !== dispatcherInfo.address) continue
+      const contract = new Contract(ctx, block.header, log.address)
+      const portPrefix = String(await contract.portPrefix())
 
-        const currTopic = log.topics[0]
-        if (!topics.includes(currTopic)) continue
+      const currTopic = log.topics[0]
+      if (!topics.includes(currTopic)) continue
 
-        // Packet events
-        if (currTopic === dispatcher.events.SendPacket.topic) {
-          entities.sendPackets.push(handleSendPacket(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.RecvPacket.topic) {
-          entities.recvPackets.push(handleRecvPacket(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
-          entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
-          entities.acknowledgements.push(handleAcknowledgement(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.Timeout.topic) {
-          entities.timeouts.push(handleTimeout(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
-          entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, dispatcherInfo))
-        }
+      // Packet events
+      if (currTopic === dispatcher.events.SendPacket.topic) {
+        entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix))
+      } else if (currTopic === dispatcher.events.RecvPacket.topic) {
+        entities.recvPackets.push(handleRecvPacket(block.header, log, portPrefix))
+      } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
+        entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, portPrefix))
+      } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
+        entities.acknowledgements.push(handleAcknowledgement(block.header, log, portPrefix))
+      } else if (currTopic === dispatcher.events.Timeout.topic) {
+        entities.timeouts.push(handleTimeout(block.header, log, portPrefix))
+      } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
+        entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, portPrefix))
+      }
 
-        // Channel events
-        else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
-          entities.openInitIbcChannels.push(handleChannelOpenInit(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
-          entities.openTryIbcChannels.push(handleChannelOpenTry(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
-          entities.openAckIbcChannels.push(handleChannelOpenAck(block.header, log, dispatcherInfo))
-        } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
-          entities.openConfirmIbcChannels.push(handleChannelOpenConfirm(block.header, log, dispatcherInfo))
-        }
+      // Channel events
+      else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
+        entities.openInitIbcChannels.push(handleChannelOpenInit(portPrefix, block.header, log))
+      } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
+        entities.openTryIbcChannels.push(handleChannelOpenTry(block.header, log))
+      } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
+        entities.openAckIbcChannels.push(handleChannelOpenAck(block.header, log))
+      } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
+        entities.openConfirmIbcChannels.push(handleChannelOpenConfirm(block.header, log))
       }
     }
   }
@@ -148,7 +148,7 @@ export async function handler(ctx: Context, dispatcherInfos: DispatcherInfo[]) {
 
   await insertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities)
-  // await postBlockPacketHook(ctx, entities)
+  await postBlockPacketHook(ctx, entities)
   await updateAllStats(ctx, entities, chainId);
 }
 
@@ -180,18 +180,17 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
 }
 
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {
-  for (let sendPacket of entities.sendPackets) {
-    await sendPacketHook(sendPacket, ctx)
-  }
-  for (let recvPacket of entities.recvPackets) {
-    await recvPacketHook(recvPacket, ctx)
-  }
-  for (let writeAckPacket of entities.writeAckPackets) {
-    await writeAckPacketHook(writeAckPacket, ctx)
-  }
-  for (let acknowledgement of entities.acknowledgements) {
-    await ackPacketHook(acknowledgement, ctx)
-  }
+  let update = await Promise.all(entities.sendPackets.map((sendPacket) => sendPacketHook(sendPacket, ctx)))
+  await ctx.store.upsert(update)
+
+  update = await Promise.all(entities.recvPackets.map((recvPacket) => recvPacketHook(recvPacket, ctx)))
+  await ctx.store.upsert(update)
+
+  update = await Promise.all(entities.writeAckPackets.map((writeAckPacket) => writeAckPacketHook(writeAckPacket, ctx)))
+  await ctx.store.upsert(update)
+
+  update = await Promise.all(entities.acknowledgements.map((acknowledgement) => ackPacketHook(acknowledgement, ctx)))
+  await ctx.store.upsert(update)
 }
 
 async function insertNewEntities(ctx: Context, entities: Entities) {
