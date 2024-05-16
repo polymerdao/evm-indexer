@@ -40,6 +40,7 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
+import { logger } from "../utils/logger";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -225,6 +226,7 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
 }
 
 async function insertNewEntities(ctx: Context, entities: Entities) {
+  logger.info(`Inserting new entities ${entities.openInitIbcChannels.length} openInitIbcChannels; ${entities.openTryIbcChannels.length} openTryIbcChannels; ${entities.openAckIbcChannels.length} openAckIbcChannels; ${entities.openConfirmIbcChannels.length} openConfirmIbcChannels; ${entities.closeIbcChannels.length} closeIbcChannels; ${entities.channels.length} channels; ${entities.sendPackets.length} sendPackets; ${entities.writeAckPackets.length} writeAckPackets; ${entities.recvPackets.length} recvPackets; ${entities.acknowledgements.length} acknowledgements; ${entities.timeouts.length} timeouts; ${entities.writeTimeoutPackets.length} writeTimeoutPackets`)
   await ctx.store.insert(entities.openInitIbcChannels);
   await ctx.store.insert(entities.openTryIbcChannels);
   await ctx.store.insert(entities.openAckIbcChannels);
