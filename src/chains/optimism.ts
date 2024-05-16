@@ -28,8 +28,10 @@ const processor = IbcProcessor()
   })
 
 processor.run(new TypeormDatabase({
-  supportHotBlocks: true,
-  stateSchema: 'optimism_processor'}),
-async (ctx) => {
-  await handler(ctx)
-})
+    supportHotBlocks: true,
+    isolationLevel: "REPEATABLE READ",
+    stateSchema: 'optimism_processor'
+  }),
+  async (ctx) => {
+    await handler(ctx)
+  })

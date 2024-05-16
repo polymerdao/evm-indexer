@@ -4,8 +4,8 @@ import { topics } from '../utils/topics'
 import { handler } from '../handlers'
 
 const DISPATCHERS: string[] = [
-    process.env.DISPATCHER_ADDRESS_BASE!,
-    process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!,
+  process.env.DISPATCHER_ADDRESS_BASE!,
+  process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!,
 ]
 
 const processor = IbcProcessor()
@@ -28,9 +28,11 @@ const processor = IbcProcessor()
   })
 
 processor.run(new TypeormDatabase({
-  supportHotBlocks: true,
-  stateSchema: 'base_processor'}),
-async (ctx) => {
-  await handler(ctx)
-})
+    supportHotBlocks: true,
+    isolationLevel: "REPEATABLE READ",
+    stateSchema: 'base_processor'
+  }),
+  async (ctx) => {
+    await handler(ctx)
+  })
   
