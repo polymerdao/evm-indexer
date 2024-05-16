@@ -24,7 +24,7 @@ export class SendPacket {
     sourcePortAddress!: string
 
     @StringColumn_({nullable: false})
-    sourceChannelId!: string
+    srcChannelId!: string
 
     @Index_()
     @ManyToOne_(() => Channel, {nullable: true})

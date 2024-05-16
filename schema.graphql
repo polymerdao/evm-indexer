@@ -30,7 +30,7 @@ type SendPacket @entity {
   dispatcherType: String!
   dispatcherClientName: String!
   sourcePortAddress: String!
-  sourceChannelId: String!
+  srcChannelId: String!
   sourceChannel: Channel
   packet: String!
   sequence: BigInt!

@@ -20,7 +20,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string): mo
     dispatcherType: getDispatcherType(portPrefix),
     dispatcherClientName: getDispatcherClientName(portPrefix),
     sourcePortAddress: ethers.getAddress(event.sourcePortAddress),
-    sourceChannelId,
+    srcChannelId: sourceChannelId,
     packet: packetHash,
     sequence: event.sequence,
     timeoutTimestamp: event.timeoutTimestamp,
@@ -183,7 +183,7 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, portPrefix: str
 
 export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context) {
   let srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
-  let key = `${srcPortId}-${sendPacket.sourceChannelId}-${sendPacket.sequence}`;
+  let key = `${srcPortId}-${sendPacket.srcChannelId}-${sendPacket.sequence}`;
   let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
   let state = existingPacket ? existingPacket.state : models.PacketStates.SENT
 
@@ -197,12 +197,12 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
 export async function packetSourceChannelUpdate(sendPacket: models.SendPacket, ctx: Context) {
   const channel = await ctx.store.findOne(models.Channel, {
     where: {
-      channelId: sendPacket.sourceChannelId,
+      channelId: sendPacket.srcChannelId,
     }
   })
 
   if (!channel) {
-    logger.info(`Channel not found for send packet for channel ${sendPacket.sourceChannelId}`)
+    logger.info(`Channel not found for send packet for channel ${sendPacket.srcChannelId}`)
     return null
   }
 
