@@ -29,6 +29,7 @@ type SendPacket @entity {
   dispatcherClientName: String!
   sourcePortAddress: String!
   sourceChannelId: String!
+  sourceChannel: Channel
   packet: String!
   sequence: BigInt!
   timeoutTimestamp: BigInt!

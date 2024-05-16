@@ -194,6 +194,22 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
   });
 }
 
+export async function packetSourceChannelUpdate(sendPacket: models.SendPacket, ctx: Context) {
+  const channel = await ctx.store.findOne(models.Channel, {
+    where: {
+      channelId: sendPacket.sourceChannelId,
+    }
+  })
+
+  if (!channel) {
+    logger.info(`Channel not found for send packet for channel ${sendPacket.sourceChannelId}`)
+    return null
+  }
+
+  sendPacket.sourceChannel = channel
+  return sendPacket;
+}
+
 export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context) {
   let destPortId = `polyibc.${recvPacket.dispatcherClientName}.${recvPacket.destPortAddress.slice(2)}`;
   let key

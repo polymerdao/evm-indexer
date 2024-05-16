@@ -9,7 +9,7 @@ import {
   handleSendPacket,
   handleTimeout,
   handleWriteAckPacket,
-  handleWriteTimeoutPacket, packetMetrics,
+  handleWriteTimeoutPacket, packetMetrics, packetSourceChannelUpdate,
   recvPacketHook,
   sendPacketHook,
   writeAckPacketHook
@@ -188,23 +188,27 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
 }
 
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {
-  let update = await Promise.all(entities.sendPackets.map((sendPacket) => sendPacketHook(sendPacket, ctx)))
-  await ctx.store.upsert(update)
-  await ctx.store.upsert(update.map(packetMetrics))
+  let packetUpdates = await Promise.all(entities.sendPackets.map((sendPacket) => sendPacketHook(sendPacket, ctx)))
+  await ctx.store.upsert(packetUpdates)
+  await ctx.store.upsert(packetUpdates.map(packetMetrics))
 
-  update = (await Promise.all(entities.recvPackets.map((recvPacket) => recvPacketHook(recvPacket, ctx))))
+  let sendPacketUpdates = (await Promise.all(entities.sendPackets.map((sendPacket) => packetSourceChannelUpdate(sendPacket, ctx))))
+    .filter((packet): packet is SendPacket => packet !== null);
+  await ctx.store.upsert(sendPacketUpdates)
+
+  packetUpdates = (await Promise.all(entities.recvPackets.map((recvPacket) => recvPacketHook(recvPacket, ctx))))
     .filter((packet): packet is Packet => packet !== null);
-  await ctx.store.upsert(update);
-  await ctx.store.upsert(update.map(packetMetrics));
+  await ctx.store.upsert(packetUpdates);
+  await ctx.store.upsert(packetUpdates.map(packetMetrics));
 
-  update = (await Promise.all(entities.writeAckPackets.map((writeAckPacket) => writeAckPacketHook(writeAckPacket, ctx))))
+  packetUpdates = (await Promise.all(entities.writeAckPackets.map((writeAckPacket) => writeAckPacketHook(writeAckPacket, ctx))))
     .filter((packet): packet is Packet => packet !== null);
-  await ctx.store.upsert(update)
-  await ctx.store.upsert(update.map(packetMetrics))
+  await ctx.store.upsert(packetUpdates)
+  await ctx.store.upsert(packetUpdates.map(packetMetrics))
 
-  update = await Promise.all(entities.acknowledgements.map((acknowledgement) => ackPacketHook(acknowledgement, ctx)))
-  await ctx.store.upsert(update)
-  await ctx.store.upsert(update.map(packetMetrics))
+  packetUpdates = await Promise.all(entities.acknowledgements.map((acknowledgement) => ackPacketHook(acknowledgement, ctx)))
+  await ctx.store.upsert(packetUpdates)
+  await ctx.store.upsert(packetUpdates.map(packetMetrics))
 }
 
 async function insertNewEntities(ctx: Context, entities: Entities) {
