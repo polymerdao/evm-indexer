@@ -14,4 +14,7 @@ export class Stat {
 
     @IntColumn_({nullable: false})
     val!: number
+
+    @IntColumn_({nullable: false})
+    chainId!: number
 }

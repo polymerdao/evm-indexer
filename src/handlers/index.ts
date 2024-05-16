@@ -9,7 +9,9 @@ import {
   handleSendPacket,
   handleTimeout,
   handleWriteAckPacket,
-  handleWriteTimeoutPacket, packetMetrics, packetSourceChannelUpdate,
+  handleWriteTimeoutPacket,
+  packetMetrics,
+  packetSourceChannelUpdate,
   recvPacketHook,
   sendPacketHook,
   writeAckPacketHook
@@ -31,7 +33,8 @@ import {
   ChannelOpenConfirm,
   ChannelOpenInit,
   ChannelOpenTry,
-  CloseIbcChannel, Packet,
+  CloseIbcChannel,
+  Packet,
   RecvPacket,
   SendPacket,
   Stat,
@@ -40,7 +43,6 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
-import { logger } from "../utils/logger";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -56,24 +58,28 @@ export enum StatName {
   CloseChannel = 'CloseChannel',
 }
 
-async function updateStats(ctx: Context, statName: StatName, val: number = 0, chainId?: number) {
+async function updateStats(ctx: Context, statName: StatName, val: number = 0, chainId: number) {
   if (val == 0) {
     return
   }
 
-  const id = `${statName}`
-
-  const stat = await ctx.store.findOneBy(Stat, {id})
-  if (!stat) {
-    await ctx.store.insert(new Stat({
-      id: id,
-      name: statName,
-      val: val,
-    }))
-  } else {
-    stat.val += val
-    await ctx.store.upsert(stat)
+  async function _updateStats(id: string, val: number, chainId: number) {
+    const stat = await ctx.store.findOneBy(Stat, {id})
+    if (!stat) {
+      await ctx.store.insert(new Stat({
+        id: id,
+        name: statName,
+        val: val,
+        chainId: chainId,
+      }))
+    } else {
+      stat.val += val
+      await ctx.store.upsert(stat)
+    }
   }
+
+  await _updateStats(`${statName}:${chainId}`, val, chainId);
+  await _updateStats(`${statName}`, val, 0);
 }
 
 type Entities = {
