@@ -3,6 +3,7 @@ import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
+import { logger } from "../utils/logger";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -96,7 +97,6 @@ export function handleWriteAckPacket(block: Block, log: Log, portPrefix: string)
 
 export function handleAcknowledgement(block: Block, log: Log, portPrefix: string): models.Acknowledgement {
   let event = dispatcher.events.Acknowledgement.decode(log);
-  let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId);
   const gas = BigInt(log.transaction!.gas)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
@@ -108,7 +108,7 @@ export function handleAcknowledgement(block: Block, log: Log, portPrefix: string
     dispatcherType: getDispatcherType(portPrefix),
     dispatcherClientName: getDispatcherClientName(portPrefix),
     sourcePortAddress: ethers.getAddress(event.sourcePortAddress),
-    sourceChannelId: sourceChannelId,
+    sourceChannelId: ethers.decodeBytes32String(event.sourceChannelId),
     sequence: event.sequence,
     blockNumber: BigInt(block.height),
     blockTimestamp: BigInt(log.block.timestamp),
@@ -187,49 +187,28 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
   let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
   let state = existingPacket ? existingPacket.state : models.PacketStates.SENT
 
-  let sendToRecvTime
-  if (sendPacket.blockTimestamp && existingPacket?.recvPacket?.blockTimestamp && !existingPacket?.sendToRecvTime) {
-    sendToRecvTime = existingPacket.recvPacket.blockTimestamp - sendPacket.blockTimestamp
-  }
-
-  let sendToRecvGas
-  if (sendPacket.gas && existingPacket?.recvPacket?.gas && !existingPacket?.sendToRecvGas) {
-    sendToRecvGas = sendPacket.gas + existingPacket.recvPacket.gas
-  }
-
-  let destChain = existingPacket?.recvPacket?.dispatcherClientName
-  if (!destChain) {
-    const channel = await ctx.store.findOneOrFail(models.Channel, {
-      where: {
-        portId: srcPortId,
-        channelId: sendPacket.sourceChannelId
-      }
-    })
-    destChain = channel.counterpartyPortId.split('.')[1]
-  }
-
   return new models.Packet({
     id: key,
     state: state,
     sendPacket: sendPacket,
-    sendTx: sendPacket.transactionHash,
-    sourceChain: sendPacket.dispatcherClientName,
-    destChain,
-    sendBlockTimestamp: sendPacket.blockTimestamp,
-    sendToRecvTime,
-    sendToRecvGas: sendToRecvGas ? BigInt(sendToRecvGas) : null
   });
 }
 
 export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context) {
   let destPortId = `polyibc.${recvPacket.dispatcherClientName}.${recvPacket.destPortAddress.slice(2)}`;
   let key
-  const destChannel = await ctx.store.findOneOrFail(models.Channel, {
+  const destChannel = await ctx.store.findOne(models.Channel, {
     where: {
       portId: destPortId,
       channelId: recvPacket.destChannelId
     }
   })
+
+  if (!destChannel) {
+    logger.info(`Channel not found for recv packet for port ${destPortId} and channel ${recvPacket.destChannelId}`)
+    return null
+  }
+
   key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${recvPacket.sequence}`
 
   let state
@@ -240,26 +219,10 @@ export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context
     state = existingPacket.state
   }
 
-  let destChain = recvPacket.dispatcherClientName
-
-  let sendToRecvTime
-  if (recvPacket.blockTimestamp && existingPacket?.sendPacket?.blockTimestamp) {
-    sendToRecvTime = recvPacket.blockTimestamp - existingPacket.sendPacket.blockTimestamp
-  }
-
-  let sendToRecvGas
-  if (recvPacket.gas && existingPacket?.sendPacket?.gas && !existingPacket?.sendToRecvGas) {
-    sendToRecvGas = recvPacket.gas + existingPacket.sendPacket.gas
-  }
-
   return new models.Packet({
     id: key,
     state,
-    destChain,
     recvPacket,
-    recvTx: recvPacket.transactionHash,
-    sendToRecvTime,
-    sendToRecvGas
   });
 }
 
@@ -286,7 +249,6 @@ export async function writeAckPacketHook(writeAckPacket: models.WriteAckPacket, 
     id: key,
     state: state,
     writeAckPacket: writeAckPacket,
-    writeAckTx: writeAckPacket.transactionHash
   })
 }
 
@@ -302,22 +264,29 @@ export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Cont
     state = models.PacketStates.ACK
   }
 
-  let sendToAckTime
-  if (ackPacket.blockTimestamp && existingPacket?.sendBlockTimestamp) {
-    sendToAckTime = ackPacket.blockTimestamp - existingPacket.sendBlockTimestamp
-  }
-
-  let sendToAckGas
-  if (ackPacket.gas && existingPacket?.sendPacket?.gas && existingPacket?.recvPacket?.gas) {
-    sendToAckGas = ackPacket.gas + existingPacket.sendPacket.gas + existingPacket.recvPacket.gas
-  }
-
   return new models.Packet({
     id: key,
     state: state,
     ackPacket: ackPacket,
-    ackTx: ackPacket.transactionHash,
-    sendToAckTime,
-    sendToAckGas: sendToAckGas ? BigInt(sendToAckGas) : null
   });
+}
+
+export function packetMetrics(packet: models.Packet): models.Packet {
+  if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
+    packet.sendToRecvTime = packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp
+  }
+
+  if (!packet.sendToRecvGas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
+    packet.sendToRecvGas = packet.sendPacket.gas + packet.recvPacket.gas
+  }
+
+  if (!packet.sendToAckTime && packet.ackPacket?.blockTimestamp && packet.sendPacket?.blockTimestamp) {
+    packet.sendToAckTime = packet.ackPacket.blockTimestamp - packet.sendPacket.blockTimestamp
+  }
+
+  if (!packet.sendToAckGas && packet.ackPacket?.gas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
+    packet.sendToAckGas = packet.ackPacket.gas + packet.sendPacket.gas + packet.recvPacket.gas
+  }
+
+  return packet
 }

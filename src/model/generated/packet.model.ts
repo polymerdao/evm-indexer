@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToOne as OneToOne_, Index as Index_, JoinColumn as JoinColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToOne as OneToOne_, Index as Index_, JoinColumn as JoinColumn_, BigIntColumn as BigIntColumn_} from "@subsquid/typeorm-store"
 import {SendPacket} from "./sendPacket.model"
 import {RecvPacket} from "./recvPacket.model"
 import {WriteAckPacket} from "./writeAckPacket.model"
@@ -36,27 +36,6 @@ export class Packet {
 
     @Column_("varchar", {length: 13, nullable: false})
     state!: PacketStates
-
-    @StringColumn_({nullable: true})
-    sourceChain!: string | undefined | null
-
-    @StringColumn_({nullable: true})
-    destChain!: string | undefined | null
-
-    @BigIntColumn_({nullable: true})
-    sendBlockTimestamp!: bigint | undefined | null
-
-    @StringColumn_({nullable: true})
-    sendTx!: string | undefined | null
-
-    @StringColumn_({nullable: true})
-    recvTx!: string | undefined | null
-
-    @StringColumn_({nullable: true})
-    writeAckTx!: string | undefined | null
-
-    @StringColumn_({nullable: true})
-    ackTx!: string | undefined | null
 
     @BigIntColumn_({nullable: true})
     sendToRecvTime!: bigint | undefined | null
