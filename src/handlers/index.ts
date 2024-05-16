@@ -40,6 +40,7 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
+import { logger } from "../utils/logger";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -123,19 +124,19 @@ export async function handler(ctx: Context) {
       if (!topics.includes(currTopic)) continue
 
       // Packet events
-      if (currTopic === dispatcher.events.SendPacket.topic) {
-        entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.RecvPacket.topic) {
-        entities.recvPackets.push(handleRecvPacket(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
-        entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
-        entities.acknowledgements.push(handleAcknowledgement(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.Timeout.topic) {
-        entities.timeouts.push(handleTimeout(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
-        entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, portPrefix))
-      }
+      // if (currTopic === dispatcher.events.SendPacket.topic) {
+      //   entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix))
+      // } else if (currTopic === dispatcher.events.RecvPacket.topic) {
+      //   entities.recvPackets.push(handleRecvPacket(block.header, log, portPrefix))
+      // } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
+      //   entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, portPrefix))
+      // } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
+      //   entities.acknowledgements.push(handleAcknowledgement(block.header, log, portPrefix))
+      // } else if (currTopic === dispatcher.events.Timeout.topic) {
+      //   entities.timeouts.push(handleTimeout(block.header, log, portPrefix))
+      // } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
+      //   entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, portPrefix))
+      // }
 
       // Channel events
       else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
@@ -225,6 +226,7 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
 }
 
 async function insertNewEntities(ctx: Context, entities: Entities) {
+  logger.info(`Inserting new entities ${entities.openInitIbcChannels.length} openInitIbcChannels; ${entities.openTryIbcChannels.length} openTryIbcChannels; ${entities.openAckIbcChannels.length} openAckIbcChannels; ${entities.openConfirmIbcChannels.length} openConfirmIbcChannels; ${entities.closeIbcChannels.length} closeIbcChannels; ${entities.channels.length} channels; ${entities.sendPackets.length} sendPackets; ${entities.writeAckPackets.length} writeAckPackets; ${entities.recvPackets.length} recvPackets; ${entities.acknowledgements.length} acknowledgements; ${entities.timeouts.length} timeouts; ${entities.writeTimeoutPackets.length} writeTimeoutPackets`)
   await ctx.store.insert(entities.openInitIbcChannels);
   await ctx.store.insert(entities.openTryIbcChannels);
   await ctx.store.insert(entities.openAckIbcChannels);
