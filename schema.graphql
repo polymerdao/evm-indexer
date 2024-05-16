@@ -11,6 +11,8 @@ type Packet @entity {
   sendToRecvGas: BigInt
   sendToAckTime: BigInt
   sendToAckGas: BigInt
+  sendToRecvPolymerGas: BigInt
+  sendToAckPolymerGas: BigInt
 }
 
 enum PacketStates {
@@ -173,8 +175,11 @@ type Channel @entity{
   initToTryTime: Int
   initToAckTime: Int
   initToConfirmTime: Int
+  initToTryGas: Int
   initToTryPolymerGas: Int
+  initToAckGas: Int
   initToAckPolymerGas: Int
+  initToConfirmGas: Int
   initToConfirmPolymerGas: Int
 }
 

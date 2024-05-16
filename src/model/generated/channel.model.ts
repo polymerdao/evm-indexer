@@ -78,10 +78,19 @@ export class Channel {
     initToConfirmTime!: number | undefined | null
 
     @IntColumn_({nullable: true})
+    initToTryGas!: number | undefined | null
+
+    @IntColumn_({nullable: true})
     initToTryPolymerGas!: number | undefined | null
 
     @IntColumn_({nullable: true})
+    initToAckGas!: number | undefined | null
+
+    @IntColumn_({nullable: true})
     initToAckPolymerGas!: number | undefined | null
+
+    @IntColumn_({nullable: true})
+    initToConfirmGas!: number | undefined | null
 
     @IntColumn_({nullable: true})
     initToConfirmPolymerGas!: number | undefined | null

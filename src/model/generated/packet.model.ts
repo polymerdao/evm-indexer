@@ -48,4 +48,10 @@ export class Packet {
 
     @BigIntColumn_({nullable: true})
     sendToAckGas!: bigint | undefined | null
+
+    @BigIntColumn_({nullable: true})
+    sendToRecvPolymerGas!: bigint | undefined | null
+
+    @BigIntColumn_({nullable: true})
+    sendToAckPolymerGas!: bigint | undefined | null
 }

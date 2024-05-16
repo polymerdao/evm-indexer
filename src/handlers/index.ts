@@ -40,6 +40,7 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
+import { logger } from "../utils/logger";
 
 export enum StatName {
   SendPackets = 'SendPackets',
