@@ -298,5 +298,4 @@ type Stat @entity {
   id: ID!
   name: String!
   val: Int!
-  chainId: Int!
 }

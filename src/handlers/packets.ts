@@ -229,12 +229,16 @@ export async function recvPacketHook(recvPacket: models.RecvPacket, ctx: Context
 export async function writeAckPacketHook(writeAckPacket: models.WriteAckPacket, ctx: Context) {
   let destPortId = `polyibc.${writeAckPacket.dispatcherClientName}.${writeAckPacket.writerPortAddress.slice(2)}`;
   let key
-  const destChannel = await ctx.store.findOneOrFail(models.Channel, {
+  const destChannel = await ctx.store.findOne(models.Channel, {
     where: {
       portId: destPortId,
       channelId: writeAckPacket.writerChannelId
     }
   })
+  if (!destChannel) {
+    logger.info(`Channel not found for write ack packet for port ${destPortId} and channel ${writeAckPacket.writerChannelId}`)
+    return null
+  }
   key = `${destChannel.counterpartyPortId}-${destChannel.counterpartyChannelId}-${writeAckPacket.sequence}`
 
   let state
