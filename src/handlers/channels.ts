@@ -4,10 +4,11 @@ import * as dispatcher from '../abi/dispatcher'
 import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
+import { logger } from "../utils/logger";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
-  let portAddress = event.recevier
+  let portAddress = ethers.getAddress(event.recevier)
   let portId = `${portPrefix}${portAddress.slice(2)}`
 
   return new models.ChannelOpenInit({
@@ -37,7 +38,7 @@ export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log
 
 export function handleChannelOpenTry(block: Block, log: Log): models.ChannelOpenTry {
   let event = dispatcher.events.ChannelOpenTry.decode(log);
-  let portAddress = event.receiver
+  let portAddress = ethers.getAddress(event.receiver)
   let counterpartyPortId = event.counterpartyPortId;
   let counterpartyChannelId = ethers.decodeBytes32String(event.counterpartyChannelId);
   const txParams = dispatcher.functions.channelOpenTry.decode(log.transaction!.input)
@@ -70,7 +71,7 @@ export function handleChannelOpenTry(block: Block, log: Log): models.ChannelOpen
 export function handleChannelOpenAck(block: Block, log: Log): ChannelOpenAck {
   let event = dispatcher.events.ChannelOpenAck.decode(log);
   const txParams = dispatcher.functions.channelOpenAck.decode(log.transaction!.input)
-  let portAddress = event.receiver
+  let portAddress = ethers.getAddress(event.receiver)
   let channelId = ethers.decodeBytes32String(event.channelId);
 
   return new models.ChannelOpenAck({
@@ -96,7 +97,7 @@ export function handleChannelOpenAck(block: Block, log: Log): ChannelOpenAck {
 
 export function handleChannelOpenConfirm(block: Block, log: Log): ChannelOpenConfirm {
   let event = dispatcher.events.ChannelOpenConfirm.decode(log);
-  let portAddress = event.receiver
+  let portAddress = ethers.getAddress(event.receiver)
   const txParams = dispatcher.functions.channelOpenConfirm.decode(log.transaction!.input)
 
   return new models.ChannelOpenConfirm({
@@ -162,7 +163,7 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
 
   // update latest INIT state record that have incomplete id
   // NOTE: there is an assumption that the latest INIT event corresponds to the current event which is not 100% correct
-  const incompleteInitChannel = await ctx.store.findOneOrFail(models.Channel, {
+  const incompleteInitChannel = await ctx.store.findOne(models.Channel, {
     where: {
       portId: portId,
       channelId: '',
@@ -171,6 +172,14 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
     order: {blockTimestamp: "desc"},
     relations: {channelOpenInit: true}
   })
+
+  if (!incompleteInitChannel) {
+    logger.info(`Channel not found for ack channel where clause portId: ${portId}, channelId: '', state: ${ChannelStates.INIT}`)
+    return {
+      cpChannel: null,
+      channelOpenInit: null
+    }
+  }
 
   if (!incompleteInitChannel.channelOpenInit) {
     throw new Error(`ChannelOpenInit not found for channel ${incompleteInitChannel.id}`)
