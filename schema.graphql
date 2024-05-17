@@ -7,12 +7,12 @@ type Packet @entity {
   ackPacket: Acknowledgement @unique
   state: PacketStates!
 
-  sendToRecvTime: BigInt
-  sendToRecvGas: BigInt
-  sendToAckTime: BigInt
-  sendToAckGas: BigInt
-  sendToRecvPolymerGas: BigInt
-  sendToAckPolymerGas: BigInt
+  sendToRecvTime: Int
+  sendToRecvGas: Int
+  sendToAckTime: Int
+  sendToAckGas: Int
+  sendToRecvPolymerGas: Int
+  sendToAckPolymerGas: Int
 }
 
 enum PacketStates {

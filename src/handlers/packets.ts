@@ -1,9 +1,11 @@
 import * as models from '../model'
+import { Packet } from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
 import { logger } from "../utils/logger";
+import { In } from "typeorm";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -194,6 +196,7 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
   });
 }
 
+// update the source channel relation for the send packet after there is a Channel entity in the db
 export async function packetSourceChannelUpdate(sendPacket: models.SendPacket, ctx: Context) {
   const channel = await ctx.store.findOne(models.Channel, {
     where: {
@@ -291,22 +294,29 @@ export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Cont
   });
 }
 
-export function packetMetrics(packet: models.Packet): models.Packet {
-  if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
-    packet.sendToRecvTime = packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp
+export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {
+  const packets = await ctx.store.find(Packet, {
+    where: {id: In(packetIds)},
+    relations: {sendPacket: true, recvPacket: true, ackPacket: true}
+  })
+
+  for (const packet of packets) {
+    if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
+      packet.sendToRecvTime = Number(packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp);
+    }
+
+    if (!packet.sendToRecvGas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
+      packet.sendToRecvGas = Number(packet.sendPacket.gas + packet.recvPacket.gas);
+    }
+
+    if (!packet.sendToAckTime && packet.ackPacket?.blockTimestamp && packet.sendPacket?.blockTimestamp) {
+      packet.sendToAckTime = Number(packet.ackPacket.blockTimestamp - packet.sendPacket.blockTimestamp);
+    }
+
+    if (!packet.sendToAckGas && packet.ackPacket?.gas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
+      packet.sendToAckGas = Number(packet.ackPacket.gas + packet.sendPacket.gas + packet.recvPacket.gas);
+    }
   }
 
-  if (!packet.sendToRecvGas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
-    packet.sendToRecvGas = packet.sendPacket.gas + packet.recvPacket.gas
-  }
-
-  if (!packet.sendToAckTime && packet.ackPacket?.blockTimestamp && packet.sendPacket?.blockTimestamp) {
-    packet.sendToAckTime = packet.ackPacket.blockTimestamp - packet.sendPacket.blockTimestamp
-  }
-
-  if (!packet.sendToAckGas && packet.ackPacket?.gas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
-    packet.sendToAckGas = packet.ackPacket.gas + packet.sendPacket.gas + packet.recvPacket.gas
-  }
-
-  return packet
+  await ctx.store.upsert(packets);
 }

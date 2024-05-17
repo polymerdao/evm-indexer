@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToOne as OneToOne_, Index as Index_, JoinColumn as JoinColumn_, BigIntColumn as BigIntColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToOne as OneToOne_, Index as Index_, JoinColumn as JoinColumn_, IntColumn as IntColumn_} from "@subsquid/typeorm-store"
 import {SendPacket} from "./sendPacket.model"
 import {RecvPacket} from "./recvPacket.model"
 import {WriteAckPacket} from "./writeAckPacket.model"
@@ -37,21 +37,21 @@ export class Packet {
     @Column_("varchar", {length: 13, nullable: false})
     state!: PacketStates
 
-    @BigIntColumn_({nullable: true})
-    sendToRecvTime!: bigint | undefined | null
+    @IntColumn_({nullable: true})
+    sendToRecvTime!: number | undefined | null
 
-    @BigIntColumn_({nullable: true})
-    sendToRecvGas!: bigint | undefined | null
+    @IntColumn_({nullable: true})
+    sendToRecvGas!: number | undefined | null
 
-    @BigIntColumn_({nullable: true})
-    sendToAckTime!: bigint | undefined | null
+    @IntColumn_({nullable: true})
+    sendToAckTime!: number | undefined | null
 
-    @BigIntColumn_({nullable: true})
-    sendToAckGas!: bigint | undefined | null
+    @IntColumn_({nullable: true})
+    sendToAckGas!: number | undefined | null
 
-    @BigIntColumn_({nullable: true})
-    sendToRecvPolymerGas!: bigint | undefined | null
+    @IntColumn_({nullable: true})
+    sendToRecvPolymerGas!: number | undefined | null
 
-    @BigIntColumn_({nullable: true})
-    sendToAckPolymerGas!: bigint | undefined | null
+    @IntColumn_({nullable: true})
+    sendToAckPolymerGas!: number | undefined | null
 }

@@ -34,7 +34,6 @@ import {
   ChannelOpenInit,
   ChannelOpenTry,
   CloseIbcChannel,
-  Packet,
   RecvPacket,
   SendPacket,
   Stat,
@@ -194,6 +193,7 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
   await ctx.store.upsert(channelUpdates)
 }
 
+// Helper function to filter out duplicates and keep only the last occurrence based on `id`
 const uniqueByLastOccurrence = <T extends { id: string }>(items: T[]): T[] => {
   const seen = new Map<string, T>();
   for (const item of items) {
@@ -202,33 +202,41 @@ const uniqueByLastOccurrence = <T extends { id: string }>(items: T[]): T[] => {
   return Array.from(seen.values());
 };
 
-export async function postBlockPacketHook(ctx: Context, entities: Entities) {
-  let packetUpdates = await Promise.all(entities.sendPackets.map((sendPacket) => sendPacketHook(sendPacket, ctx)));
-  packetUpdates = uniqueByLastOccurrence(packetUpdates);
-  await ctx.store.upsert(packetUpdates);
-  await ctx.store.upsert(packetUpdates.map(packetMetrics));
+const processAndUpsertPackets = async  <T extends { id: string }>(
+  packets: T[],
+  ctx: Context,
+  hookFunction: (packet: T, ctx: Context) => Promise<any>
+): Promise<string[]> => {
+  let processedPackets = await Promise.all(packets.map(packet => hookFunction(packet, ctx)));
+  processedPackets = processedPackets.filter((packet): packet is T => packet !== null);
+  processedPackets = uniqueByLastOccurrence(processedPackets);
+  await ctx.store.upsert(processedPackets);
 
-  let sendPacketUpdates = (await Promise.all(entities.sendPackets.map((sendPacket) => packetSourceChannelUpdate(sendPacket, ctx))))
+  // Return the unique IDs of processed packets
+  return processedPackets.map(packet => packet.id);
+};
+
+export async function postBlockPacketHook(ctx: Context, entities: Entities) {
+  const uniquePacketIds = new Set<string>();
+
+  let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook);
+  packetUpdates.forEach(id => uniquePacketIds.add(id));
+
+  let sendPacketUpdates = (await Promise.all(entities.sendPackets.map(packet => packetSourceChannelUpdate(packet, ctx))))
     .filter((packet): packet is SendPacket => packet !== null);
   sendPacketUpdates = uniqueByLastOccurrence(sendPacketUpdates);
   await ctx.store.upsert(sendPacketUpdates);
 
-  packetUpdates = (await Promise.all(entities.recvPackets.map((recvPacket) => recvPacketHook(recvPacket, ctx))))
-    .filter((packet): packet is Packet => packet !== null);
-  packetUpdates = uniqueByLastOccurrence(packetUpdates);
-  await ctx.store.upsert(packetUpdates);
-  await ctx.store.upsert(packetUpdates.map(packetMetrics));
+  packetUpdates = await processAndUpsertPackets(entities.recvPackets, ctx, recvPacketHook);
+  packetUpdates.forEach(id => uniquePacketIds.add(id));
 
-  packetUpdates = (await Promise.all(entities.writeAckPackets.map((writeAckPacket) => writeAckPacketHook(writeAckPacket, ctx))))
-    .filter((packet): packet is Packet => packet !== null);
-  packetUpdates = uniqueByLastOccurrence(packetUpdates);
-  await ctx.store.upsert(packetUpdates);
-  await ctx.store.upsert(packetUpdates.map(packetMetrics));
+  packetUpdates = await processAndUpsertPackets(entities.writeAckPackets, ctx, writeAckPacketHook);
+  packetUpdates.forEach(id => uniquePacketIds.add(id));
 
-  packetUpdates = await Promise.all(entities.acknowledgements.map((acknowledgement) => ackPacketHook(acknowledgement, ctx)));
-  packetUpdates = uniqueByLastOccurrence(packetUpdates);
-  await ctx.store.upsert(packetUpdates);
-  await ctx.store.upsert(packetUpdates.map(packetMetrics));
+  packetUpdates = await processAndUpsertPackets(entities.acknowledgements, ctx, ackPacketHook);
+  packetUpdates.forEach(id => uniquePacketIds.add(id));
+
+  await packetMetrics(Array.from(uniquePacketIds), ctx);
 }
 
 async function insertNewEntities(ctx: Context, entities: Entities) {
