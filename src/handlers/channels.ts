@@ -198,10 +198,7 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   })
 
   incompleteInitChannel.channelOpenInit.channelId = channelId
-  incompleteInitChannel.initToConfirmTime = Number(channelOpenAck.blockTimestamp - incompleteInitChannel.channelOpenInit.blockTimestamp)
-  // TODO: that should be l2 gas, not polymer gas
-  // TODO: calculate polymer gas separately
-  incompleteInitChannel.initToConfirmPolymerGas = Number(channelOpenAck.gas + incompleteInitChannel.channelOpenInit.gas)
+  incompleteInitChannel.initToConfirmTime = Number(channelOpenAck.blockTimestamp - incompleteInitChannel.channelOpenInit.blockTimestamp) / 1000
 
   if (cpChannel) {
     cpChannel.channelOpenInit = incompleteInitChannel.channelOpenInit
@@ -215,8 +212,7 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   incompleteInitChannel.channelOpenInit!.counterpartyChannelId = channelOpenAck.counterpartyChannelId
   incompleteInitChannel.channelOpenInit!.counterpartyPortId = channelOpenAck.counterpartyPortId
   incompleteInitChannel.channelOpenAck = channelOpenAck
-  incompleteInitChannel.initToAckTime = Number(channelOpenAck.blockTimestamp) - Number(incompleteInitChannel.channelOpenInit?.blockTimestamp)
-  incompleteInitChannel.initToAckPolymerGas = Number(channelOpenAck.gas) + Number(incompleteInitChannel.channelOpenInit?.gas)
+  incompleteInitChannel.initToAckTime = Number(channelOpenAck.blockTimestamp - incompleteInitChannel.channelOpenInit?.blockTimestamp) / 1000
 
   await ctx.store.upsert(incompleteInitChannel)
 
@@ -239,7 +235,7 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
       blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
     },
     order: {blockTimestamp: "desc"},
-    relations: {channelOpenTry: true, channelOpenInit: true}
+    relations: {channelOpenTry: true, channelOpenInit: true, channelOpenAck: true, channelOpenConfirm: true}
   })
 
   let cpChannel = await ctx.store.findOne(models.Channel, {
@@ -265,10 +261,7 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
   tryChannel.channelOpenConfirm = channelOpenConfirm
 
   if (tryChannel.channelOpenInit) {
-    tryChannel.initToConfirmTime = Number(channelOpenConfirm.blockTimestamp - tryChannel.channelOpenInit.blockTimestamp)
-    // TODO: that should be l2 gas, not polymer gas
-    // TODO: calculate polymer gas separately
-    tryChannel.initToConfirmPolymerGas = Number(channelOpenConfirm.gas + tryChannel.channelOpenInit.gas)
+    tryChannel.initToConfirmTime = Number(channelOpenConfirm.blockTimestamp - tryChannel.channelOpenInit.blockTimestamp) / 1000
   }
 
   entities.push(tryChannel)
