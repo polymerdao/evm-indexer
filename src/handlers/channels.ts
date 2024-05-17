@@ -5,7 +5,7 @@ import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
 import { logger } from "../utils/logger";
-import { LessThan, MoreThan } from "typeorm";
+import { In, LessThan, MoreThan } from "typeorm";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
@@ -267,3 +267,37 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
   entities.push(tryChannel)
   return entities
 }
+
+
+export async function channelMetrics(channelIds: string[], ctx: Context): Promise<void> {
+  const channels = await ctx.store.find(models.Channel, {
+    where: {id: In(channelIds)},
+    relations: {channelOpenInit: true, channelOpenTry: true, channelOpenAck: true, channelOpenConfirm: true}
+  });
+
+  for (const channel of channels) {
+    if (!channel.initToTryTime && channel.channelOpenInit && channel.channelOpenTry) {
+      channel.initToTryTime = Number(channel.channelOpenTry.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000
+    }
+
+    if (!channel.initToConfirmTime && channel.channelOpenInit && channel.channelOpenConfirm) {
+      channel.initToConfirmTime = Number(channel.channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000
+    }
+    if (!channel.initToAckTime && channel.channelOpenInit && channel.channelOpenAck) {
+      channel.initToAckTime = Number(channel.channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000
+    }
+
+    if (!channel.initToTryGas && channel.channelOpenInit && channel.channelOpenTry) {
+      channel.initToTryGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas)
+    }
+    if (!channel.initToConfirmGas && channel.channelOpenInit && channel.channelOpenConfirm && channel.channelOpenTry) {
+      channel.initToConfirmGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas)
+    }
+    if (!channel.initToAckGas && channel.channelOpenInit && channel.channelOpenConfirm && channel.channelOpenTry && channel.channelOpenAck) {
+      channel.initToAckGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas + channel.channelOpenAck.gas)
+    }
+  }
+
+  await ctx.store.upsert(channels)
+}
+

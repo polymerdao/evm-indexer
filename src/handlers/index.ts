@@ -17,7 +17,7 @@ import {
   writeAckPacketHook
 } from './packets'
 import {
-  ackChannelHook,
+  ackChannelHook, channelMetrics,
   confirmChannelHook,
   createChannelInInitState,
   createChannelInTryState,
@@ -165,11 +165,16 @@ export async function handler(ctx: Context) {
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
+  const uniqueChannelIds = new Set<string>();
+
   let channelUpdates: Channel[] = []
-  let initChannels = entities.openInitIbcChannels.map((channelOpenInit) => createChannelInInitState(channelOpenInit, ctx));
-  let openTryChannels = entities.openTryIbcChannels.map((channelOpenTry) => createChannelInTryState(channelOpenTry, ctx));
+  let initChannels = entities.openInitIbcChannels.map(channelOpenInit => createChannelInInitState(channelOpenInit, ctx));
+  let openTryChannels = entities.openTryIbcChannels.map(channelOpenTry => createChannelInTryState(channelOpenTry, ctx));
   channelUpdates.push(...initChannels, ...openTryChannels);
-  await ctx.store.upsert(channelUpdates)
+  await ctx.store.upsert(channelUpdates);
+
+  initChannels.forEach(channel => uniqueChannelIds.add(channel.id));
+  openTryChannels.forEach(channel => uniqueChannelIds.add(channel.id));
 
   channelUpdates = []
   let channelEventUpdates: Entity[] = []
@@ -188,9 +193,13 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
 
   channelUpdates = []
   for (let channelOpenConfirm of entities.openConfirmIbcChannels) {
-    channelUpdates.push(...await confirmChannelHook(channelOpenConfirm, ctx))
+    let confirmedChannels = await confirmChannelHook(channelOpenConfirm, ctx);
+    channelUpdates.push(...confirmedChannels);
+    confirmedChannels.forEach(channel => uniqueChannelIds.add(channel.id));
   }
   await ctx.store.upsert(channelUpdates)
+
+  await channelMetrics(Array.from(uniqueChannelIds), ctx);
 }
 
 // Helper function to filter out duplicates and keep only the last occurrence based on `id`
@@ -202,7 +211,7 @@ const uniqueByLastOccurrence = <T extends { id: string }>(items: T[]): T[] => {
   return Array.from(seen.values());
 };
 
-const processAndUpsertPackets = async  <T extends { id: string }>(
+const processAndUpsertPackets = async <T extends { id: string }>(
   packets: T[],
   ctx: Context,
   hookFunction: (packet: T, ctx: Context) => Promise<any>
