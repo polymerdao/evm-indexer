@@ -5,6 +5,7 @@ import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
 import { logger } from "../utils/logger";
+import { LessThan, MoreThan } from "typeorm";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
@@ -167,7 +168,8 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
     where: {
       portId: portId,
       channelId: '',
-      state: ChannelStates.INIT
+      state: ChannelStates.INIT,
+      blockTimestamp: LessThan(channelOpenAck.blockTimestamp)
     },
     order: {blockTimestamp: "desc"},
     relations: {channelOpenInit: true}
@@ -187,7 +189,11 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
 
   // find counterparty channel
   let cpChannel = await ctx.store.findOne(models.Channel, {
-    where: {counterpartyPortId: portId, counterpartyChannelId: channelId},
+    where: {
+      counterpartyPortId: portId,
+      counterpartyChannelId: channelId,
+      blockTimestamp: MoreThan(incompleteInitChannel.blockTimestamp)
+    },
     relations: {channelOpenInit: true, channelOpenAck: true}
   })
 
@@ -229,14 +235,19 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
     where: {
       portId: portId,
       channelId: channelId,
-      state: models.ChannelStates.TRY
+      state: models.ChannelStates.TRY,
+      blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
     },
     order: {blockTimestamp: "desc"},
     relations: {channelOpenTry: true, channelOpenInit: true}
   })
 
   let cpChannel = await ctx.store.findOne(models.Channel, {
-    where: {counterpartyPortId: portId, counterpartyChannelId: channelId},
+    where: {
+      counterpartyPortId: portId,
+      counterpartyChannelId: channelId,
+      blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
+    },
     relations: {channelOpenInit: true, channelOpenAck: true, channelOpenTry: true, channelOpenConfirm: true}
   })
 
