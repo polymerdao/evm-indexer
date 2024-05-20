@@ -2,6 +2,7 @@ import { TypeormDatabase } from '@subsquid/typeorm-store'
 import { IbcProcessor } from '../utils/ibc-processor'
 import { topics } from '../utils/topics'
 import { handler } from '../handlers'
+import { VERSION } from "./constants";
 
 const DISPATCHERS: string[] = [
   process.env.DISPATCHER_ADDRESS_OPTIMISM!,
@@ -30,7 +31,7 @@ const processor = IbcProcessor()
 processor.run(new TypeormDatabase({
     supportHotBlocks: true,
     isolationLevel: "REPEATABLE READ",
-    stateSchema: 'optimism_processor'
+    stateSchema: `optimism_processor_${VERSION}`
   }),
   async (ctx) => {
     await handler(ctx)
