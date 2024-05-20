@@ -120,7 +120,9 @@ export async function handler(ctx: Context) {
 
       let portPrefix = portPrefixCache.get(log.address)
       if (!portPrefix) {
-        const contract = new Contract(ctx, block.header, log.address)
+        // Get the port prefix from the last block in case the port prefix hasn't been properly set in the beginning
+        let latestHeight = Number(await ctx._chain.client.call("eth_blockNumber", ["latest"]))
+        const contract = new Contract(ctx, {height: latestHeight}, log.address)
         portPrefix = String(await contract.portPrefix())
         portPrefixCache.set(log.address, portPrefix)
       }
