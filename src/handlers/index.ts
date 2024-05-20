@@ -158,7 +158,7 @@ export async function handler(ctx: Context) {
 
   let chainId = Number(await chainIdPromise);
 
-  await insertNewEntities(ctx, entities);
+  await upsertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities)
   await postBlockPacketHook(ctx, entities)
   await updateAllStats(ctx, entities, chainId);
@@ -248,19 +248,19 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   await packetMetrics(Array.from(uniquePacketIds), ctx);
 }
 
-async function insertNewEntities(ctx: Context, entities: Entities) {
-  await ctx.store.insert(entities.openInitIbcChannels);
-  await ctx.store.insert(entities.openTryIbcChannels);
-  await ctx.store.insert(entities.openAckIbcChannels);
-  await ctx.store.insert(entities.openConfirmIbcChannels);
-  await ctx.store.insert(entities.closeIbcChannels);
-  await ctx.store.insert(entities.channels);
-  await ctx.store.insert(entities.sendPackets);
-  await ctx.store.insert(entities.writeAckPackets);
-  await ctx.store.insert(entities.recvPackets);
-  await ctx.store.insert(entities.acknowledgements);
-  await ctx.store.insert(entities.timeouts);
-  await ctx.store.insert(entities.writeTimeoutPackets);
+async function upsertNewEntities(ctx: Context, entities: Entities) {
+  await ctx.store.upsert(entities.openInitIbcChannels);
+  await ctx.store.upsert(entities.openTryIbcChannels);
+  await ctx.store.upsert(entities.openAckIbcChannels);
+  await ctx.store.upsert(entities.openConfirmIbcChannels);
+  await ctx.store.upsert(entities.closeIbcChannels);
+  await ctx.store.upsert(entities.channels);
+  await ctx.store.upsert(entities.sendPackets);
+  await ctx.store.upsert(entities.writeAckPackets);
+  await ctx.store.upsert(entities.recvPackets);
+  await ctx.store.upsert(entities.acknowledgements);
+  await ctx.store.upsert(entities.timeouts);
+  await ctx.store.upsert(entities.writeTimeoutPackets);
 }
 
 async function updateAllStats(ctx: Context, entities: Entities, chainId: number) {
