@@ -68,4 +68,13 @@ export class SendPacket {
 
     @OneToOne_(() => Packet, e => e.sendPacket)
     packetRelation!: Packet | undefined | null
+
+    @StringColumn_({nullable: true})
+    polymerTxHash!: string | undefined | null
+
+    @IntColumn_({nullable: true})
+    polymerGas!: number | undefined | null
+
+    @BigIntColumn_({nullable: true})
+    polymerBlockNumber!: bigint | undefined | null
 }

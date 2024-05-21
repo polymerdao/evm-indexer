@@ -45,6 +45,9 @@ type SendPacket @entity {
   maxPriorityFeePerGas: BigInt
   from: String!
   packetRelation: Packet @derivedFrom(field: "sendPacket")
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type RecvPacket @entity {
@@ -87,6 +90,9 @@ type WriteAckPacket @entity {
   maxPriorityFeePerGas: BigInt
   from: String!
   packet: Packet @derivedFrom(field: "writeAckPacket")
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type Acknowledgement @entity {

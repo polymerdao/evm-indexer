@@ -1,11 +1,13 @@
 import * as models from '../model'
-import { Packet } from '../model'
+import { Packet, SendPacket, WriteAckPacket } from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
 import { logger } from "../utils/logger";
 import { In } from "typeorm";
+import { TmClient } from "./tmclient";
+import { IndexedTx } from "@cosmjs/stargate";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -294,11 +296,94 @@ export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Cont
   });
 }
 
+async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
+  const stargateClient = await TmClient.getStargate();
+  let sendPacket = packet.sendPacket!
+  const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
+
+  let txs: IndexedTx[] = []
+  try {
+    txs = await stargateClient.searchTx([
+      {
+        key: "send_packet.packet_sequence",
+        value: sendPacket.sequence
+      },
+      {
+        key: "send_packet.packet_src_port",
+        value: srcPortId
+      },
+      {
+        key: "send_packet.packet_src_channel",
+        value: sendPacket.srcChannelId
+      }
+    ])
+  } catch (e) {
+    throw new Error(`Polymer tx search failed for send packet ${sendPacket.id}`)
+  }
+
+  if (txs.length > 1) {
+    throw new Error(`Multiple txs found for sendPacketId: ${sendPacket.id}`);
+  }
+
+  if (txs.length == 1) {
+    let polymerGas = Number(txs[0]!.gasUsed);
+    packet.sendToRecvPolymerGas = polymerGas
+    packet.sendPacket!.polymerGas = polymerGas;
+    packet.sendPacket!.polymerTxHash = txs[0]!.hash;
+    packet.sendPacket!.polymerBlockNumber = BigInt(txs[0]!.height);
+  } else {
+    ctx.log.warn(`No polymer tx found for send packet ${sendPacket.id}`)
+  }
+}
+
+async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
+  const stargateClient = await TmClient.getStargate();
+  let writeAckPacket = packet.writeAckPacket!
+  const destPortId = `polyibc.${writeAckPacket.dispatcherClientName}.${writeAckPacket.writerPortAddress.slice(2)}`;
+
+  let txs: IndexedTx[] = []
+  try {
+    txs = await stargateClient.searchTx([
+      {
+        key: "write_acknowledgement.packet_sequence",
+        value: writeAckPacket.sequence
+      },
+      {
+        key: "write_acknowledgement.packet_dst_port",
+        value: destPortId
+      },
+      {
+        key: "write_acknowledgement.packet_dst_channel",
+        value: writeAckPacket.writerChannelId
+      }
+    ])
+  } catch (e) {
+    throw new Error(`Polymer tx search failed for writer ack packet ${writeAckPacket.id}`)
+  }
+
+  if (txs.length > 1) {
+    throw new Error(`Multiple txs found for write ack packet: ${writeAckPacket.id}`);
+  }
+
+  if (txs.length == 1) {
+    let polymerGas = Number(txs[0]!.gasUsed);
+    packet.sendToAckPolymerGas = polymerGas + packet.sendToRecvPolymerGas!
+    packet.writeAckPacket!.polymerGas = polymerGas;
+    packet.writeAckPacket!.polymerTxHash = txs[0]!.hash;
+    packet.writeAckPacket!.polymerBlockNumber = BigInt(txs[0]!.height);
+  } else {
+    ctx.log.warn(`No polymer tx found for write ack packet ${writeAckPacket.id}`)
+  }
+}
+
 export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {
   const packets = await ctx.store.find(Packet, {
     where: {id: In(packetIds)},
     relations: {sendPacket: true, recvPacket: true, ackPacket: true}
   })
+
+  let sendPackets: SendPacket[] = []
+  let writeAckPackets: WriteAckPacket[] = []
 
   for (const packet of packets) {
     if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
@@ -316,7 +401,19 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
     if (!packet.sendToAckGas && packet.ackPacket?.gas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
       packet.sendToAckGas = Number(packet.ackPacket.gas + packet.sendPacket.gas + packet.recvPacket.gas);
     }
+
+    if (!packet.sendToRecvPolymerGas && packet.sendPacket && packet.recvPacket) {
+      await updateSendToRecvPolymerGas(packet, ctx);
+      sendPackets.push(packet.sendPacket)
+    }
+
+    if (!packet.sendToAckPolymerGas && packet.sendPacket && packet.recvPacket && packet.writeAckPacket) {
+      await updateSendToAckPolymerGas(packet, ctx);
+      writeAckPackets.push(packet.writeAckPacket)
+    }
   }
 
+  await ctx.store.upsert(sendPackets);
+  await ctx.store.upsert(writeAckPackets);
   await ctx.store.upsert(packets);
 }

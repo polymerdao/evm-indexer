@@ -63,4 +63,13 @@ export class WriteAckPacket {
 
     @OneToOne_(() => Packet, e => e.writeAckPacket)
     packet!: Packet | undefined | null
+
+    @StringColumn_({nullable: true})
+    polymerTxHash!: string | undefined | null
+
+    @IntColumn_({nullable: true})
+    polymerGas!: number | undefined | null
+
+    @BigIntColumn_({nullable: true})
+    polymerBlockNumber!: bigint | undefined | null
 }
