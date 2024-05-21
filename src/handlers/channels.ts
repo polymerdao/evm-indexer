@@ -1,18 +1,19 @@
-import * as models from '../model'
-import { ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelStates } from '../model'
+import { Channel, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ChannelStates } from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
 import { logger } from "../utils/logger";
 import { In, LessThan, MoreThan } from "typeorm";
+import { IndexedTx, StargateClient } from "@cosmjs/stargate";
+import { TmClient } from "./tmclient";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
   let portAddress = ethers.getAddress(event.recevier)
   let portId = `${portPrefix}${portAddress.slice(2)}`
 
-  return new models.ChannelOpenInit({
+  return new ChannelOpenInit({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: getDispatcherType(portId),
@@ -37,14 +38,14 @@ export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log
   });
 }
 
-export function handleChannelOpenTry(block: Block, log: Log): models.ChannelOpenTry {
+export function handleChannelOpenTry(block: Block, log: Log): ChannelOpenTry {
   let event = dispatcher.events.ChannelOpenTry.decode(log);
   let portAddress = ethers.getAddress(event.receiver)
   let counterpartyPortId = event.counterpartyPortId;
   let counterpartyChannelId = ethers.decodeBytes32String(event.counterpartyChannelId);
   const txParams = dispatcher.functions.channelOpenTry.decode(log.transaction!.input)
 
-  return new models.ChannelOpenTry({
+  return new ChannelOpenTry({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: getDispatcherType(txParams.local.portId),
@@ -75,7 +76,7 @@ export function handleChannelOpenAck(block: Block, log: Log): ChannelOpenAck {
   let portAddress = ethers.getAddress(event.receiver)
   let channelId = ethers.decodeBytes32String(event.channelId);
 
-  return new models.ChannelOpenAck({
+  return new ChannelOpenAck({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: getDispatcherType(txParams.local.portId),
@@ -101,7 +102,7 @@ export function handleChannelOpenConfirm(block: Block, log: Log): ChannelOpenCon
   let portAddress = ethers.getAddress(event.receiver)
   const txParams = dispatcher.functions.channelOpenConfirm.decode(log.transaction!.input)
 
-  return new models.ChannelOpenConfirm({
+  return new ChannelOpenConfirm({
     id: log.id,
     dispatcherAddress: log.address,
     dispatcherType: getDispatcherType(txParams.local.portId),
@@ -122,8 +123,8 @@ export function handleChannelOpenConfirm(block: Block, log: Log): ChannelOpenCon
   })
 }
 
-export function createChannelInInitState(channelOpenInit: models.ChannelOpenInit, ctx: Context) {
-  return new models.Channel({
+export function createChannelInInitState(channelOpenInit: ChannelOpenInit, ctx: Context) {
+  return new Channel({
     id: channelOpenInit.id,
     portId: channelOpenInit.portId,
     channelId: channelOpenInit.channelId,
@@ -135,13 +136,13 @@ export function createChannelInInitState(channelOpenInit: models.ChannelOpenInit
     blockNumber: channelOpenInit.blockNumber,
     blockTimestamp: channelOpenInit.blockTimestamp,
     transactionHash: channelOpenInit.transactionHash,
-    state: models.ChannelStates.INIT,
+    state: ChannelStates.INIT,
     channelOpenInit
   });
 }
 
-export function createChannelInTryState(channelOpenTry: models.ChannelOpenTry, ctx: Context) {
-  return new models.Channel({
+export function createChannelInTryState(channelOpenTry: ChannelOpenTry, ctx: Context) {
+  return new Channel({
     id: channelOpenTry.id,
     portId: channelOpenTry.portId,
     channelId: channelOpenTry.channelId,
@@ -153,18 +154,18 @@ export function createChannelInTryState(channelOpenTry: models.ChannelOpenTry, c
     blockNumber: channelOpenTry.blockNumber,
     blockTimestamp: channelOpenTry.blockTimestamp,
     transactionHash: channelOpenTry.transactionHash,
-    state: models.ChannelStates.TRY,
+    state: ChannelStates.TRY,
     channelOpenTry
   })
 }
 
-export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx: Context) {
+export async function ackChannelHook(channelOpenAck: ChannelOpenAck, ctx: Context) {
   let portId = channelOpenAck.portId;
   let channelId = channelOpenAck.channelId;
 
   // update latest INIT state record that have incomplete id
   // NOTE: there is an assumption that the latest INIT event corresponds to the current event which is not 100% correct
-  const incompleteInitChannel = await ctx.store.findOne(models.Channel, {
+  const incompleteInitChannel = await ctx.store.findOne(Channel, {
     where: {
       portId: portId,
       channelId: '',
@@ -188,7 +189,7 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   }
 
   // find counterparty channel
-  let cpChannel = await ctx.store.findOne(models.Channel, {
+  let cpChannel = await ctx.store.findOne(Channel, {
     where: {
       counterpartyPortId: portId,
       counterpartyChannelId: channelId,
@@ -206,7 +207,7 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   }
 
   incompleteInitChannel.channelId = channelId
-  incompleteInitChannel.state = models.ChannelStates.OPEN
+  incompleteInitChannel.state = ChannelStates.OPEN
   incompleteInitChannel.counterpartyPortId = channelOpenAck.counterpartyPortId
   incompleteInitChannel.counterpartyChannelId = channelOpenAck.counterpartyChannelId
   incompleteInitChannel.channelOpenInit!.counterpartyChannelId = channelOpenAck.counterpartyChannelId
@@ -222,23 +223,23 @@ export async function ackChannelHook(channelOpenAck: models.ChannelOpenAck, ctx:
   }
 }
 
-export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenConfirm, ctx: Context) {
+export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm, ctx: Context) {
   let portId = channelOpenConfirm.portId;
   let channelId = channelOpenConfirm.channelId;
 
   // find the earliest channel in TRY state
-  const tryChannel = await ctx.store.findOneOrFail(models.Channel, {
+  const tryChannel = await ctx.store.findOneOrFail(Channel, {
     where: {
       portId: portId,
       channelId: channelId,
-      state: models.ChannelStates.TRY,
+      state: ChannelStates.TRY,
       blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
     },
     order: {blockTimestamp: "desc"},
     relations: {channelOpenTry: true, channelOpenInit: true, channelOpenAck: true, channelOpenConfirm: true}
   })
 
-  let cpChannel = await ctx.store.findOne(models.Channel, {
+  let cpChannel = await ctx.store.findOne(Channel, {
     where: {
       counterpartyPortId: portId,
       counterpartyChannelId: channelId,
@@ -247,7 +248,7 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
     relations: {channelOpenInit: true, channelOpenAck: true, channelOpenTry: true, channelOpenConfirm: true}
   })
 
-  let entities: models.Channel[] = []
+  let entities: Channel[] = []
   if (cpChannel) {
     cpChannel.channelOpenTry = tryChannel.channelOpenTry
     cpChannel.channelOpenConfirm = channelOpenConfirm
@@ -257,7 +258,7 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
     tryChannel.channelOpenAck = cpChannel.channelOpenAck
   }
 
-  tryChannel.state = models.ChannelStates.OPEN
+  tryChannel.state = ChannelStates.OPEN
   tryChannel.channelOpenConfirm = channelOpenConfirm
 
   if (tryChannel.channelOpenInit) {
@@ -268,36 +269,146 @@ export async function confirmChannelHook(channelOpenConfirm: models.ChannelOpenC
   return entities
 }
 
+async function getChannelTx(
+  stargateClient: StargateClient,
+  channel: ChannelOpenInit | ChannelOpenTry | ChannelOpenAck | ChannelOpenConfirm,
+  type: 'init' | 'try' | 'ack' | 'confirm'
+): Promise<IndexedTx | null> {
+  const txs = await stargateClient.searchTx([
+    {key: `channel_open_${type}.port_id`, value: channel.portId},
+    {key: `channel_open_${type}.channel_id`, value: channel.channelId},
+    {key: `channel_open_${type}.counterparty_port_id`, value: channel.counterpartyPortId},
+  ]);
+
+  if (txs.length > 1) {
+    throw new Error(`\nMultiple txs found for channel_open_${type} with channel id: ${channel.id}`);
+  }
+
+  if (txs.length === 0) {
+    throw new Error(`\nNo txs found for channel_open_${type}: channel_open_${type}.port_id=${channel.portId} channel_open_${type}.channel_id=${channel.channelId} channel_open_${type}.counterparty_port_id=${channel.counterpartyPortId}`);
+    // if (channel.channelId) {
+    //   console.error(`\nNo polymer txs found for channel_open_${type}: ${channel.id}`);
+    // }
+    // return null;
+  }
+
+  return txs[0]!;
+}
+
+
+async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
+  const stargateClient = await TmClient.getStargate();
+
+  if (!channel.channelOpenInit || !channel.channelOpenTry) {
+    throw new Error(`Expected channel relations not found for channel ${channel.id}`);
+  }
+
+  const initTx = await getChannelTx(stargateClient, channel.channelOpenInit!, 'init')
+  const tryTx = await getChannelTx(stargateClient, channel.channelOpenTry!, 'try')
+  let initToTryTime = channel.channelOpenTry!.blockTimestamp - channel.channelOpenInit!.blockTimestamp;
+
+  channel.channelOpenInit!.polymerGas = Number(initTx!.gasUsed)
+  channel.channelOpenTry!.polymerGas = Number(tryTx!.gasUsed)
+  channel.channelOpenInit!.polymerTxHash = initTx!.hash
+  channel.channelOpenTry!.polymerTxHash = tryTx!.hash
+  channel.channelOpenInit!.polymerBlockNumber = BigInt(initTx!.height)
+  channel.channelOpenTry!.polymerBlockNumber = BigInt(tryTx!.height)
+
+  channel.initToTryPolymerGas = Number(initTx!.gasUsed) + Number(tryTx!.gasUsed)
+  channel.initToTryTime = Number(initToTryTime)
+}
+
+
+async function updateInitToConfirmMetrics(channel: Channel, ctx: Context) {
+  const stargateClient = await TmClient.getStargate();
+
+  if (!channel.channelOpenInit || !channel.channelOpenConfirm || !channel.channelOpenTry || !channel.channelOpenAck) {
+    throw new Error(`Expected channel relations not found for channel ${channel.id}`);
+  }
+
+  const confirmTx = await getChannelTx(stargateClient, channel.channelOpenConfirm, 'confirm');
+  const initToConfirmTime = Number(channel.channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp);
+
+  channel.channelOpenConfirm.polymerGas = Number(confirmTx?.gasUsed);
+  channel.channelOpenConfirm.polymerTxHash = confirmTx?.hash;
+  channel.channelOpenConfirm.polymerBlockNumber = BigInt(confirmTx!.height);
+
+  channel.initToConfirmTime = initToConfirmTime / 1000; // Convert to seconds
+  channel.initToConfirmPolymerGas = Number(channel.channelOpenInit.polymerGas) + Number(channel.channelOpenTry.polymerGas) + Number(channel.channelOpenAck.polymerGas) + Number(confirmTx?.gasUsed) ;
+}
+
+async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
+  const stargateClient = await TmClient.getStargate();
+
+  if (!channel.channelOpenInit || !channel.channelOpenAck || !channel.channelOpenTry) {
+    throw new Error(`Expected channel relations not found for channel ${channel.id}`);
+  }
+
+  const ackTx = await getChannelTx(stargateClient, channel.channelOpenAck, 'ack');
+  const initToAckTime = Number(channel.channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp);
+
+  channel.channelOpenAck.polymerGas = Number(ackTx?.gasUsed);
+  channel.channelOpenAck.polymerTxHash = ackTx?.hash;
+  channel.channelOpenAck.polymerBlockNumber = BigInt(ackTx!.height);
+
+  channel.initToAckTime = initToAckTime / 1000; // Convert to seconds
+  channel.initToAckPolymerGas = Number(channel.channelOpenInit.polymerGas) + Number(channel.channelOpenTry.polymerGas) + Number(ackTx?.gasUsed);
+}
 
 export async function channelMetrics(channelIds: string[], ctx: Context): Promise<void> {
-  const channels = await ctx.store.find(models.Channel, {
+  const channels = await ctx.store.find(Channel, {
     where: {id: In(channelIds)},
     relations: {channelOpenInit: true, channelOpenTry: true, channelOpenAck: true, channelOpenConfirm: true}
   });
 
+  const initChannels = new Map<string, ChannelOpenInit>();
+  const tryChannels = new Map<string, ChannelOpenTry>();
+  const ackChannels = new Map<string, ChannelOpenAck>();
+  const confirmChannels = new Map<string, ChannelOpenConfirm>();
+
   for (const channel of channels) {
     if (!channel.initToTryTime && channel.channelOpenInit && channel.channelOpenTry) {
-      channel.initToTryTime = Number(channel.channelOpenTry.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000
+      channel.initToTryTime = Number(channel.channelOpenTry.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000;
     }
 
     if (!channel.initToConfirmTime && channel.channelOpenInit && channel.channelOpenConfirm) {
-      channel.initToConfirmTime = Number(channel.channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000
+      channel.initToConfirmTime = Number(channel.channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000;
     }
     if (!channel.initToAckTime && channel.channelOpenInit && channel.channelOpenAck) {
-      channel.initToAckTime = Number(channel.channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000
+      channel.initToAckTime = Number(channel.channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp) / 1000;
     }
 
     if (!channel.initToTryGas && channel.channelOpenInit && channel.channelOpenTry) {
-      channel.initToTryGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas)
+      channel.initToTryGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas);
     }
     if (!channel.initToConfirmGas && channel.channelOpenInit && channel.channelOpenConfirm && channel.channelOpenTry) {
-      channel.initToConfirmGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas)
+      channel.initToConfirmGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas);
     }
     if (!channel.initToAckGas && channel.channelOpenInit && channel.channelOpenConfirm && channel.channelOpenTry && channel.channelOpenAck) {
-      channel.initToAckGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas + channel.channelOpenAck.gas)
+      channel.initToAckGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas + channel.channelOpenAck.gas);
+    }
+
+    if (!channel.initToTryPolymerGas && channel.channelOpenInit && channel.channelOpenTry) {
+      await updateInitToTryMetrics(channel, ctx);
+      initChannels.set(channel.channelOpenInit.id, channel.channelOpenInit);
+      tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
+    }
+
+    if (!channel.initToAckTime && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck) {
+      await updateInitToAckMetrics(channel, ctx);
+      ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
+    }
+
+    if (!channel.initToConfirmTime && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm) {
+      await updateInitToConfirmMetrics(channel, ctx);
+      confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
     }
   }
 
-  await ctx.store.upsert(channels)
+  await ctx.store.upsert(Array.from(initChannels.values()));
+  await ctx.store.upsert(Array.from(tryChannels.values()));
+  await ctx.store.upsert(Array.from(ackChannels.values()));
+  await ctx.store.upsert(Array.from(confirmChannels.values()));
+  await ctx.store.upsert(channels);
 }
 

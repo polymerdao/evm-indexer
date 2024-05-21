@@ -219,6 +219,9 @@ type ChannelOpenInit @entity {
   gasPrice: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type ChannelOpenTry @entity {
@@ -243,6 +246,9 @@ type ChannelOpenTry @entity {
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type ChannelOpenAck @entity {
@@ -264,6 +270,9 @@ type ChannelOpenAck @entity {
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type ChannelOpenConfirm @entity {
@@ -285,6 +294,9 @@ type ChannelOpenConfirm @entity {
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type CloseIbcChannel @entity {
@@ -304,6 +316,9 @@ type CloseIbcChannel @entity {
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
+  polymerTxHash: String
+  polymerGas: Int
+  polymerBlockNumber: BigInt
 }
 
 type Stat @entity {

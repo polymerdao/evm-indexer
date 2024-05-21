@@ -59,4 +59,13 @@ export class ChannelOpenAck {
 
     @StringColumn_({nullable: false})
     from!: string
+
+    @StringColumn_({nullable: true})
+    polymerTxHash!: string | undefined | null
+
+    @IntColumn_({nullable: true})
+    polymerGas!: number | undefined | null
+
+    @BigIntColumn_({nullable: true})
+    polymerBlockNumber!: bigint | undefined | null
 }
