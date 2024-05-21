@@ -177,6 +177,7 @@ type Channel @entity{
   channelOpenAck: ChannelOpenAck @index
   channelOpenConfirm: ChannelOpenConfirm @index
   closeIbcChannel: CloseIbcChannel @index
+  cpChannel: Channel @unique
 
   initToTryTime: Int
   initToAckTime: Int

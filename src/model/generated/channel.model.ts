@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, Index as Index_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToOne as OneToOne_, JoinColumn as JoinColumn_} from "@subsquid/typeorm-store"
 import {ChannelStates} from "./_channelStates"
 import {ChannelOpenInit} from "./channelOpenInit.model"
 import {ChannelOpenTry} from "./channelOpenTry.model"
@@ -67,6 +67,11 @@ export class Channel {
     @Index_()
     @ManyToOne_(() => CloseIbcChannel, {nullable: true})
     closeIbcChannel!: CloseIbcChannel | undefined | null
+
+    @Index_({unique: true})
+    @OneToOne_(() => Channel, {nullable: true})
+    @JoinColumn_()
+    cpChannel!: Channel | undefined | null
 
     @IntColumn_({nullable: true})
     initToTryTime!: number | undefined | null

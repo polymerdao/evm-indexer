@@ -204,6 +204,8 @@ export async function ackChannelHook(channelOpenAck: ChannelOpenAck, ctx: Contex
   if (cpChannel) {
     cpChannel.channelOpenInit = incompleteInitChannel.channelOpenInit
     cpChannel.channelOpenAck = channelOpenAck
+    cpChannel.cpChannel = incompleteInitChannel
+    incompleteInitChannel.cpChannel = cpChannel
   }
 
   incompleteInitChannel.channelId = channelId
@@ -252,8 +254,10 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
   if (cpChannel) {
     cpChannel.channelOpenTry = tryChannel.channelOpenTry
     cpChannel.channelOpenConfirm = channelOpenConfirm
+    cpChannel.cpChannel = tryChannel
     entities.push(cpChannel)
 
+    tryChannel.cpChannel = cpChannel
     tryChannel.channelOpenInit = cpChannel.channelOpenInit
     tryChannel.channelOpenAck = cpChannel.channelOpenAck
   }
@@ -305,7 +309,6 @@ async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
 
   const initTx = await getChannelTx(stargateClient, channel.channelOpenInit!, 'init')
   const tryTx = await getChannelTx(stargateClient, channel.channelOpenTry!, 'try')
-  let initToTryTime = channel.channelOpenTry!.blockTimestamp - channel.channelOpenInit!.blockTimestamp;
 
   channel.channelOpenInit!.polymerGas = Number(initTx!.gasUsed)
   channel.channelOpenTry!.polymerGas = Number(tryTx!.gasUsed)
@@ -314,8 +317,16 @@ async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
   channel.channelOpenInit!.polymerBlockNumber = BigInt(initTx!.height)
   channel.channelOpenTry!.polymerBlockNumber = BigInt(tryTx!.height)
 
-  channel.initToTryPolymerGas = Number(initTx!.gasUsed) + Number(tryTx!.gasUsed)
+  let initToTryTime = channel.channelOpenTry!.blockTimestamp - channel.channelOpenInit!.blockTimestamp;
+  let initToTryPolymerGas = Number(initTx!.gasUsed) + Number(tryTx!.gasUsed);
+
+  channel.initToTryPolymerGas = initToTryPolymerGas
   channel.initToTryTime = Number(initToTryTime)
+
+  if (channel.cpChannel) {
+    channel.cpChannel.initToTryTime = Number(initToTryTime)
+    channel.cpChannel.initToTryPolymerGas = initToTryPolymerGas
+  }
 }
 
 
@@ -327,14 +338,21 @@ async function updateInitToConfirmMetrics(channel: Channel, ctx: Context) {
   }
 
   const confirmTx = await getChannelTx(stargateClient, channel.channelOpenConfirm, 'confirm');
-  const initToConfirmTime = Number(channel.channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp);
 
   channel.channelOpenConfirm.polymerGas = Number(confirmTx?.gasUsed);
   channel.channelOpenConfirm.polymerTxHash = confirmTx?.hash;
   channel.channelOpenConfirm.polymerBlockNumber = BigInt(confirmTx!.height);
 
+  let initToConfirmPolymerGas = Number(channel.channelOpenInit.polymerGas) + Number(channel.channelOpenTry.polymerGas) + Number(channel.channelOpenAck.polymerGas) + Number(confirmTx?.gasUsed);
+  const initToConfirmTime = Number(channel.channelOpenConfirm.blockTimestamp - channel.channelOpenInit.blockTimestamp);
+
   channel.initToConfirmTime = initToConfirmTime / 1000; // Convert to seconds
-  channel.initToConfirmPolymerGas = Number(channel.channelOpenInit.polymerGas) + Number(channel.channelOpenTry.polymerGas) + Number(channel.channelOpenAck.polymerGas) + Number(confirmTx?.gasUsed) ;
+  channel.initToConfirmPolymerGas = initToConfirmPolymerGas;
+
+  if (channel.cpChannel) {
+    channel.cpChannel.initToConfirmTime = initToConfirmTime / 1000;
+    channel.cpChannel.initToConfirmPolymerGas = initToConfirmPolymerGas;
+  }
 }
 
 async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
@@ -345,20 +363,33 @@ async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
   }
 
   const ackTx = await getChannelTx(stargateClient, channel.channelOpenAck, 'ack');
-  const initToAckTime = Number(channel.channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp);
 
   channel.channelOpenAck.polymerGas = Number(ackTx?.gasUsed);
   channel.channelOpenAck.polymerTxHash = ackTx?.hash;
   channel.channelOpenAck.polymerBlockNumber = BigInt(ackTx!.height);
 
+  const initToAckTime = Number(channel.channelOpenAck.blockTimestamp - channel.channelOpenInit.blockTimestamp);
+  let initToAckPolymerGas = Number(channel.channelOpenInit.polymerGas) + Number(channel.channelOpenTry.polymerGas) + Number(ackTx?.gasUsed);
+
   channel.initToAckTime = initToAckTime / 1000; // Convert to seconds
-  channel.initToAckPolymerGas = Number(channel.channelOpenInit.polymerGas) + Number(channel.channelOpenTry.polymerGas) + Number(ackTx?.gasUsed);
+  channel.initToAckPolymerGas = initToAckPolymerGas;
+
+  if (channel.cpChannel) {
+    channel.cpChannel.initToAckTime = initToAckTime / 1000;
+    channel.cpChannel.initToAckPolymerGas = initToAckPolymerGas;
+  }
 }
 
 export async function channelMetrics(channelIds: string[], ctx: Context): Promise<void> {
   const channels = await ctx.store.find(Channel, {
     where: {id: In(channelIds)},
-    relations: {channelOpenInit: true, channelOpenTry: true, channelOpenAck: true, channelOpenConfirm: true}
+    relations: {
+      channelOpenInit: true,
+      channelOpenTry: true,
+      channelOpenAck: true,
+      channelOpenConfirm: true,
+      cpChannel: true
+    }
   });
 
   const initChannels = new Map<string, ChannelOpenInit>();
@@ -410,5 +441,8 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
   await ctx.store.upsert(Array.from(ackChannels.values()));
   await ctx.store.upsert(Array.from(confirmChannels.values()));
   await ctx.store.upsert(channels);
+
+  const cpChannels = channels.map(c => c.cpChannel).filter(c => c !== null) as Channel[];
+  await ctx.store.upsert(cpChannels);
 }
 

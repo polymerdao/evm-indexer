@@ -318,7 +318,7 @@ async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
       }
     ])
   } catch (e) {
-    throw new Error(`Polymer tx search failed for send packet ${sendPacket.id}`)
+    throw new Error(`Polymer tx search failed for send packet ${sendPacket.id} seq: ${sendPacket.sequence} srcPort: ${srcPortId} srcChannel: ${sendPacket.srcChannelId}`)
   }
 
   if (txs.length > 1) {
