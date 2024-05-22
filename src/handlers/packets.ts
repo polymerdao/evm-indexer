@@ -8,6 +8,8 @@ import { logger } from "../utils/logger";
 import { In } from "typeorm";
 import { TmClient } from "./tmclient";
 import { IndexedTx } from "@cosmjs/stargate";
+import { SearchTxQuery } from "@cosmjs/stargate/build/search";
+import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -296,84 +298,92 @@ export async function ackPacketHook(ackPacket: models.Acknowledgement, ctx: Cont
   });
 }
 
-async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
+async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<PolymerData | null> {
+  const polymerData = await getCosmosPolymerData(query, eventType)
+  if (polymerData) {
+    return polymerData
+  }
+
   const stargateClient = await TmClient.getStargate();
-  let sendPacket = packet.sendPacket!
-  const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
 
   let txs: IndexedTx[] = []
   try {
-    txs = await stargateClient.searchTx([
-      {
-        key: "send_packet.packet_sequence",
-        value: sendPacket.sequence
-      },
-      {
-        key: "send_packet.packet_src_port",
-        value: srcPortId
-      },
-      {
-        key: "send_packet.packet_src_channel",
-        value: sendPacket.srcChannelId
-      }
-    ])
+    console.log(query)
+    txs = await stargateClient.searchTx(query)
   } catch (e) {
-    throw new Error(`Polymer tx search failed for send packet ${sendPacket.id} seq: ${sendPacket.sequence} srcPort: ${srcPortId} srcChannel: ${sendPacket.srcChannelId}`)
+    throw new Error(`Polymer tx search failed ${e}`)
   }
 
   if (txs.length > 1) {
-    throw new Error(`Multiple txs found for sendPacketId: ${sendPacket.id}`);
+    throw new Error(`Multiple txs found during search`);
   }
 
-  if (txs.length == 1) {
-    let polymerGas = Number(txs[0]!.gasUsed);
-    packet.sendToRecvPolymerGas = polymerGas
-    packet.sendPacket!.polymerGas = polymerGas;
-    packet.sendPacket!.polymerTxHash = txs[0]!.hash;
-    packet.sendPacket!.polymerBlockNumber = BigInt(txs[0]!.height);
-  } else {
-    ctx.log.warn(`No polymer tx found for send packet ${sendPacket.id}`)
+  if (txs.length == 0) {
+    return null
   }
+
+  return txs[0]
+}
+
+async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
+  let sendPacket = packet.sendPacket!
+  const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
+  const polymerData = await getPolymerData([
+    {
+      key: "send_packet.packet_sequence",
+      value: sendPacket.sequence
+    },
+    {
+      key: "send_packet.packet_src_port",
+      value: srcPortId
+    },
+    {
+      key: "send_packet.packet_src_channel",
+      value: sendPacket.srcChannelId
+    }
+  ], "send_packet")
+
+  if (!polymerData) {
+    ctx.log.warn(`No polymer tx found for send packet ${sendPacket.id}`)
+    return
+  }
+
+  let polymerGas = Number(polymerData!.gasUsed);
+  packet.sendToRecvPolymerGas = polymerGas
+  packet.sendPacket!.polymerGas = polymerGas;
+  packet.sendPacket!.polymerTxHash = polymerData!.hash;
+  packet.sendPacket!.polymerBlockNumber = BigInt(polymerData!.height);
 }
 
 async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
-  const stargateClient = await TmClient.getStargate();
   let writeAckPacket = packet.writeAckPacket!
   const destPortId = `polyibc.${writeAckPacket.dispatcherClientName}.${writeAckPacket.writerPortAddress.slice(2)}`;
 
-  let txs: IndexedTx[] = []
-  try {
-    txs = await stargateClient.searchTx([
-      {
-        key: "write_acknowledgement.packet_sequence",
-        value: writeAckPacket.sequence
-      },
-      {
-        key: "write_acknowledgement.packet_dst_port",
-        value: destPortId
-      },
-      {
-        key: "write_acknowledgement.packet_dst_channel",
-        value: writeAckPacket.writerChannelId
-      }
-    ])
-  } catch (e) {
-    throw new Error(`Polymer tx search failed for writer ack packet ${writeAckPacket.id}`)
-  }
+  const polymerData = await getPolymerData([
+    {
+      key: "write_acknowledgement.packet_sequence",
+      value: writeAckPacket.sequence
+    },
+    {
+      key: "write_acknowledgement.packet_dst_port",
+      value: destPortId
+    },
+    {
+      key: "write_acknowledgement.packet_dst_channel",
+      value: writeAckPacket.writerChannelId
+    }
+  ], "write_acknowledgement")
 
-  if (txs.length > 1) {
-    throw new Error(`Multiple txs found for write ack packet: ${writeAckPacket.id}`);
-  }
-
-  if (txs.length == 1) {
-    let polymerGas = Number(txs[0]!.gasUsed);
-    packet.sendToAckPolymerGas = polymerGas + packet.sendToRecvPolymerGas!
-    packet.writeAckPacket!.polymerGas = polymerGas;
-    packet.writeAckPacket!.polymerTxHash = txs[0]!.hash;
-    packet.writeAckPacket!.polymerBlockNumber = BigInt(txs[0]!.height);
-  } else {
+  if (!polymerData) {
     ctx.log.warn(`No polymer tx found for write ack packet ${writeAckPacket.id}`)
+    return
   }
+
+  let polymerGas = Number(polymerData!.gasUsed);
+  packet.sendToAckPolymerGas = polymerGas + packet.sendToRecvPolymerGas!
+  packet.writeAckPacket!.polymerGas = polymerGas;
+  packet.writeAckPacket!.polymerTxHash = polymerData!.hash;
+  packet.writeAckPacket!.polymerBlockNumber = BigInt(polymerData!.height);
 }
 
 export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {

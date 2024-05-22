@@ -5,8 +5,8 @@ import { ethers } from 'ethers'
 import { getDispatcherClientName, getDispatcherType } from "./helpers";
 import { logger } from "../utils/logger";
 import { In, LessThan, MoreThan } from "typeorm";
-import { IndexedTx, StargateClient } from "@cosmjs/stargate";
 import { TmClient } from "./tmclient";
+import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
@@ -274,15 +274,23 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
 }
 
 async function getChannelTx(
-  stargateClient: StargateClient,
   channel: ChannelOpenInit | ChannelOpenTry | ChannelOpenAck | ChannelOpenConfirm,
-  type: 'init' | 'try' | 'ack' | 'confirm'
-): Promise<IndexedTx | null> {
-  const txs = await stargateClient.searchTx([
+  type: "init" | "try" | "ack" | "confirm"
+): Promise<PolymerData | null> {
+  let query = [
     {key: `channel_open_${type}.port_id`, value: channel.portId},
     {key: `channel_open_${type}.channel_id`, value: channel.channelId},
     {key: `channel_open_${type}.counterparty_port_id`, value: channel.counterpartyPortId},
-  ]);
+  ];
+
+  const polymerData = await getCosmosPolymerData(query, `channel_open_${type}`)
+  if (polymerData) {
+    return polymerData
+  }
+
+  const stargateClient = await TmClient.getStargate();
+
+  const txs = await stargateClient.searchTx(query);
 
   if (txs.length > 1) {
     throw new Error(`\nMultiple txs found for channel_open_${type} with channel id: ${channel.id}`);
@@ -301,14 +309,12 @@ async function getChannelTx(
 
 
 async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
-  const stargateClient = await TmClient.getStargate();
-
   if (!channel.channelOpenInit || !channel.channelOpenTry) {
     throw new Error(`Expected channel relations not found for channel ${channel.id}`);
   }
 
-  const initTx = await getChannelTx(stargateClient, channel.channelOpenInit!, 'init')
-  const tryTx = await getChannelTx(stargateClient, channel.channelOpenTry!, 'try')
+  const initTx = await getChannelTx(channel.channelOpenInit!, 'init')
+  const tryTx = await getChannelTx(channel.channelOpenTry!, 'try')
 
   channel.channelOpenInit!.polymerGas = Number(initTx!.gasUsed)
   channel.channelOpenTry!.polymerGas = Number(tryTx!.gasUsed)
@@ -331,13 +337,11 @@ async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
 
 
 async function updateInitToConfirmMetrics(channel: Channel, ctx: Context) {
-  const stargateClient = await TmClient.getStargate();
-
   if (!channel.channelOpenInit || !channel.channelOpenConfirm || !channel.channelOpenTry || !channel.channelOpenAck) {
     throw new Error(`Expected channel relations not found for channel ${channel.id}`);
   }
 
-  const confirmTx = await getChannelTx(stargateClient, channel.channelOpenConfirm, 'confirm');
+  const confirmTx = await getChannelTx(channel.channelOpenConfirm, 'confirm');
 
   channel.channelOpenConfirm.polymerGas = Number(confirmTx?.gasUsed);
   channel.channelOpenConfirm.polymerTxHash = confirmTx?.hash;
@@ -362,7 +366,7 @@ async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
     throw new Error(`Expected channel relations not found for channel ${channel.id}`);
   }
 
-  const ackTx = await getChannelTx(stargateClient, channel.channelOpenAck, 'ack');
+  const ackTx = await getChannelTx(channel.channelOpenAck, 'ack');
 
   channel.channelOpenAck.polymerGas = Number(ackTx?.gasUsed);
   channel.channelOpenAck.polymerTxHash = ackTx?.hash;
