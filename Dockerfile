@@ -35,6 +35,13 @@ FROM node AS squid
 
 WORKDIR /squid
 
+# Install global npm package as root
+RUN npm i -g @subsquid/commands && mv $(which squid-commands) /usr/local/bin/sqd
+
+RUN addgroup -g 333 polymer && adduser -D -u 333 -G polymer polymer
+RUN chown -R polymer:polymer /squid
+USER polymer
+
 COPY --from=deps /squid/package.json .
 COPY --from=deps /squid/package-lock.json .
 COPY --from=deps /squid/node_modules node_modules
@@ -50,7 +57,5 @@ COPY --from=builder /squid/schema.graphql schema.graphql
 ADD commands.json .
 
 RUN echo -e "loglevel=silent\\nupdate-notifier=false" > /squid/.npmrc
-
-RUN npm i -g @subsquid/commands && mv $(which squid-commands) /usr/local/bin/sqd
 
 ENV PROCESSOR_PROMETHEUS_PORT 3000
