@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_, Index as Index_, IntColumn as IntColumn_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
 import {Packet} from "./packet.model"
 
 @Entity_()
@@ -31,9 +31,11 @@ export class Acknowledgement {
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
 
+    @Index_()
     @BigIntColumn_({nullable: false})
     blockTimestamp!: bigint
 
+    @Index_()
     @StringColumn_({nullable: false})
     transactionHash!: string
 

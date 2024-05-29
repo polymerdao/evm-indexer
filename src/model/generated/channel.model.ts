@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, Index as Index_, OneToOne as OneToOne_, JoinColumn as JoinColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, OneToOne as OneToOne_, JoinColumn as JoinColumn_} from "@subsquid/typeorm-store"
 import {ChannelStates} from "./_channelStates"
 import {ChannelOpenInit} from "./channelOpenInit.model"
 import {ChannelOpenTry} from "./channelOpenTry.model"
@@ -15,15 +15,19 @@ export class Channel {
     @PrimaryColumn_()
     id!: string
 
+    @Index_()
     @StringColumn_({nullable: false})
     channelId!: string
 
+    @Index_()
     @StringColumn_({nullable: false})
     portId!: string
 
+    @Index_()
     @StringColumn_({nullable: false})
     counterpartyPortId!: string
 
+    @Index_()
     @StringColumn_({nullable: false})
     counterpartyChannelId!: string
 
@@ -39,9 +43,11 @@ export class Channel {
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
 
+    @Index_()
     @BigIntColumn_({nullable: false})
     blockTimestamp!: bigint
 
+    @Index_()
     @StringColumn_({nullable: false})
     transactionHash!: string
 

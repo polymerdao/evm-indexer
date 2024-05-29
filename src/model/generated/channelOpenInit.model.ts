@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BooleanColumn as BooleanColumn_, BigIntColumn as BigIntColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BooleanColumn as BooleanColumn_, BigIntColumn as BigIntColumn_, Index as Index_} from "@subsquid/typeorm-store"
 
 @Entity_()
 export class ChannelOpenInit {
@@ -48,9 +48,11 @@ export class ChannelOpenInit {
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
 
+    @Index_()
     @BigIntColumn_({nullable: false})
     blockTimestamp!: bigint
 
+    @Index_()
     @StringColumn_({nullable: false})
     transactionHash!: string
 
@@ -72,6 +74,7 @@ export class ChannelOpenInit {
     @BigIntColumn_({nullable: true})
     maxPriorityFeePerGas!: bigint | undefined | null
 
+    @Index_()
     @StringColumn_({nullable: true})
     polymerTxHash!: string | undefined | null
 

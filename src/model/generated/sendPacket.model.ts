@@ -42,9 +42,11 @@ export class SendPacket {
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
 
+    @Index_()
     @BigIntColumn_({nullable: false})
     blockTimestamp!: bigint
 
+    @Index_()
     @StringColumn_({nullable: false})
     transactionHash!: string
 
@@ -69,6 +71,7 @@ export class SendPacket {
     @OneToOne_(() => Packet, e => e.sendPacket)
     packetRelation!: Packet | undefined | null
 
+    @Index_()
     @StringColumn_({nullable: true})
     polymerTxHash!: string | undefined | null
 

@@ -66,13 +66,11 @@ export async function getCosmosPolymerData(query: SearchTxQuery, eventType: stri
   }
 
   if (transactions.length == 1) {
-  console.log("Found a tx in polymer indexer")
     return {
       gasUsed: BigInt(transactions[0].gas_used),
       hash: transactions[0].hash,
       height: transactions[0].height,
     }
   }
-  console.log("No tx found in polymer indexer")
   return null
 }

@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, BigIntColumn as BigIntColumn_, Index as Index_, IntColumn as IntColumn_} from "@subsquid/typeorm-store"
 
 @Entity_()
 export class CloseIbcChannel {
@@ -30,9 +30,11 @@ export class CloseIbcChannel {
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
 
+    @Index_()
     @BigIntColumn_({nullable: false})
     blockTimestamp!: bigint
 
+    @Index_()
     @StringColumn_({nullable: false})
     transactionHash!: string
 
@@ -54,6 +56,7 @@ export class CloseIbcChannel {
     @StringColumn_({nullable: false})
     from!: string
 
+    @Index_()
     @StringColumn_({nullable: true})
     polymerTxHash!: string | undefined | null
 

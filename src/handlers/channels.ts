@@ -298,10 +298,6 @@ async function getChannelTx(
 
   if (txs.length === 0) {
     throw new Error(`\nNo txs found for channel_open_${type}: channel_open_${type}.port_id=${channel.portId} channel_open_${type}.channel_id=${channel.channelId} channel_open_${type}.counterparty_port_id=${channel.counterpartyPortId}`);
-    // if (channel.channelId) {
-    //   console.error(`\nNo polymer txs found for channel_open_${type}: ${channel.id}`);
-    // }
-    // return null;
   }
 
   return txs[0]!;

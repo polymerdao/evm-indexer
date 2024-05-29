@@ -36,8 +36,8 @@ type SendPacket @entity {
   sequence: BigInt!
   timeoutTimestamp: BigInt!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
@@ -45,7 +45,7 @@ type SendPacket @entity {
   maxPriorityFeePerGas: BigInt
   from: String!
   packetRelation: Packet @derivedFrom(field: "sendPacket")
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
@@ -59,8 +59,8 @@ type RecvPacket @entity {
   destChannelId: String!
   sequence: BigInt!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
@@ -81,8 +81,8 @@ type WriteAckPacket @entity {
   ackPacketSuccess: Boolean!
   ackPacketData: String!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
@@ -90,7 +90,7 @@ type WriteAckPacket @entity {
   maxPriorityFeePerGas: BigInt
   from: String!
   packet: Packet @derivedFrom(field: "writeAckPacket")
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
@@ -104,8 +104,8 @@ type Acknowledgement @entity {
   sourceChannelId: String!
   sequence: BigInt!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
@@ -124,8 +124,8 @@ type Timeout @entity {
   sourceChannelId: String!
   sequence: BigInt!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
@@ -146,8 +146,8 @@ type WriteTimeoutPacket @entity {
   timeoutHeightRevisionHeight: BigInt!
   timeoutTimestamp: BigInt!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
@@ -160,16 +160,16 @@ type WriteTimeoutPacket @entity {
 # Channels
 type Channel @entity{
   id: ID!
-  channelId: String!
-  portId: String!
-  counterpartyPortId: String!
-  counterpartyChannelId: String!
+  channelId: String! @index
+  portId: String! @index
+  counterpartyPortId: String!  @index
+  counterpartyChannelId: String!  @index
   version: String!
   ordering: Int!
   connectionHops: [String!]!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   state: ChannelStates!
 
   channelOpenInit: ChannelOpenInit @index
@@ -212,15 +212,15 @@ type ChannelOpenInit @entity {
   counterpartyPortId: String!
   counterpartyChannelId: String!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   from: String!
   gas: BigInt!
   gasPrice: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
@@ -240,14 +240,14 @@ type ChannelOpenTry @entity {
   counterpartyPortId: String!
   counterpartyChannelId: String!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
@@ -263,15 +263,15 @@ type ChannelOpenAck @entity {
   counterpartyPortId: String!
   counterpartyChannelId: String!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
@@ -287,15 +287,15 @@ type ChannelOpenConfirm @entity {
   counterpartyPortId: String!
   counterpartyChannelId: String!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
@@ -309,15 +309,15 @@ type CloseIbcChannel @entity {
   portId: String!
   channelId: String!
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: String!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
   chainId: Int!
   gas: BigInt!
   gasPrice: BigInt
   maxFeePerGas: BigInt
   maxPriorityFeePerGas: BigInt
   from: String!
-  polymerTxHash: String
+  polymerTxHash: String @index
   polymerGas: Int
   polymerBlockNumber: BigInt
 }
