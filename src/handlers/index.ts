@@ -42,6 +42,7 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
+import { VERSION } from "../chains/constants";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -70,6 +71,7 @@ async function updateStats(ctx: Context, statName: StatName, val: number = 0, ch
         name: statName,
         val: val,
         chainId: chainId,
+        version: VERSION
       }))
     } else {
       stat.val += val
@@ -77,8 +79,8 @@ async function updateStats(ctx: Context, statName: StatName, val: number = 0, ch
     }
   }
 
-  await _updateStats(`${statName}:${chainId}`, val, chainId);
-  await _updateStats(`${statName}`, val, 0);
+  await _updateStats(`${statName}:${chainId}:${VERSION}`, val, chainId);
+  await _updateStats(`${statName}:${VERSION}`, val, 0);
 }
 
 type Entities = {
