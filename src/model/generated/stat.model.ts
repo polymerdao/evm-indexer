@@ -17,4 +17,7 @@ export class Stat {
 
     @IntColumn_({nullable: false})
     chainId!: number
+
+    @StringColumn_({nullable: false})
+    version!: string
 }
