@@ -290,6 +290,9 @@ async function getChannelTx(
 
   const stargateClient = await TmClient.getStargate();
 
+  logger.info(`No polymer data found for channel_open_${type} with channel id: ${channel.id}`)
+  logger.info(`Searching for txs using query: ${query}`)
+
   const txs = await stargateClient.searchTx(query);
 
   if (txs.length > 1) {

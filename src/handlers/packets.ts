@@ -308,6 +308,7 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
 
   let txs: IndexedTx[] = []
   try {
+    logger.info(`No polymer data found in cosmos indexer for ${eventType}`)
     console.log(query)
     txs = await stargateClient.searchTx(query)
   } catch (e) {
@@ -319,6 +320,7 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
   }
 
   if (txs.length == 0) {
+    logger.info(`No polymer data found in peptide for ${eventType}`)
     return null
   }
 
