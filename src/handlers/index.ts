@@ -166,6 +166,10 @@ export async function handler(ctx: Context) {
   await postBlockChannelHook(ctx, entities)
   await postBlockPacketHook(ctx, entities)
   await updateAllStats(ctx, entities, chainId);
+
+  if (ctx.isHead) {
+    ctx.log.info(`Reached blockchain head`)
+  }
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
