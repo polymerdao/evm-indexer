@@ -2,7 +2,7 @@ import { TypeormDatabase } from '@subsquid/typeorm-store'
 import { IbcProcessor } from '../utils/ibc-processor'
 import { topics } from '../utils/topics'
 import { handler } from '../handlers'
-import { VERSION } from "./constants";
+import { MAX_BATCH_CALL_SIZE, VERSION } from "./constants";
 
 const DISPATCHERS: string[] = [
   process.env.DISPATCHER_ADDRESS_BASE!,
@@ -13,7 +13,8 @@ const processor = IbcProcessor()
   .setGateway(process.env.BASE_GATEWAY!)
   .setRpcEndpoint({
     url: process.env.BASE_RPC!,
-    rateLimit: Number(process.env.RPC_RATE_LIMIT!)
+    rateLimit: Number(process.env.RPC_RATE_LIMIT!),
+    maxBatchCallSize: MAX_BATCH_CALL_SIZE,
   })
   .setBlockRange({
     // from: 9676707
