@@ -5,6 +5,7 @@ import {ChannelOpenTry} from "./channelOpenTry.model"
 import {ChannelOpenAck} from "./channelOpenAck.model"
 import {ChannelOpenConfirm} from "./channelOpenConfirm.model"
 import {CloseIbcChannel} from "./closeIbcChannel.model"
+import {ChannelCatchUpError} from "./channelCatchUpError.model"
 
 @Entity_()
 export class Channel {
@@ -105,4 +106,9 @@ export class Channel {
 
     @IntColumn_({nullable: true})
     initToConfirmPolymerGas!: number | undefined | null
+
+    @Index_({unique: true})
+    @OneToOne_(() => ChannelCatchUpError, {nullable: true})
+    @JoinColumn_()
+    catchupError!: ChannelCatchUpError | undefined | null
 }

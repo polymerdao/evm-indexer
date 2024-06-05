@@ -44,8 +44,8 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
-import { CATCHUP_BATCH_SIZE, ENABLE_CATCHUP, VERSION } from "../chains/constants";
-import { IsNull, Not } from "typeorm";
+import { CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP, VERSION } from "../chains/constants";
+import { IsNull, LessThan, Not } from "typeorm";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -113,20 +113,48 @@ async function updateMissingChannelMetrics(ctx: Context, chainId: number) {
       channelOpenConfirm: true
     },
     where: [
-      {initToTryPolymerGas: IsNull(), channelOpenInit: {chainId: chainId}, channelOpenTry: Not(IsNull())},
+      {
+        initToTryPolymerGas: IsNull(),
+        channelOpenInit: {chainId: chainId},
+        channelOpenTry: Not(IsNull()),
+        catchupError: IsNull()
+      },
+      {
+        initToTryPolymerGas: IsNull(),
+        channelOpenInit: {chainId: chainId},
+        channelOpenTry: Not(IsNull()),
+        catchupError: {initToTryPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
+      },
       {
         initToAckPolymerGas: IsNull(),
         channelOpenInit: {chainId: chainId},
         channelOpenTry: Not(IsNull()),
-        channelOpenAck: Not(IsNull())
+        channelOpenAck: Not(IsNull()),
+        catchupError: IsNull()
+      },
+      {
+        initToAckPolymerGas: IsNull(),
+        channelOpenInit: {chainId: chainId},
+        channelOpenTry: Not(IsNull()),
+        channelOpenAck: Not(IsNull()),
+        catchupError: {initToAckPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
       },
       {
         initToConfirmPolymerGas: IsNull(),
         channelOpenInit: {chainId: chainId},
         channelOpenTry: Not(IsNull()),
         channelOpenAck: Not(IsNull()),
-        channelOpenConfirm: Not(IsNull())
+        channelOpenConfirm: Not(IsNull()),
+        catchupError: IsNull()
       },
+      {
+        initToConfirmPolymerGas: IsNull(),
+        channelOpenInit: {chainId: chainId},
+        channelOpenTry: Not(IsNull()),
+        channelOpenAck: Not(IsNull()),
+        channelOpenConfirm: Not(IsNull()),
+        catchupError: {initToConfirmPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
+      }
     ]
   })
 
@@ -144,9 +172,24 @@ async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
       sendToAckPolymerGas: IsNull(),
       sendPacket: {chainId: chainId},
       recvPacket: Not(IsNull()),
-      writeAckPacket: Not(IsNull())
+      writeAckPacket: Not(IsNull()),
+      catchupError: {sendToAckPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
     },
-    {sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull())},
+    {
+      sendToAckPolymerGas: IsNull(),
+      sendPacket: {chainId: chainId},
+      recvPacket: Not(IsNull()),
+      writeAckPacket: Not(IsNull()),
+      catchupError: IsNull()
+    },
+    {
+      sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
+      catchupError: {sendToRecvPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
+    },
+    {
+      sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
+      catchupError: IsNull()
+    },
   ];
 
   const packetCount = await ctx.store.count(Packet, {

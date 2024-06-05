@@ -1,4 +1,12 @@
-import { Channel, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ChannelStates } from '../model'
+import {
+  Channel,
+  ChannelCatchUpError,
+  ChannelOpenAck,
+  ChannelOpenConfirm,
+  ChannelOpenInit,
+  ChannelOpenTry,
+  ChannelStates
+} from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
@@ -7,6 +15,7 @@ import { logger } from "../utils/logger";
 import { In, LessThan, MoreThan } from "typeorm";
 import { TmClient } from "./tmclient";
 import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
+import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
@@ -359,8 +368,6 @@ async function updateInitToConfirmMetrics(channel: Channel, ctx: Context) {
 }
 
 async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
-  const stargateClient = await TmClient.getStargate();
-
   if (!channel.channelOpenInit || !channel.channelOpenAck || !channel.channelOpenTry) {
     throw new Error(`Expected channel relations not found for channel ${channel.id}`);
   }
@@ -383,6 +390,28 @@ async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
   }
 }
 
+async function addCatchupErrorsToChannels(channels: Channel[], ctx: Context) {
+  let catchupErrors: ChannelCatchUpError[] = []
+
+  for (const channel of channels) {
+    if (!channel.catchupError) {
+      channel.catchupError = new ChannelCatchUpError({
+        id: channel.id,
+        channel: channel,
+        initToTryPolymerGas: 0,
+        initToConfirmPolymerGas: 0,
+        initToAckPolymerGas: 0
+      })
+      catchupErrors.push(channel.catchupError)
+    }
+  }
+
+  if (catchupErrors.length > 0) {
+    ctx.log.debug(`Adding ${catchupErrors.length} catchup errors`)
+    await ctx.store.upsert(catchupErrors)
+  }
+}
+
 export async function channelMetrics(channelIds: string[], ctx: Context): Promise<void> {
   const channels = await ctx.store.find(Channel, {
     where: {id: In(channelIds)},
@@ -394,6 +423,8 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
       cpChannel: true
     }
   });
+
+  await addCatchupErrorsToChannels(channels, ctx);
 
   const initChannels = new Map<string, ChannelOpenInit>();
   const tryChannels = new Map<string, ChannelOpenTry>();
@@ -422,18 +453,18 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
       channel.initToAckGas = Number(channel.channelOpenInit.gas + channel.channelOpenTry.gas + channel.channelOpenConfirm.gas + channel.channelOpenAck.gas);
     }
 
-    if (!channel.initToTryPolymerGas && channel.channelOpenInit && channel.channelOpenTry) {
+    if (!channel.initToTryPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.catchupError!.initToTryPolymerGas < CATCHUP_ERROR_LIMIT) {
       await updateInitToTryMetrics(channel, ctx);
       initChannels.set(channel.channelOpenInit.id, channel.channelOpenInit);
       tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
     }
 
-    if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck) {
+    if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.catchupError!.initToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
       await updateInitToAckMetrics(channel, ctx);
       ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
     }
 
-    if (!channel.initToConfirmPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm) {
+    if (!channel.initToConfirmPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm && channel.catchupError!.initToConfirmPolymerGas < CATCHUP_ERROR_LIMIT) {
       await updateInitToConfirmMetrics(channel, ctx);
       confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
     }
