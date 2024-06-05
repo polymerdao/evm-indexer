@@ -327,17 +327,17 @@ type CloseIbcChannel @entity {
 
 type PacketCatchUpError @entity {
   id: ID!
-  sendToRecvPolymerGas: Int!
-  sendToAckPolymerGas: Int!
+  sendToRecvPolymerGas: Int! @index
+  sendToAckPolymerGas: Int! @index
 
   packet: Packet @derivedFrom(field: "catchupError")
 }
 
 type ChannelCatchUpError @entity {
   id: ID!
-  initToTryPolymerGas: Int!
-  initToConfirmPolymerGas: Int!
-  initToAckPolymerGas: Int!
+  initToTryPolymerGas: Int! @index
+  initToConfirmPolymerGas: Int! @index
+  initToAckPolymerGas: Int! @index
 
   channel: Channel @derivedFrom(field: "catchupError")
 }
