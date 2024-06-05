@@ -17,7 +17,8 @@ import {
   writeAckPacketHook
 } from './packets'
 import {
-  ackChannelHook, channelMetrics,
+  ackChannelHook,
+  channelMetrics,
   confirmChannelHook,
   createChannelInInitState,
   createChannelInTryState,
@@ -34,6 +35,7 @@ import {
   ChannelOpenInit,
   ChannelOpenTry,
   CloseIbcChannel,
+  Packet,
   RecvPacket,
   SendPacket,
   Stat,
@@ -43,6 +45,7 @@ import {
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
 import { VERSION } from "../chains/constants";
+import { IsNull, Not } from "typeorm";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -169,6 +172,23 @@ export async function handler(ctx: Context) {
 
   if (ctx.isHead) {
     ctx.log.info(`Reached blockchain head`)
+    const packets = await ctx.store.find(Packet, {
+      take: 10,
+      where: [
+        {sendToAckPolymerGas: IsNull(), sendPacket: Not(IsNull()), recvPacket: Not(IsNull()), writeAckPacket: Not(IsNull())},
+        {sendToRecvPolymerGas: IsNull(), sendPacket: Not(IsNull()), recvPacket: Not(IsNull())},
+      ],
+    })
+
+    const uniquePacketIds = new Set<string>();
+    for (let packet of packets) {
+      uniquePacketIds.add(packet.id);
+    }
+
+    ctx.log.info(`Found ${packets.length} packets with no polymer gas`)
+    ctx.log.info(`Packet ids: ${Array.from(uniquePacketIds).join(", ")}`)
+
+    await packetMetrics(Array.from(uniquePacketIds), ctx);
   }
 }
 
