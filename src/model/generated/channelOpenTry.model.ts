@@ -56,6 +56,7 @@ export class ChannelOpenTry {
     @StringColumn_({nullable: false})
     transactionHash!: string
 
+    @Index_()
     @IntColumn_({nullable: false})
     chainId!: number
 
