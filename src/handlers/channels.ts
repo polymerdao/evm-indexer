@@ -359,8 +359,6 @@ async function updateInitToConfirmMetrics(channel: Channel, ctx: Context) {
 }
 
 async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
-  const stargateClient = await TmClient.getStargate();
-
   if (!channel.channelOpenInit || !channel.channelOpenAck || !channel.channelOpenTry) {
     throw new Error(`Expected channel relations not found for channel ${channel.id}`);
   }

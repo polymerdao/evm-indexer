@@ -1,5 +1,5 @@
 import * as models from '../model'
-import { Packet, SendPacket, WriteAckPacket } from '../model'
+import { Packet, PacketCatchUpError, SendPacket, WriteAckPacket } from '../model'
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
@@ -10,6 +10,7 @@ import { TmClient } from "./tmclient";
 import { IndexedTx } from "@cosmjs/stargate";
 import { SearchTxQuery } from "@cosmjs/stargate/build/search";
 import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
+import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -319,8 +320,7 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
 
   if (txs.length == 0) {
     console.log(query)
-    logger.info(`No polymer data found in peptide for ${eventType}`)
-    return null
+    throw new Error(`No polymer data found in peptide for ${eventType}`)
   }
 
   return txs[0]
@@ -343,11 +343,6 @@ async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
       value: sendPacket.srcChannelId
     }
   ], "send_packet")
-
-  if (!polymerData) {
-    ctx.log.warn(`No polymer tx found for send packet ${sendPacket.id}`)
-    return
-  }
 
   let polymerGas = Number(polymerData!.gasUsed);
   packet.sendToRecvPolymerGas = polymerGas
@@ -375,11 +370,6 @@ async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
     }
   ], "write_acknowledgement")
 
-  if (!polymerData) {
-    ctx.log.warn(`No polymer tx found for write ack packet ${writeAckPacket.id}`)
-    return
-  }
-
   let polymerGas = Number(polymerData!.gasUsed);
   packet.sendToAckPolymerGas = polymerGas + packet.sendToRecvPolymerGas!
   packet.writeAckPacket!.polymerGas = polymerGas;
@@ -387,14 +377,32 @@ async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
   packet.writeAckPacket!.polymerBlockNumber = BigInt(polymerData!.height);
 }
 
+async function addCatchupErrorsToPackets(packets: Packet[], ctx: Context) {
+  let catchupErrors: PacketCatchUpError[] = []
+
+  for (const packet of packets) {
+    if (!packet.catchupError) {
+      packet.catchupError = new PacketCatchUpError({id: packet.id, packet: packet, sendToRecvPolymerGas: 0, sendToAckPolymerGas: 0})
+      catchupErrors.push(packet.catchupError)
+    }
+  }
+
+  if (catchupErrors.length > 0) {
+    await ctx.store.upsert(catchupErrors)
+  }
+}
+
 export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {
   const packets = await ctx.store.find(Packet, {
     where: {id: In(packetIds)},
-    relations: {sendPacket: true, recvPacket: true, ackPacket: true, writeAckPacket: true}
+    relations: {sendPacket: true, recvPacket: true, ackPacket: true, writeAckPacket: true, catchupError: true},
   })
+
+  await addCatchupErrorsToPackets(packets, ctx);
 
   let sendPackets: SendPacket[] = []
   let writeAckPackets: WriteAckPacket[] = []
+  let catchupErrors: PacketCatchUpError[] = []
 
   for (const packet of packets) {
     if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
@@ -413,18 +421,29 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
       packet.sendToAckGas = Number(packet.ackPacket.gas + packet.sendPacket.gas + packet.recvPacket.gas);
     }
 
-    if (!packet.sendToRecvPolymerGas && packet.sendPacket && packet.recvPacket) {
-      await updateSendToRecvPolymerGas(packet, ctx);
-      sendPackets.push(packet.sendPacket)
+    if (!packet.sendToRecvPolymerGas && packet.sendPacket && packet.recvPacket && packet.catchupError!.sendToRecvPolymerGas < CATCHUP_ERROR_LIMIT) {
+      try {
+        await updateSendToRecvPolymerGas(packet, ctx);
+        sendPackets.push(packet.sendPacket)
+      } catch (e) {
+        packet.catchupError!.sendToRecvPolymerGas += 1
+        catchupErrors.push(packet.catchupError!)
+      }
     }
 
-    if (!packet.sendToAckPolymerGas && packet.sendPacket && packet.recvPacket && packet.writeAckPacket) {
-      await updateSendToAckPolymerGas(packet, ctx);
-      writeAckPackets.push(packet.writeAckPacket)
+    if (!packet.sendToAckPolymerGas && packet.sendPacket && packet.recvPacket && packet.writeAckPacket && packet.catchupError!.sendToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
+      try {
+        await updateSendToAckPolymerGas(packet, ctx);
+        writeAckPackets.push(packet.writeAckPacket)
+      } catch (e) {
+        packet.catchupError!.sendToAckPolymerGas += 1
+        catchupErrors.push(packet.catchupError!)
+      }
     }
   }
 
   await ctx.store.upsert(sendPackets);
   await ctx.store.upsert(writeAckPackets);
   await ctx.store.upsert(packets);
+  await ctx.store.upsert(catchupErrors);
 }

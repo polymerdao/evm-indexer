@@ -13,6 +13,8 @@ type Packet @entity {
   sendToAckGas: Int
   sendToRecvPolymerGas: Int
   sendToAckPolymerGas: Int
+
+  catchupError: PacketCatchUpError @unique
 }
 
 enum PacketStates {
@@ -188,6 +190,8 @@ type Channel @entity{
   initToAckPolymerGas: Int
   initToConfirmGas: Int
   initToConfirmPolymerGas: Int
+
+  catchupError: ChannelCatchUpError @unique
 }
 
 enum ChannelStates {
@@ -328,4 +332,21 @@ type Stat @entity {
   val: Int!
   chainId: Int!
   version: String
+}
+
+type PacketCatchUpError @entity {
+  id: ID!
+  sendToRecvPolymerGas: Int!
+  sendToAckPolymerGas: Int!
+
+  packet: Packet @derivedFrom(field: "catchupError")
+}
+
+type ChannelCatchUpError @entity {
+  id: ID!
+  initToTryPolymerGas: Int!
+  initToConfirmPolymerGas: Int!
+  initToAckPolymerGas: Int!
+
+  channel: Channel @derivedFrom(field: "catchupError")
 }
