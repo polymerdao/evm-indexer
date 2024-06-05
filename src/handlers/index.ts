@@ -17,7 +17,8 @@ import {
   writeAckPacketHook
 } from './packets'
 import {
-  ackChannelHook, channelMetrics,
+  ackChannelHook,
+  channelMetrics,
   confirmChannelHook,
   createChannelInInitState,
   createChannelInTryState,
@@ -34,6 +35,7 @@ import {
   ChannelOpenInit,
   ChannelOpenTry,
   CloseIbcChannel,
+  Packet,
   RecvPacket,
   SendPacket,
   Stat,
@@ -43,6 +45,7 @@ import {
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
 import { VERSION } from "../chains/constants";
+import { IsNull, Not } from "typeorm";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -168,7 +171,57 @@ export async function handler(ctx: Context) {
   await updateAllStats(ctx, entities, chainId);
 
   if (ctx.isHead) {
-    ctx.log.info(`Reached blockchain head`)
+    const packets = await ctx.store.find(Packet, {
+      take: 10,
+      where: [
+        {
+          sendToAckPolymerGas: IsNull(),
+          sendPacket: Not(IsNull()),
+          recvPacket: Not(IsNull()),
+          writeAckPacket: Not(IsNull())
+        },
+        {sendToRecvPolymerGas: IsNull(), sendPacket: Not(IsNull()), recvPacket: Not(IsNull())},
+      ],
+    })
+
+    const uniquePacketIds = new Set<string>();
+    for (let packet of packets) {
+      uniquePacketIds.add(packet.id);
+    }
+
+    ctx.log.info(`Found ${packets.length} packets with no polymer gas`)
+    await packetMetrics(Array.from(uniquePacketIds), ctx);
+
+    const channels = await ctx.store.find(Channel, {
+      take: 10,
+      where: [
+        {initToTryPolymerGas: IsNull(), channelOpenInit: Not(IsNull()), channelOpenTry: Not(IsNull())},
+        {
+          initToAckPolymerGas: IsNull(),
+          channelOpenInit: Not(IsNull()),
+          channelOpenTry: Not(IsNull()),
+          channelOpenAck: Not(IsNull())
+        },
+        {
+          initToConfirmPolymerGas: IsNull(),
+          channelOpenInit: Not(IsNull()),
+          channelOpenTry: Not(IsNull()),
+          channelOpenAck: Not(IsNull()),
+          channelOpenConfirm: Not(IsNull())
+        },
+      ]
+    })
+
+    const uniqueChannelIds = new Set<string>();
+    for (let channel of channels) {
+      uniqueChannelIds.add(channel.id);
+    }
+
+    ctx.log.info(`Found ${channels.length} channels with no polymer gas`)
+    // log channel ids
+    ctx.log.info(`Unique channel ids: ${Array.from(uniqueChannelIds)}`)
+
+    await channelMetrics(Array.from(uniqueChannelIds), ctx);
   }
 }
 
