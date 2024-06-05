@@ -326,14 +326,6 @@ type CloseIbcChannel @entity {
   polymerBlockNumber: BigInt
 }
 
-type Stat @entity {
-  id: ID!
-  name: String!
-  val: Int!
-  chainId: Int!
-  version: String
-}
-
 type PacketCatchUpError @entity {
   id: ID!
   sendToRecvPolymerGas: Int!

@@ -38,13 +38,12 @@ import {
   Packet,
   RecvPacket,
   SendPacket,
-  Stat,
   Timeout,
   WriteAckPacket,
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
-import { CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP, VERSION } from "../chains/constants";
+import { CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP } from "../chains/constants";
 import { IsNull, LessThan, Not } from "typeorm";
 
 export enum StatName {
@@ -59,31 +58,6 @@ export enum StatName {
   OpenAckChannel = 'OpenAckChannel',
   OpenConfirmChannel = 'OpenConfirmChannel',
   CloseChannel = 'CloseChannel',
-}
-
-async function updateStats(ctx: Context, statName: StatName, val: number = 0, chainId: number) {
-  if (val == 0) {
-    return
-  }
-
-  async function _updateStats(id: string, val: number, chainId: number) {
-    const stat = await ctx.store.findOneBy(Stat, {id})
-    if (!stat) {
-      await ctx.store.insert(new Stat({
-        id: id,
-        name: statName,
-        val: val,
-        chainId: chainId,
-        version: VERSION
-      }))
-    } else {
-      stat.val += val
-      await ctx.store.upsert(stat)
-    }
-  }
-
-  await _updateStats(`${statName}:${chainId}:${VERSION}`, val, chainId);
-  await _updateStats(`${statName}:${VERSION}`, val, 0);
 }
 
 type Entities = {
@@ -275,7 +249,6 @@ export async function handler(ctx: Context) {
   await upsertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities)
   await postBlockPacketHook(ctx, entities)
-  await updateAllStats(ctx, entities, chainId);
 
   if (ctx.isHead && ENABLE_CATCHUP) {
     await updateMissingPacketMetrics(ctx, chainId);
@@ -381,18 +354,3 @@ async function upsertNewEntities(ctx: Context, entities: Entities) {
   await ctx.store.upsert(entities.timeouts);
   await ctx.store.upsert(entities.writeTimeoutPackets);
 }
-
-async function updateAllStats(ctx: Context, entities: Entities, chainId: number) {
-  await updateStats(ctx, StatName.OpenInitChannel, entities.openInitIbcChannels.length, chainId);
-  await updateStats(ctx, StatName.OpenTryChannel, entities.openTryIbcChannels.length, chainId);
-  await updateStats(ctx, StatName.OpenAckChannel, entities.openAckIbcChannels.length, chainId);
-  await updateStats(ctx, StatName.OpenConfirmChannel, entities.openConfirmIbcChannels.length, chainId);
-  await updateStats(ctx, StatName.CloseChannel, entities.closeIbcChannels.length, chainId);
-  await updateStats(ctx, StatName.SendPackets, entities.sendPackets.length, chainId);
-  await updateStats(ctx, StatName.WriteAckPacket, entities.writeAckPackets.length, chainId);
-  await updateStats(ctx, StatName.RecvPackets, entities.recvPackets.length, chainId);
-  await updateStats(ctx, StatName.AckPackets, entities.acknowledgements.length, chainId);
-  await updateStats(ctx, StatName.Timeout, entities.timeouts.length, chainId);
-  await updateStats(ctx, StatName.WriteTimeoutPacket, entities.writeTimeoutPackets.length, chainId);
-}
-
