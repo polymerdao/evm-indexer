@@ -410,7 +410,8 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
   const tryChannels = new Map<string, ChannelOpenTry>();
   const ackChannels = new Map<string, ChannelOpenAck>();
   const confirmChannels = new Map<string, ChannelOpenConfirm>();
-  let catchupErrors: ChannelCatchUpError[] = []
+  const catchupErrors = new Set<ChannelCatchUpError>();
+
 
   for (const channel of channels) {
     if (!channel.initToTryTime && channel.channelOpenInit && channel.channelOpenTry) {
@@ -441,7 +442,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
         tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
       } catch (e) {
         channel.catchupError!.initToTryPolymerGas += 1
-        catchupErrors.push(channel.catchupError!)
+        catchupErrors.add(channel.catchupError!);
       }
     }
 
@@ -452,7 +453,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
       }
     } catch (e) {
       channel.catchupError!.initToAckPolymerGas += 1
-      catchupErrors.push(channel.catchupError!)
+      catchupErrors.add(channel.catchupError!);
     }
 
     if (!channel.initToConfirmPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm && channel.catchupError!.initToConfirmPolymerGas < CATCHUP_ERROR_LIMIT) {
@@ -461,7 +462,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
         confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
       } catch (e) {
         channel.catchupError!.initToConfirmPolymerGas += 1
-        catchupErrors.push(channel.catchupError!)
+        catchupErrors.add(channel.catchupError!);
       }
     }
   }
@@ -472,6 +473,6 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
   await ctx.store.upsert(Array.from(confirmChannels.values()));
   await ctx.store.upsert(channels);
 
-  await ctx.store.upsert(catchupErrors)
+  await ctx.store.upsert(Array.from(catchupErrors));
 }
 
