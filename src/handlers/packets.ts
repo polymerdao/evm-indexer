@@ -308,8 +308,6 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
 
   let txs: IndexedTx[] = []
   try {
-    logger.info(`No polymer data found in cosmos indexer for ${eventType}`)
-    console.log(query)
     txs = await stargateClient.searchTx(query)
   } catch (e) {
     throw new Error(`Polymer tx search failed ${e}`)
@@ -320,6 +318,7 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
   }
 
   if (txs.length == 0) {
+    console.log(query)
     logger.info(`No polymer data found in peptide for ${eventType}`)
     return null
   }
@@ -391,7 +390,7 @@ async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
 export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {
   const packets = await ctx.store.find(Packet, {
     where: {id: In(packetIds)},
-    relations: {sendPacket: true, recvPacket: true, ackPacket: true}
+    relations: {sendPacket: true, recvPacket: true, ackPacket: true, writeAckPacket: true}
   })
 
   let sendPackets: SendPacket[] = []
