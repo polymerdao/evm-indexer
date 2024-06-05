@@ -428,12 +428,12 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
       tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
     }
 
-    if (!channel.initToAckTime && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck) {
+    if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck) {
       await updateInitToAckMetrics(channel, ctx);
       ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
     }
 
-    if (!channel.initToConfirmTime && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm) {
+    if (!channel.initToConfirmPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm) {
       await updateInitToConfirmMetrics(channel, ctx);
       confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
     }
