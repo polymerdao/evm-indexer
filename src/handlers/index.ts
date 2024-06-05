@@ -44,8 +44,8 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
-import { CATCHUP_BATCH_SIZE, ENABLE_CATCHUP, VERSION } from "../chains/constants";
-import { IsNull, Not } from "typeorm";
+import { CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP, VERSION } from "../chains/constants";
+import { IsNull, LessThan, Not } from "typeorm";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -144,9 +144,24 @@ async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
       sendToAckPolymerGas: IsNull(),
       sendPacket: {chainId: chainId},
       recvPacket: Not(IsNull()),
-      writeAckPacket: Not(IsNull())
+      writeAckPacket: Not(IsNull()),
+      catchupError: {sendToAckPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
     },
-    {sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull())},
+    {
+      sendToAckPolymerGas: IsNull(),
+      sendPacket: {chainId: chainId},
+      recvPacket: Not(IsNull()),
+      writeAckPacket: Not(IsNull()),
+      catchupError: IsNull()
+    },
+    {
+      sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
+      catchupError: {sendToRecvPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
+    },
+    {
+      sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
+      catchupError: IsNull()
+    },
   ];
 
   const packetCount = await ctx.store.count(Packet, {

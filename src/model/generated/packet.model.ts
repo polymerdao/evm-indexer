@@ -4,6 +4,7 @@ import {RecvPacket} from "./recvPacket.model"
 import {WriteAckPacket} from "./writeAckPacket.model"
 import {Acknowledgement} from "./acknowledgement.model"
 import {PacketStates} from "./_packetStates"
+import {PacketCatchUpError} from "./packetCatchUpError.model"
 
 @Entity_()
 export class Packet {
@@ -54,4 +55,9 @@ export class Packet {
 
     @IntColumn_({nullable: true})
     sendToAckPolymerGas!: number | undefined | null
+
+    @Index_({unique: true})
+    @OneToOne_(() => PacketCatchUpError, {nullable: true})
+    @JoinColumn_()
+    catchupError!: PacketCatchUpError | undefined | null
 }
