@@ -405,7 +405,7 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
 
   let sendPackets: SendPacket[] = []
   let writeAckPackets: WriteAckPacket[] = []
-  let catchupErrors: PacketCatchUpError[] = []
+  const catchUpErrors = new Set<PacketCatchUpError>();
 
   for (const packet of packets) {
     if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
@@ -430,7 +430,7 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
         sendPackets.push(packet.sendPacket)
       } catch (e) {
         packet.catchupError!.sendToRecvPolymerGas += 1
-        catchupErrors.push(packet.catchupError!)
+        catchUpErrors.add(packet.catchupError!);
       }
     } else {
       ctx.log.debug(`Not adding sendToRecvPolymerGas for ${packet.id} with catchupError:${packet.catchupError} and sendToRecvPolymerGas:${packet.sendToRecvPolymerGas} and sendPacket:${packet.sendPacket} and recvPacket:${packet.recvPacket}`)
@@ -442,7 +442,7 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
         writeAckPackets.push(packet.writeAckPacket)
       } catch (e) {
         packet.catchupError!.sendToAckPolymerGas += 1
-        catchupErrors.push(packet.catchupError!)
+        catchUpErrors.add(packet.catchupError!);
       }
     } else {
       ctx.log.debug(`Not adding sendToAckPolymerGas for ${packet.id} with catchupError:${packet.catchupError} and sendToAckPolymerGas:${packet.sendToAckPolymerGas} and sendPacket:${packet.sendPacket} and recvPacket:${packet.recvPacket} and writeAckPacket:${packet.writeAckPacket}/`)
@@ -452,5 +452,5 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
   await ctx.store.upsert(sendPackets);
   await ctx.store.upsert(writeAckPackets);
   await ctx.store.upsert(packets);
-  await ctx.store.upsert(catchupErrors);
+  await ctx.store.upsert(Array.from(catchUpErrors));
 }
