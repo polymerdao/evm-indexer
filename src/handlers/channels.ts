@@ -300,7 +300,6 @@ async function getChannelTx(
   const stargateClient = await TmClient.getStargate();
 
   logger.info(`No polymer data found for channel_open_${type} with channel id: ${channel.id}`)
-  logger.info(`Searching for txs using query: ${query}`)
 
   const txs = await stargateClient.searchTx(query);
 
@@ -420,7 +419,8 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
       channelOpenTry: true,
       channelOpenAck: true,
       channelOpenConfirm: true,
-      cpChannel: true
+      cpChannel: true,
+      catchupError: true
     }
   });
 
@@ -430,6 +430,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
   const tryChannels = new Map<string, ChannelOpenTry>();
   const ackChannels = new Map<string, ChannelOpenAck>();
   const confirmChannels = new Map<string, ChannelOpenConfirm>();
+  let catchupErrors: ChannelCatchUpError[] = []
 
   for (const channel of channels) {
     if (!channel.initToTryTime && channel.channelOpenInit && channel.channelOpenTry) {
@@ -454,19 +455,34 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
     }
 
     if (!channel.initToTryPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.catchupError!.initToTryPolymerGas < CATCHUP_ERROR_LIMIT) {
-      await updateInitToTryMetrics(channel, ctx);
-      initChannels.set(channel.channelOpenInit.id, channel.channelOpenInit);
-      tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
+      try {
+        await updateInitToTryMetrics(channel, ctx);
+        initChannels.set(channel.channelOpenInit.id, channel.channelOpenInit);
+        tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
+      } catch (e) {
+        channel.catchupError!.initToTryPolymerGas += 1
+        catchupErrors.push(channel.catchupError!)
+      }
     }
 
-    if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.catchupError!.initToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
-      await updateInitToAckMetrics(channel, ctx);
-      ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
+    try {
+      if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.catchupError!.initToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
+        await updateInitToAckMetrics(channel, ctx);
+        ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
+      }
+    } catch (e) {
+      channel.catchupError!.initToAckPolymerGas += 1
+      catchupErrors.push(channel.catchupError!)
     }
 
     if (!channel.initToConfirmPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm && channel.catchupError!.initToConfirmPolymerGas < CATCHUP_ERROR_LIMIT) {
-      await updateInitToConfirmMetrics(channel, ctx);
-      confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
+      try {
+        await updateInitToConfirmMetrics(channel, ctx);
+        confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
+      } catch (e) {
+        channel.catchupError!.initToConfirmPolymerGas += 1
+        catchupErrors.push(channel.catchupError!)
+      }
     }
   }
 
@@ -478,5 +494,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
 
   const cpChannels = channels.map(c => c.cpChannel).filter(c => c !== null) as Channel[];
   await ctx.store.upsert(cpChannels);
+
+  await ctx.store.upsert(catchupErrors)
 }
 
