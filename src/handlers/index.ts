@@ -17,7 +17,8 @@ import {
   writeAckPacketHook
 } from './packets'
 import {
-  ackChannelHook, channelMetrics,
+  ackChannelHook,
+  channelMetrics,
   confirmChannelHook,
   createChannelInInitState,
   createChannelInTryState,
@@ -34,6 +35,7 @@ import {
   ChannelOpenInit,
   ChannelOpenTry,
   CloseIbcChannel,
+  Packet,
   RecvPacket,
   SendPacket,
   Stat,
@@ -42,7 +44,8 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
-import { VERSION } from "../chains/constants";
+import { CATCHUP_BATCH_SIZE, VERSION } from "../chains/constants";
+import { IsNull, Not } from "typeorm";
 
 export enum StatName {
   SendPackets = 'SendPackets',
@@ -99,6 +102,70 @@ type Entities = {
 }
 
 const portPrefixCache = new Map<string, string>();
+
+async function updateMissingChannelMetrics(ctx: Context, chainId: number) {
+  const channels = await ctx.store.find(Channel, {
+    take: CATCHUP_BATCH_SIZE,
+    relations: {
+      channelOpenInit: true,
+      channelOpenTry: true,
+      channelOpenAck: true,
+      channelOpenConfirm: true
+    },
+    where: [
+      {initToTryPolymerGas: IsNull(), channelOpenInit: {chainId: chainId}, channelOpenTry: Not(IsNull())},
+      {
+        initToAckPolymerGas: IsNull(),
+        channelOpenInit: {chainId: chainId},
+        channelOpenTry: Not(IsNull()),
+        channelOpenAck: Not(IsNull())
+      },
+      {
+        initToConfirmPolymerGas: IsNull(),
+        channelOpenInit: {chainId: chainId},
+        channelOpenTry: Not(IsNull()),
+        channelOpenAck: Not(IsNull()),
+        channelOpenConfirm: Not(IsNull())
+      },
+    ]
+  })
+
+  const uniqueChannelIds = new Set<string>();
+  for (let channel of channels) {
+    uniqueChannelIds.add(channel.id);
+  }
+
+  await channelMetrics(Array.from(uniqueChannelIds), ctx);
+}
+
+async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
+  let where = [
+    {
+      sendToAckPolymerGas: IsNull(),
+      sendPacket: {chainId: chainId},
+      recvPacket: Not(IsNull()),
+      writeAckPacket: Not(IsNull())
+    },
+    {sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull())},
+  ];
+
+  const packetCount = await ctx.store.count(Packet, {
+    where: where
+  })
+  ctx.log.info(`Found ${packetCount} packets with no polymer gas`)
+
+  const packets = await ctx.store.find(Packet, {
+    take: CATCHUP_BATCH_SIZE,
+    where: where,
+  })
+
+  const uniquePacketIds = new Set<string>();
+  for (let packet of packets) {
+    uniquePacketIds.add(packet.id);
+  }
+
+  await packetMetrics(Array.from(uniquePacketIds), ctx);
+}
 
 export async function handler(ctx: Context) {
   let chainIdPromise = ctx._chain.client.call("eth_chainId")
@@ -168,7 +235,8 @@ export async function handler(ctx: Context) {
   await updateAllStats(ctx, entities, chainId);
 
   if (ctx.isHead) {
-    ctx.log.info(`Reached blockchain head`)
+    await updateMissingPacketMetrics(ctx, chainId);
+    await updateMissingChannelMetrics(ctx, chainId);
   }
 }
 
