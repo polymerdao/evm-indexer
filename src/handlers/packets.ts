@@ -391,7 +391,7 @@ async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
 export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {
   const packets = await ctx.store.find(Packet, {
     where: {id: In(packetIds)},
-    relations: {sendPacket: true, recvPacket: true, ackPacket: true}
+    relations: {sendPacket: true, recvPacket: true, ackPacket: true, writeAckPacket: true}
   })
 
   let sendPackets: SendPacket[] = []
