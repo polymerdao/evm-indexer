@@ -75,11 +75,6 @@ export class Channel {
     @ManyToOne_(() => CloseIbcChannel, {nullable: true})
     closeIbcChannel!: CloseIbcChannel | undefined | null
 
-    @Index_({unique: true})
-    @OneToOne_(() => Channel, {nullable: true})
-    @JoinColumn_()
-    cpChannel!: Channel | undefined | null
-
     @IntColumn_({nullable: true})
     initToTryTime!: number | undefined | null
 

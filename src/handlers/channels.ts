@@ -213,8 +213,6 @@ export async function ackChannelHook(channelOpenAck: ChannelOpenAck, ctx: Contex
   if (cpChannel) {
     cpChannel.channelOpenInit = incompleteInitChannel.channelOpenInit
     cpChannel.channelOpenAck = channelOpenAck
-    cpChannel.cpChannel = incompleteInitChannel
-    incompleteInitChannel.cpChannel = cpChannel
   }
 
   incompleteInitChannel.channelId = channelId
@@ -263,10 +261,8 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
   if (cpChannel) {
     cpChannel.channelOpenTry = tryChannel.channelOpenTry
     cpChannel.channelOpenConfirm = channelOpenConfirm
-    cpChannel.cpChannel = tryChannel
     entities.push(cpChannel)
 
-    tryChannel.cpChannel = cpChannel
     tryChannel.channelOpenInit = cpChannel.channelOpenInit
     tryChannel.channelOpenAck = cpChannel.channelOpenAck
   }
@@ -335,11 +331,6 @@ async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
 
   channel.initToTryPolymerGas = initToTryPolymerGas
   channel.initToTryTime = Number(initToTryTime)
-
-  if (channel.cpChannel) {
-    channel.cpChannel.initToTryTime = Number(initToTryTime)
-    channel.cpChannel.initToTryPolymerGas = initToTryPolymerGas
-  }
 }
 
 
@@ -359,11 +350,6 @@ async function updateInitToConfirmMetrics(channel: Channel, ctx: Context) {
 
   channel.initToConfirmTime = initToConfirmTime / 1000; // Convert to seconds
   channel.initToConfirmPolymerGas = initToConfirmPolymerGas;
-
-  if (channel.cpChannel) {
-    channel.cpChannel.initToConfirmTime = initToConfirmTime / 1000;
-    channel.cpChannel.initToConfirmPolymerGas = initToConfirmPolymerGas;
-  }
 }
 
 async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
@@ -382,11 +368,6 @@ async function updateInitToAckMetrics(channel: Channel, ctx: Context) {
 
   channel.initToAckTime = initToAckTime / 1000; // Convert to seconds
   channel.initToAckPolymerGas = initToAckPolymerGas;
-
-  if (channel.cpChannel) {
-    channel.cpChannel.initToAckTime = initToAckTime / 1000;
-    channel.cpChannel.initToAckPolymerGas = initToAckPolymerGas;
-  }
 }
 
 async function addCatchupErrorsToChannels(channels: Channel[], ctx: Context) {
@@ -419,7 +400,6 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
       channelOpenTry: true,
       channelOpenAck: true,
       channelOpenConfirm: true,
-      cpChannel: true,
       catchupError: true
     }
   });
@@ -491,9 +471,6 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
   await ctx.store.upsert(Array.from(ackChannels.values()));
   await ctx.store.upsert(Array.from(confirmChannels.values()));
   await ctx.store.upsert(channels);
-
-  const cpChannels = channels.map(c => c.cpChannel).filter(c => c !== null) as Channel[];
-  await ctx.store.upsert(cpChannels);
 
   await ctx.store.upsert(catchupErrors)
 }
