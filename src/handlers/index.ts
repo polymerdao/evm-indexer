@@ -141,7 +141,7 @@ async function updateMissingChannelMetrics(ctx: Context, chainId: number) {
 }
 
 async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
-  let where = [
+  const whereClauses = [
     {
       sendToAckPolymerGas: IsNull(),
       sendPacket: {chainId: chainId},
@@ -166,20 +166,22 @@ async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
     },
   ];
 
-  const packetCount = await ctx.store.count(Packet, {
-    where: where
-  })
-  ctx.log.info(`Found ${packetCount} packets with no polymer gas`)
+  const uniquePacketIds = new Set<string>();
+  const startTime = Date.now();
 
   const packets = await ctx.store.find(Packet, {
     take: CATCHUP_BATCH_SIZE,
-    where: where,
-  })
+    where: whereClauses,
+  });
 
-  const uniquePacketIds = new Set<string>();
+  const endTime = Date.now();
+
   for (let packet of packets) {
     uniquePacketIds.add(packet.id);
   }
+
+  const queryTime = endTime - startTime;
+  ctx.log.info(`Query took ${queryTime} ms.`);
 
   await packetMetrics(Array.from(uniquePacketIds), ctx);
 }
