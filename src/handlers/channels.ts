@@ -441,19 +441,21 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
         initChannels.set(channel.channelOpenInit.id, channel.channelOpenInit);
         tryChannels.set(channel.channelOpenTry.id, channel.channelOpenTry);
       } catch (e) {
+        ctx.log.error(`Error updating init to try metrics for channel ${channel.id}: ${e}`)
         channel.catchupError!.initToTryPolymerGas += 1
         catchupErrors.add(channel.catchupError!);
       }
     }
 
-    try {
-      if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.catchupError!.initToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
+    if (!channel.initToAckPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.catchupError!.initToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
+      try {
         await updateInitToAckMetrics(channel, ctx);
         ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
+      } catch (e) {
+        ctx.log.error(`Error updating init to ack metrics for channel ${channel.id}: ${e}`)
+        channel.catchupError!.initToAckPolymerGas += 1
+        catchupErrors.add(channel.catchupError!);
       }
-    } catch (e) {
-      channel.catchupError!.initToAckPolymerGas += 1
-      catchupErrors.add(channel.catchupError!);
     }
 
     if (!channel.initToConfirmPolymerGas && channel.channelOpenInit && channel.channelOpenTry && channel.channelOpenAck && channel.channelOpenConfirm && channel.catchupError!.initToConfirmPolymerGas < CATCHUP_ERROR_LIMIT) {
@@ -461,6 +463,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
         await updateInitToConfirmMetrics(channel, ctx);
         confirmChannels.set(channel.channelOpenConfirm.id, channel.channelOpenConfirm);
       } catch (e) {
+        ctx.log.error(`Error updating init to confirm metrics for channel ${channel.id}: ${e}`)
         channel.catchupError!.initToConfirmPolymerGas += 1
         catchupErrors.add(channel.catchupError!);
       }
