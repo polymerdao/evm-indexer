@@ -84,7 +84,8 @@ async function updateMissingChannelMetrics(ctx: Context, chainId: number) {
       channelOpenInit: true,
       channelOpenTry: true,
       channelOpenAck: true,
-      channelOpenConfirm: true
+      channelOpenConfirm: true,
+      catchupError: true
     },
     where: [
       {
