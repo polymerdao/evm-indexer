@@ -429,11 +429,10 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
         await updateSendToRecvPolymerGas(packet, ctx);
         sendPackets.push(packet.sendPacket)
       } catch (e) {
+        ctx.log.error(`Error updating sendToRecvPolymerGas for ${packet.id} ${e}`)
         packet.catchupError!.sendToRecvPolymerGas += 1
         catchUpErrors.add(packet.catchupError!);
       }
-    } else {
-      ctx.log.debug(`Not adding sendToRecvPolymerGas for ${packet.id} with catchupError:${packet.catchupError} and sendToRecvPolymerGas:${packet.sendToRecvPolymerGas} and sendPacket:${packet.sendPacket} and recvPacket:${packet.recvPacket}`)
     }
 
     if (!packet.sendToAckPolymerGas && packet.sendPacket && packet.recvPacket && packet.writeAckPacket && packet.catchupError!.sendToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
@@ -441,11 +440,10 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
         await updateSendToAckPolymerGas(packet, ctx);
         writeAckPackets.push(packet.writeAckPacket)
       } catch (e) {
+        ctx.log.error(`Error updating sendToAckPolymerGas for ${packet.id} ${e}`)
         packet.catchupError!.sendToAckPolymerGas += 1
         catchUpErrors.add(packet.catchupError!);
       }
-    } else {
-      ctx.log.debug(`Not adding sendToAckPolymerGas for ${packet.id} with catchupError:${packet.catchupError} and sendToAckPolymerGas:${packet.sendToAckPolymerGas} and sendPacket:${packet.sendPacket} and recvPacket:${packet.recvPacket} and writeAckPacket:${packet.writeAckPacket}/`)
     }
   }
 
