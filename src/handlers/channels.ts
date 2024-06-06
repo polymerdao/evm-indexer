@@ -330,7 +330,7 @@ async function updateInitToTryMetrics(channel: Channel, ctx: Context) {
   let initToTryPolymerGas = Number(initTx!.gasUsed) + Number(tryTx!.gasUsed);
 
   channel.initToTryPolymerGas = initToTryPolymerGas
-  channel.initToTryTime = Number(initToTryTime) / 1000
+  channel.initToTryTime = Number(initToTryTime) / 1000 // Convert to seconds
 }
 
 
