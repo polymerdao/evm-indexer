@@ -409,7 +409,7 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
 
   for (const packet of packets) {
     if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
-      packet.sendToRecvTime = Number(packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp);
+      packet.sendToRecvTime = Number(packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp) / 1000;
     }
 
     if (!packet.sendToRecvGas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
@@ -417,7 +417,7 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
     }
 
     if (!packet.sendToAckTime && packet.ackPacket?.blockTimestamp && packet.sendPacket?.blockTimestamp) {
-      packet.sendToAckTime = Number(packet.ackPacket.blockTimestamp - packet.sendPacket.blockTimestamp);
+      packet.sendToAckTime = Number(packet.ackPacket.blockTimestamp - packet.sendPacket.blockTimestamp) / 1000;
     }
 
     if (!packet.sendToAckGas && packet.ackPacket?.gas && packet.sendPacket?.gas && packet.recvPacket?.gas) {

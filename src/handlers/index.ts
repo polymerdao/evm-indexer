@@ -181,7 +181,7 @@ async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
   }
 
   const queryTime = endTime - startTime;
-  ctx.log.info(`Query took ${queryTime} ms.`);
+  ctx.log.debug(`Query took ${queryTime} ms.`);
 
   await packetMetrics(Array.from(uniquePacketIds), ctx);
 }
@@ -253,7 +253,6 @@ export async function handler(ctx: Context) {
   await postBlockPacketHook(ctx, entities)
 
   if (ctx.isHead && ENABLE_CATCHUP) {
-    ctx.log.info(`isHead: ${ctx.isHead}, catchup: ${ENABLE_CATCHUP}, chainId: ${chainId}`)
     await updateMissingPacketMetrics(ctx, chainId);
     await updateMissingChannelMetrics(ctx, chainId);
   }
