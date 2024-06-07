@@ -1,7 +1,15 @@
 import { Arg, Field, ObjectType, Query, Resolver } from 'type-graphql'
-import type { EntityManager } from 'typeorm'
+import { And, Brackets, EntityManager, IsNull, LessThan, MoreThan, Not } from 'typeorm'
 import {
-  Acknowledgement, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, CloseIbcChannel,
+  Acknowledgement,
+  Channel, ChannelCatchUpError,
+  ChannelOpenAck,
+  ChannelOpenConfirm,
+  ChannelOpenInit,
+  ChannelOpenTry,
+  CloseIbcChannel,
+  Packet,
+  PacketCatchUpError,
   RecvPacket,
   SendPacket,
   Timeout,
@@ -9,6 +17,8 @@ import {
   WriteTimeoutPacket
 } from "../../model";
 import { StatName } from "../../handlers";
+import { CATCHUP_ERROR_LIMIT } from "../../chains/constants";
+import { getMissingChannelMetricsClauses, getMissingPacketMetricsClauses } from "../../handlers/backfill";
 
 @ObjectType()
 export class Stat {
@@ -24,6 +34,25 @@ export class Stat {
 
   @Field({nullable: false})
   chainId!: number
+}
+
+@ObjectType()
+export class BackfillStat {
+  constructor(props?: Partial<BackfillStat>) {
+    Object.assign(this, props)
+  }
+
+  @Field({nullable: false})
+  channels!: number
+
+  @Field({nullable: false})
+  packets!: number
+
+  @Field({nullable: false})
+  packetsWithErrors!: number
+
+  @Field({nullable: false})
+  channelsWithErrors!: number
 }
 
 
@@ -81,11 +110,11 @@ export class StatsResolver {
 
   @Query(() => [Stat])
   async stats(
-    @Arg('name', { nullable: true }) name: StatName,
-    @Arg('chainId', { nullable: true }) chainId: number,
+    @Arg('name', {nullable: true}) name: StatName,
+    @Arg('chainId', {nullable: true}) chainId: number,
   ): Promise<Stat[]> {
 
-    if (name)  {
+    if (name) {
       return [await this.getStat(name, chainId)]
     }
 
@@ -96,5 +125,56 @@ export class StatsResolver {
     }
 
     return res
+  }
+
+
+  @Query(() => BackfillStat)
+  async backfill(): Promise<BackfillStat> {
+    const manager = await this.tx()
+
+    const packets = await manager.getRepository(Packet).count({where: getMissingPacketMetricsClauses()})
+
+    let packetCatchupErrors = await manager.getRepository(PacketCatchUpError).count({
+      where: [
+        {
+          sendToAckPolymerGas: And(MoreThan(0), LessThan(CATCHUP_ERROR_LIMIT))
+        },
+        {
+          sendToRecvPolymerGas: And(MoreThan(0), LessThan(CATCHUP_ERROR_LIMIT))
+        }
+      ]
+    })
+
+    let channels = await manager.getRepository(Channel).count({
+      relations: {
+        channelOpenInit: true,
+        channelOpenTry: true,
+        channelOpenAck: true,
+        channelOpenConfirm: true,
+        catchupError: true
+      },
+      where: getMissingChannelMetricsClauses()
+    })
+
+    let channelCatchupErrors = await manager.getRepository(ChannelCatchUpError).count({
+      where: [
+        {
+          initToTryPolymerGas: And(MoreThan(0), LessThan(CATCHUP_ERROR_LIMIT))
+        },
+        {
+          initToAckPolymerGas: And(MoreThan(0), LessThan(CATCHUP_ERROR_LIMIT))
+        },
+        {
+          initToConfirmPolymerGas: And(MoreThan(0), LessThan(CATCHUP_ERROR_LIMIT))
+        }
+      ]
+    })
+
+    return {
+      channels,
+      packets,
+      packetsWithErrors: packetCatchupErrors,
+      channelsWithErrors: channelCatchupErrors
+    }
   }
 }
