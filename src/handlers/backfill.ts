@@ -100,16 +100,11 @@ export function getMissingPacketMetricsClauses() {
 
 async function updateMissingPacketMetrics(ctx: Context) {
   const uniquePacketIds = new Set<string>();
-  const startTime = Date.now();
 
   const packets = await ctx.store.find(Packet, {
     take: CATCHUP_BATCH_SIZE,
     where: getMissingPacketMetricsClauses(),
   });
-
-  const endTime = Date.now();
-  const queryTime = endTime - startTime;
-  console.log(`Packet Query time: ${queryTime}ms`);
 
   for (let packet of packets) {
     uniquePacketIds.add(packet.id);
