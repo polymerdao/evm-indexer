@@ -143,27 +143,29 @@ async function updateMissingChannelMetrics(ctx: Context, chainId: number) {
 
 async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
   const whereClauses = [
+    // {
+    //   sendPacket: {chainId: chainId},
+    //   recvPacket: Not(IsNull()),
+    //   writeAckPacket: Not(IsNull()),
+    //   sendToAckPolymerGas: IsNull(),
+    //   catchupError: {sendToAckPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
+    // },
     {
-      sendToAckPolymerGas: IsNull(),
       sendPacket: {chainId: chainId},
       recvPacket: Not(IsNull()),
       writeAckPacket: Not(IsNull()),
-      catchupError: {sendToAckPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
-    },
-    {
       sendToAckPolymerGas: IsNull(),
-      sendPacket: {chainId: chainId},
-      recvPacket: Not(IsNull()),
-      writeAckPacket: Not(IsNull()),
       catchupError: IsNull()
     },
+    // {
+    //   sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
+    //   catchupError: {sendToRecvPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)},
+    //   sendToRecvPolymerGas: IsNull(),
+    // },
     {
-      sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
-      catchupError: {sendToRecvPolymerGas: LessThan(CATCHUP_ERROR_LIMIT)}
-    },
-    {
-      sendToRecvPolymerGas: IsNull(), sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
-      catchupError: IsNull()
+      sendPacket: {chainId: chainId}, recvPacket: Not(IsNull()),
+      catchupError: IsNull(),
+      sendToRecvPolymerGas: IsNull(),
     },
   ];
 
@@ -172,7 +174,7 @@ async function updateMissingPacketMetrics(ctx: Context, chainId: number) {
 
   const packets = await ctx.store.find(Packet, {
     take: CATCHUP_BATCH_SIZE,
-    where: whereClauses,
+    where: whereClauses[0],
   });
 
   const endTime = Date.now();
@@ -203,6 +205,9 @@ export async function handler(ctx: Context) {
     timeouts: [],
     writeTimeoutPackets: [],
   };
+
+  await updateMissingPacketMetrics(ctx, Number(await chainIdPromise));
+
 
   for (let block of ctx.blocks) {
     for (let log of block.logs) {
