@@ -1,18 +1,18 @@
 # Packets
-type Packet @entity {
+type Packet @entity @index(fields: ["sendPacket", "recvPacket", "writeAckPacket", "ackPacket"], unique: true) {
   id: ID!
   sendPacket: SendPacket @unique
   recvPacket: RecvPacket @unique
   writeAckPacket: WriteAckPacket @unique
   ackPacket: Acknowledgement @unique
-  state: PacketStates!
+  state: PacketStates! @index
 
-  sendToRecvTime: Int
-  sendToRecvGas: Int
-  sendToAckTime: Int
-  sendToAckGas: Int
-  sendToRecvPolymerGas: Int
-  sendToAckPolymerGas: Int
+  sendToRecvTime: Int @index
+  sendToRecvGas: Int @index
+  sendToAckTime: Int @index
+  sendToAckGas: Int @index
+  sendToRecvPolymerGas: Int @index
+  sendToAckPolymerGas: Int @index
 
   catchupError: PacketCatchUpError @unique
 }
