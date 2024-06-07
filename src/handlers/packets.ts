@@ -399,7 +399,10 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
     relations: {sendPacket: true, recvPacket: true, ackPacket: true, writeAckPacket: true, catchupError: true},
   })
 
-  ctx.log.debug(`Adding metrics for ${packets.length} packets`)
+  if (packets.length == 0) {
+    ctx.log.debug(`Adding metrics for ${packets.length} packets`)
+    return
+  }
 
   await addCatchupErrorsToPackets(packets, ctx);
 
