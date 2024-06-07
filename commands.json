@@ -50,19 +50,29 @@
         "cmd": ["node", "--require=dotenv/config", "lib/chains/optimism.js"]
       },
       "process:base": {
-        "description": "Load .env and start the BSC squid processor",
+        "description": "Load .env and start the Base squid processor",
         "deps": ["build", "migration:apply"],
         "cmd": ["node", "--require=dotenv/config", "lib/chains/base.js"]
       },
+      "process:backfill": {
+        "description": "Load .env and start the Backfill squid processor",
+        "deps": ["build", "migration:apply"],
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/backfill.js"]
+      },
       "process:prod:optimism": {
-        "description": "Start the squid processor",
+        "description": "Start the Optimism squid processor",
         "deps": ["migration:apply"],
         "cmd": ["node", "lib/chains/optimism.js"],
         "hidden": true
       },
       "process:prod:base": {
-        "description": "Start the squid processor",
+        "description": "Start the Base squid processor",
         "cmd": ["node", "lib/chains/base.js"],
+        "hidden": true
+      },
+      "process:prod:backfill": {
+        "description": "Start the backfill squid processor",
+        "cmd": ["node", "lib/chains/backfill.js"],
         "hidden": true
       },
       "serve": {
