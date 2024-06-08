@@ -11,6 +11,7 @@ import { IndexedTx } from "@cosmjs/stargate";
 import { SearchTxQuery } from "@cosmjs/stargate/build/search";
 import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
 import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
+import pMap from "p-map";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -393,7 +394,7 @@ async function addCatchupErrorsToPackets(packets: Packet[], ctx: Context) {
   }
 }
 
-export async function packetMetrics(packetIds: string[], ctx: Context): Promise<void> {
+export async function packetMetrics(packetIds: string[], ctx: Context, concurrency: number = 10): Promise<void> {
   const packets = await ctx.store.find(Packet, {
     where: {id: In(packetIds)},
     relations: {sendPacket: true, recvPacket: true, ackPacket: true, writeAckPacket: true, catchupError: true},
@@ -410,7 +411,7 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
   let writeAckPackets: WriteAckPacket[] = []
   const catchUpErrors = new Set<PacketCatchUpError>();
 
-  for (const packet of packets) {
+  let mapper = async (packet: models.Packet) => {
     if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
       packet.sendToRecvTime = Number(packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp) / 1000;
     }
@@ -448,7 +449,9 @@ export async function packetMetrics(packetIds: string[], ctx: Context): Promise<
         catchUpErrors.add(packet.catchupError!);
       }
     }
-  }
+  };
+
+  await pMap(packets, mapper, {concurrency: concurrency});
 
   await ctx.store.upsert(sendPackets);
   await ctx.store.upsert(writeAckPackets);

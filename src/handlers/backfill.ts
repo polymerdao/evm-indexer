@@ -1,9 +1,10 @@
 import { Context } from "../utils/types";
-import { CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP } from "../chains/constants";
+import { BACKFILL_CONCURRENCY, CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP } from "../chains/constants";
 import { Channel, Packet, PacketCatchUpError } from "../model";
 import { And, IsNull, LessThan, MoreThan, Not } from "typeorm";
 import { channelMetrics } from "./channels";
 import { packetMetrics } from "./packets";
+
 
 export async function handler(ctx: Context) {
   if (ENABLE_CATCHUP) {
@@ -128,5 +129,5 @@ async function updateMissingPacketMetrics(ctx: Context) {
     }
   }
 
-  await packetMetrics(Array.from(uniquePacketIds), ctx);
+  await packetMetrics(Array.from(uniquePacketIds), ctx, BACKFILL_CONCURRENCY);
 }
