@@ -1,4 +1,5 @@
 import * as dispatcher from '../abi/dispatcher'
+import * as uch from '../abi/uch'
 import { Contract } from '../abi/dispatcher'
 import { topics } from '../utils/topics'
 import { Context } from '../utils/types'
@@ -73,6 +74,7 @@ type Entities = {
   acknowledgements: Acknowledgement[],
   timeouts: Timeout[],
   writeTimeoutPackets: WriteTimeoutPacket[],
+  uchPacketSends: Map<string, string>,
 }
 
 const portPrefixCache = new Map<string, string>();
@@ -92,6 +94,7 @@ export async function handler(ctx: Context) {
     acknowledgements: [],
     timeouts: [],
     writeTimeoutPackets: [],
+    uchPacketSends: new Map<string, string>(),
   };
 
   for (let block of ctx.blocks) {
@@ -108,6 +111,13 @@ export async function handler(ctx: Context) {
 
       const currTopic = log.topics[0]
       if (!topics.includes(currTopic)) continue
+
+      // UCH Packet Sent
+      if (currTopic === uch.events.UCHPacketSent.topic) {
+        const transactionHash = log.transactionHash
+        const source = uch.events.UCHPacketSent.decode(log).source
+        entities.uchPacketSends.set(transactionHash, source)
+      }
 
       // Packet events
       if (currTopic === dispatcher.events.SendPacket.topic) {
@@ -199,9 +209,16 @@ const uniqueByLastOccurrence = <T extends { id: string }>(items: T[]): T[] => {
 const processAndUpsertPackets = async <T extends { id: string }>(
   packets: T[],
   ctx: Context,
-  hookFunction: (packet: T, ctx: Context) => Promise<any>
+  hookFunction: (packet: T, ctx: Context, UchPacketSends?: Map<string, string>) => Promise<any>,
+  uchPacketSends?: Map<string, string>
 ): Promise<string[]> => {
-  let processedPackets = await Promise.all(packets.map(packet => hookFunction(packet, ctx)));
+  let processedPackets = await Promise.all(packets.map(packet => {
+    if (uchPacketSends) {
+      return hookFunction(packet, ctx, uchPacketSends);
+    } else {
+      return hookFunction(packet, ctx);
+    }
+  }));
   processedPackets = processedPackets.filter((packet): packet is T => packet !== null);
   processedPackets = uniqueByLastOccurrence(processedPackets);
   await ctx.store.upsert(processedPackets);
@@ -213,7 +230,7 @@ const processAndUpsertPackets = async <T extends { id: string }>(
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   const uniquePacketIds = new Set<string>();
 
-  let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook);
+  let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook, entities.uchPacketSends);
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
   let sendPacketUpdates = (await Promise.all(entities.sendPackets.map(packet => packetSourceChannelUpdate(packet, ctx))))

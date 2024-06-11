@@ -13,7 +13,7 @@ export function IbcProcessor() {
       },
       log: {
         transaction: true,
-        transactionHash: true
+        transactionHash: true,
       },
       transaction: {
         input: true,

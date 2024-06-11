@@ -1,4 +1,5 @@
 import * as dispatcher from "../abi/dispatcher";
+import * as uch from "../abi/uch";
 
 export let topics = [
   // Packets
@@ -14,5 +15,8 @@ export let topics = [
   dispatcher.events.ChannelOpenTry.topic,
   dispatcher.events.ChannelOpenAck.topic,
   dispatcher.events.ChannelOpenConfirm.topic,
-  dispatcher.events.CloseIbcChannel.topic
+  dispatcher.events.CloseIbcChannel.topic,
+
+  // UCH
+  uch.events.UCHPacketSent.topic
 ];
