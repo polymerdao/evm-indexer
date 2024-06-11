@@ -6,6 +6,7 @@ type Packet @entity @index(fields: ["sendPacket", "recvPacket", "writeAckPacket"
   writeAckPacket: WriteAckPacket @unique
   ackPacket: Acknowledgement @unique
   state: PacketStates! @index
+  sender: String @index
 
   sendToRecvTime: Int @index
   sendToRecvGas: Int @index

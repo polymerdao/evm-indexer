@@ -1,0 +1,867 @@
+{"abi": [
+  {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+  },
+  {
+      "inputs": [],
+      "name": "ChannelNotFound",
+      "type": "error"
+  },
+  {
+      "inputs": [],
+      "name": "MwBitmpaCannotBeZero",
+      "type": "error"
+  },
+  {
+      "inputs": [],
+      "name": "UnsupportedVersion",
+      "type": "error"
+  },
+  {
+      "inputs": [],
+      "name": "notIbcDispatcher",
+      "type": "error"
+  },
+  {
+      "anonymous": false,
+      "inputs": [
+          {
+              "indexed": false,
+              "internalType": "address",
+              "name": "previousAdmin",
+              "type": "address"
+          },
+          {
+              "indexed": false,
+              "internalType": "address",
+              "name": "newAdmin",
+              "type": "address"
+          }
+      ],
+      "name": "AdminChanged",
+      "type": "event"
+  },
+  {
+      "anonymous": false,
+      "inputs": [
+          {
+              "indexed": true,
+              "internalType": "address",
+              "name": "beacon",
+              "type": "address"
+          }
+      ],
+      "name": "BeaconUpgraded",
+      "type": "event"
+  },
+  {
+      "anonymous": false,
+      "inputs": [
+          {
+              "indexed": false,
+              "internalType": "uint8",
+              "name": "version",
+              "type": "uint8"
+          }
+      ],
+      "name": "Initialized",
+      "type": "event"
+  },
+  {
+      "anonymous": false,
+      "inputs": [
+          {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+          },
+          {
+              "indexed": true,
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+          }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+  },
+  {
+      "anonymous": false,
+      "inputs": [
+          {
+              "indexed": false,
+              "internalType": "address",
+              "name": "source",
+              "type": "address"
+          },
+          {
+              "indexed": false,
+              "internalType": "bytes32",
+              "name": "destination",
+              "type": "bytes32"
+          }
+      ],
+      "name": "UCHPacketSent",
+      "type": "event"
+  },
+  {
+      "anonymous": false,
+      "inputs": [
+          {
+              "indexed": true,
+              "internalType": "address",
+              "name": "implementation",
+              "type": "address"
+          }
+      ],
+      "name": "Upgraded",
+      "type": "event"
+  },
+  {
+      "inputs": [],
+      "name": "MW_ID",
+      "outputs": [
+          {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [],
+      "name": "VERSION",
+      "outputs": [
+          {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+          }
+      ],
+      "name": "connectedChannels",
+      "outputs": [
+          {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [],
+      "name": "dispatcher",
+      "outputs": [
+          {
+              "internalType": "contract IbcDispatcher",
+              "name": "",
+              "type": "address"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "contract IbcDispatcher",
+              "name": "_dispatcher",
+              "type": "address"
+          }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+          },
+          {
+              "internalType": "uint256",
+              "name": "",
+              "type": "uint256"
+          }
+      ],
+      "name": "mwStackAddrs",
+      "outputs": [
+          {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "components": [
+                  {
+                      "components": [
+                          {
+                              "internalType": "string",
+                              "name": "portId",
+                              "type": "string"
+                          },
+                          {
+                              "internalType": "bytes32",
+                              "name": "channelId",
+                              "type": "bytes32"
+                          }
+                      ],
+                      "internalType": "struct IbcEndpoint",
+                      "name": "src",
+                      "type": "tuple"
+                  },
+                  {
+                      "components": [
+                          {
+                              "internalType": "string",
+                              "name": "portId",
+                              "type": "string"
+                          },
+                          {
+                              "internalType": "bytes32",
+                              "name": "channelId",
+                              "type": "bytes32"
+                          }
+                      ],
+                      "internalType": "struct IbcEndpoint",
+                      "name": "dest",
+                      "type": "tuple"
+                  },
+                  {
+                      "internalType": "uint64",
+                      "name": "sequence",
+                      "type": "uint64"
+                  },
+                  {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                  },
+                  {
+                      "components": [
+                          {
+                              "internalType": "uint64",
+                              "name": "revision_number",
+                              "type": "uint64"
+                          },
+                          {
+                              "internalType": "uint64",
+                              "name": "revision_height",
+                              "type": "uint64"
+                          }
+                      ],
+                      "internalType": "struct Height",
+                      "name": "timeoutHeight",
+                      "type": "tuple"
+                  },
+                  {
+                      "internalType": "uint64",
+                      "name": "timeoutTimestamp",
+                      "type": "uint64"
+                  }
+              ],
+              "internalType": "struct IbcPacket",
+              "name": "packet",
+              "type": "tuple"
+          },
+          {
+              "components": [
+                  {
+                      "internalType": "bool",
+                      "name": "success",
+                      "type": "bool"
+                  },
+                  {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                  }
+              ],
+              "internalType": "struct AckPacket",
+              "name": "ack",
+              "type": "tuple"
+          }
+      ],
+      "name": "onAcknowledgementPacket",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+          }
+      ],
+      "name": "onChanCloseConfirm",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+          }
+      ],
+      "name": "onChanCloseInit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "string",
+              "name": "counterpartyVersion",
+              "type": "string"
+          }
+      ],
+      "name": "onChanOpenAck",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          }
+      ],
+      "name": "onChanOpenConfirm",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "enum ChannelOrder",
+              "name": "",
+              "type": "uint8"
+          },
+          {
+              "internalType": "string[]",
+              "name": "",
+              "type": "string[]"
+          },
+          {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+          },
+          {
+              "internalType": "string",
+              "name": "version",
+              "type": "string"
+          }
+      ],
+      "name": "onChanOpenInit",
+      "outputs": [
+          {
+              "internalType": "string",
+              "name": "selectedVersion",
+              "type": "string"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "enum ChannelOrder",
+              "name": "",
+              "type": "uint8"
+          },
+          {
+              "internalType": "string[]",
+              "name": "",
+              "type": "string[]"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "string",
+              "name": "",
+              "type": "string"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "string",
+              "name": "counterpartyVersion",
+              "type": "string"
+          }
+      ],
+      "name": "onChanOpenTry",
+      "outputs": [
+          {
+              "internalType": "string",
+              "name": "selectedVersion",
+              "type": "string"
+          }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "components": [
+                  {
+                      "components": [
+                          {
+                              "internalType": "string",
+                              "name": "portId",
+                              "type": "string"
+                          },
+                          {
+                              "internalType": "bytes32",
+                              "name": "channelId",
+                              "type": "bytes32"
+                          }
+                      ],
+                      "internalType": "struct IbcEndpoint",
+                      "name": "src",
+                      "type": "tuple"
+                  },
+                  {
+                      "components": [
+                          {
+                              "internalType": "string",
+                              "name": "portId",
+                              "type": "string"
+                          },
+                          {
+                              "internalType": "bytes32",
+                              "name": "channelId",
+                              "type": "bytes32"
+                          }
+                      ],
+                      "internalType": "struct IbcEndpoint",
+                      "name": "dest",
+                      "type": "tuple"
+                  },
+                  {
+                      "internalType": "uint64",
+                      "name": "sequence",
+                      "type": "uint64"
+                  },
+                  {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                  },
+                  {
+                      "components": [
+                          {
+                              "internalType": "uint64",
+                              "name": "revision_number",
+                              "type": "uint64"
+                          },
+                          {
+                              "internalType": "uint64",
+                              "name": "revision_height",
+                              "type": "uint64"
+                          }
+                      ],
+                      "internalType": "struct Height",
+                      "name": "timeoutHeight",
+                      "type": "tuple"
+                  },
+                  {
+                      "internalType": "uint64",
+                      "name": "timeoutTimestamp",
+                      "type": "uint64"
+                  }
+              ],
+              "internalType": "struct IbcPacket",
+              "name": "packet",
+              "type": "tuple"
+          }
+      ],
+      "name": "onRecvPacket",
+      "outputs": [
+          {
+              "components": [
+                  {
+                      "internalType": "bool",
+                      "name": "success",
+                      "type": "bool"
+                  },
+                  {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                  }
+              ],
+              "internalType": "struct AckPacket",
+              "name": "ackPacket",
+              "type": "tuple"
+          }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "components": [
+                  {
+                      "components": [
+                          {
+                              "internalType": "string",
+                              "name": "portId",
+                              "type": "string"
+                          },
+                          {
+                              "internalType": "bytes32",
+                              "name": "channelId",
+                              "type": "bytes32"
+                          }
+                      ],
+                      "internalType": "struct IbcEndpoint",
+                      "name": "src",
+                      "type": "tuple"
+                  },
+                  {
+                      "components": [
+                          {
+                              "internalType": "string",
+                              "name": "portId",
+                              "type": "string"
+                          },
+                          {
+                              "internalType": "bytes32",
+                              "name": "channelId",
+                              "type": "bytes32"
+                          }
+                      ],
+                      "internalType": "struct IbcEndpoint",
+                      "name": "dest",
+                      "type": "tuple"
+                  },
+                  {
+                      "internalType": "uint64",
+                      "name": "sequence",
+                      "type": "uint64"
+                  },
+                  {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                  },
+                  {
+                      "components": [
+                          {
+                              "internalType": "uint64",
+                              "name": "revision_number",
+                              "type": "uint64"
+                          },
+                          {
+                              "internalType": "uint64",
+                              "name": "revision_height",
+                              "type": "uint64"
+                          }
+                      ],
+                      "internalType": "struct Height",
+                      "name": "timeoutHeight",
+                      "type": "tuple"
+                  },
+                  {
+                      "internalType": "uint64",
+                      "name": "timeoutTimestamp",
+                      "type": "uint64"
+                  }
+              ],
+              "internalType": "struct IbcPacket",
+              "name": "packet",
+              "type": "tuple"
+          }
+      ],
+      "name": "onTimeoutPacket",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "string",
+              "name": "version",
+              "type": "string"
+          },
+          {
+              "internalType": "enum ChannelOrder",
+              "name": "ordering",
+              "type": "uint8"
+          },
+          {
+              "internalType": "bool",
+              "name": "feeEnabled",
+              "type": "bool"
+          },
+          {
+              "internalType": "string[]",
+              "name": "connectionHops",
+              "type": "string[]"
+          },
+          {
+              "internalType": "string",
+              "name": "counterpartyPortIdentifier",
+              "type": "string"
+          }
+      ],
+      "name": "openChannel",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+          {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [],
+      "name": "proxiableUUID",
+      "outputs": [
+          {
+              "internalType": "bytes32",
+              "name": "",
+              "type": "bytes32"
+          }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "uint256",
+              "name": "mwBitmap",
+              "type": "uint256"
+          },
+          {
+              "internalType": "address[]",
+              "name": "mwAddrs",
+              "type": "address[]"
+          }
+      ],
+      "name": "registerMwStack",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [],
+      "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "srcPortAddr",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "destPortAddr",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "uint256",
+              "name": "srcMwIds",
+              "type": "uint256"
+          },
+          {
+              "internalType": "bytes",
+              "name": "appData",
+              "type": "bytes"
+          },
+          {
+              "internalType": "uint64",
+              "name": "timeoutTimestamp",
+              "type": "uint64"
+          }
+      ],
+      "name": "sendMWPacket",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "bytes32",
+              "name": "channelId",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "bytes32",
+              "name": "destPortAddr",
+              "type": "bytes32"
+          },
+          {
+              "internalType": "bytes",
+              "name": "appData",
+              "type": "bytes"
+          },
+          {
+              "internalType": "uint64",
+              "name": "timeoutTimestamp",
+              "type": "uint64"
+          }
+      ],
+      "name": "sendUniversalPacket",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "contract IbcDispatcher",
+              "name": "_dispatcher",
+              "type": "address"
+          }
+      ],
+      "name": "setDispatcher",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "address",
+              "name": "newOwner",
+              "type": "address"
+          }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+          }
+      ],
+      "name": "upgradeTo",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+  },
+  {
+      "inputs": [
+          {
+              "internalType": "address",
+              "name": "newImplementation",
+              "type": "address"
+          },
+          {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+          }
+      ],
+      "name": "upgradeToAndCall",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+  },
+  {
+      "stateMutability": "payable",
+      "type": "receive"
+  }
+]}
