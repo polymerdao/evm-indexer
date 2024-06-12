@@ -54,6 +54,9 @@ export class SendPacket {
     @IntColumn_({nullable: false})
     chainId!: number
 
+    @StringColumn_({nullable: true})
+    sender!: string | undefined | null
+
     @BigIntColumn_({nullable: false})
     gas!: bigint
 
