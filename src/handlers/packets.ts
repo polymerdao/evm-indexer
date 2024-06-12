@@ -3,7 +3,7 @@ import { Packet, PacketCatchUpError, SendPacket, WriteAckPacket } from '../model
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
-import { getDispatcherClientName, getDispatcherType } from "./helpers";
+import { getDispatcherClientName, getDispatcherType, packetToSender } from "./helpers";
 import { logger } from "../utils/logger";
 import { In } from "typeorm";
 import { TmClient } from "./tmclient";
@@ -21,6 +21,8 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, sen
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
+  console.log('Transaction hash: ', log.transactionHash)
+  const sender = packetToSender(event.packet)
 
   return new models.SendPacket({
     id: log.id,
@@ -36,6 +38,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, sen
     blockTimestamp: BigInt(log.block.timestamp),
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
+    sender: sender || null,
     gas,
     gasPrice,
     maxFeePerGas,
