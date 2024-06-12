@@ -42,6 +42,7 @@ type SendPacket @entity {
   blockTimestamp: BigInt! @index
   transactionHash: String! @index
   chainId: Int! @index
+  sender: String
   gas: BigInt!
   gasPrice: BigInt
   maxFeePerGas: BigInt
