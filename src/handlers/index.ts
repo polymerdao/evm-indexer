@@ -204,7 +204,7 @@ const uniqueByLastOccurrence = <T extends { id: string }>(items: T[]): T[] => {
 const processAndUpsertPackets = async <T extends { id: string }>(
   packets: T[],
   ctx: Context,
-  hookFunction: (packet: T, ctx: Context, UchPacketSends?: Map<string, string>) => Promise<any>
+  hookFunction: (packet: T, ctx: Context) => Promise<any>
 ): Promise<string[]> => {
   let processedPackets = await Promise.all(packets.map(packet => hookFunction(packet, ctx)));
   processedPackets = processedPackets.filter((packet): packet is T => packet !== null);
