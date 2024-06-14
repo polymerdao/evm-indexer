@@ -33,6 +33,5 @@ export function packetToSender(packetData: Uint8Array): string {
     return '';
   }
 
-  console.log(`Packet sender: ${address}`);
   return address;
 }
