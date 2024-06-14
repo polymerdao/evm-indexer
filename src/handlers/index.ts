@@ -100,15 +100,6 @@ export async function handler(ctx: Context) {
   for (let block of ctx.blocks) {
     for (let log of block.logs) {
 
-      let portPrefix = portPrefixCache.get(log.address)
-      if (!portPrefix) {
-        // Get the port prefix from the last block in case the port prefix hasn't been properly set in the beginning
-        let latestHeight = Number(await ctx._chain.client.call("eth_blockNumber", ["latest"]))
-        const contract = new Contract(ctx, {height: latestHeight}, log.address)
-        portPrefix = String(await contract.portPrefix())
-        portPrefixCache.set(log.address, portPrefix)
-      }
-
       const currTopic = log.topics[0]
       if (!topics.includes(currTopic)) continue
 
@@ -117,6 +108,16 @@ export async function handler(ctx: Context) {
         const transactionHash = log.transactionHash
         const source = uch.events.UCHPacketSent.decode(log).source
         uchPacketSends.set(transactionHash, source)
+        continue
+      }
+
+      let portPrefix = portPrefixCache.get(log.address)
+      if (!portPrefix) {
+        // Get the port prefix from the last block in case the port prefix hasn't been properly set in the beginning
+        let latestHeight = Number(await ctx._chain.client.call("eth_blockNumber", ["latest"]))
+        const contract = new Contract(ctx, {height: latestHeight}, log.address)
+        portPrefix = String(await contract.portPrefix())
+        portPrefixCache.set(log.address, portPrefix)
       }
 
       // Packet events
