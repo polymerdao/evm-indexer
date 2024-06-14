@@ -55,7 +55,10 @@ export class SendPacket {
     chainId!: number
 
     @StringColumn_({nullable: true})
-    sender!: string | undefined | null
+    packetDataSender!: string | undefined | null
+
+    @StringColumn_({nullable: true})
+    uchEventSender!: string | undefined | null
 
     @BigIntColumn_({nullable: false})
     gas!: bigint

@@ -13,7 +13,7 @@ import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
 import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
 import {Promise as Bluebird} from "bluebird";
 
-export function handleSendPacket(block: Block, log: Log, portPrefix: string, sender?: string): models.SendPacket {
+export function handleSendPacket(block: Block, log: Log, portPrefix: string, uchEventSender: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId)
   const packetHash = ethers.sha256(event.packet)
@@ -21,8 +21,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, sen
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
-  console.log('Transaction hash: ', log.transactionHash)
-  const sender = packetToSender(event.packet)
+  const packetDataSender = packetToSender(event.packet)
 
   return new models.SendPacket({
     id: log.id,
@@ -38,7 +37,8 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, sen
     blockTimestamp: BigInt(log.block.timestamp),
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
-    sender: sender || null,
+    uchEventSender,
+    packetDataSender,
     gas,
     gasPrice,
     maxFeePerGas,
@@ -192,18 +192,24 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, portPrefix: str
   });
 }
 
-export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context, UchPacketSends?: Map<string, string>) {
+export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context) {
   let srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
   let key = `${srcPortId}-${sendPacket.srcChannelId}-${sendPacket.sequence}`;
   let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
   let state = existingPacket ? existingPacket.state : models.PacketStates.SENT
-  let sender = UchPacketSends?.get(sendPacket.transactionHash)
+  let sender;
+  if (sendPacket.uchEventSender) {
+    sender = sendPacket.uchEventSender
+  }
+  else if (sendPacket.packetDataSender) {
+    sender = sendPacket.packetDataSender
+  }
 
   return new models.Packet({
     id: key,
     state: state,
     sendPacket: sendPacket,
-    sender: sender || null,
+    sender
   });
 }
 
