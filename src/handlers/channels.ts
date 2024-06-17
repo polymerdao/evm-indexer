@@ -452,6 +452,7 @@ export async function channelMetrics(channelIds: string[], ctx: Context): Promis
         await updateInitToAckMetrics(channel, ctx);
         ackChannels.set(channel.channelOpenAck.id, channel.channelOpenAck);
       } catch (e) {
+        console.log(e)
         ctx.log.error(`Error updating init to ack metrics for channel ${channel.id}: ${e}`)
         channel.catchupError!.initToAckPolymerGas += 1
         catchupErrors.add(channel.catchupError!);

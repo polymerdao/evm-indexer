@@ -197,19 +197,11 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
   let key = `${srcPortId}-${sendPacket.srcChannelId}-${sendPacket.sequence}`;
   let existingPacket = await ctx.store.findOne(models.Packet, {where: {id: key}})
   let state = existingPacket ? existingPacket.state : models.PacketStates.SENT
-  let sender;
-  if (sendPacket.uchEventSender) {
-    sender = sendPacket.uchEventSender
-  }
-  else if (sendPacket.packetDataSender) {
-    sender = sendPacket.packetDataSender
-  }
 
   return new models.Packet({
     id: key,
     state: state,
-    sendPacket: sendPacket,
-    sender
+    sendPacket: sendPacket
   });
 }
 

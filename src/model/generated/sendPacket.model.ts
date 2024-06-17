@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, ManyToOne as ManyToOne_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, ManyToOne as ManyToOne_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
 import {Channel} from "./channel.model"
 import {Packet} from "./packet.model"
 
@@ -20,9 +20,11 @@ export class SendPacket {
     @StringColumn_({nullable: false})
     dispatcherClientName!: string
 
+    @Index_()
     @StringColumn_({nullable: false})
     sourcePortAddress!: string
 
+    @Index_()
     @StringColumn_({nullable: false})
     srcChannelId!: string
 
@@ -30,6 +32,7 @@ export class SendPacket {
     @ManyToOne_(() => Channel, {nullable: true})
     sourceChannel!: Channel | undefined | null
 
+    @Index_()
     @StringColumn_({nullable: false})
     packet!: string
 
@@ -54,9 +57,11 @@ export class SendPacket {
     @IntColumn_({nullable: false})
     chainId!: number
 
+    @Index_()
     @StringColumn_({nullable: true})
     packetDataSender!: string | undefined | null
 
+    @Index_()
     @StringColumn_({nullable: true})
     uchEventSender!: string | undefined | null
 
