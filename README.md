@@ -46,6 +46,8 @@ sqd serve       # GraphQL server
 After making a change to the graphql schema a migration needs to be generated.
 ```bash
 npm run build
+# apply existing migrations so that only new migrations are generated
+npx squid-typeorm-migration apply
 npx squid-typeorm-migration generate
 npx squid-typeorm-migration apply
 ```

@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, OneToOne as OneToOne_, JoinColumn as JoinColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, OneToOne as OneToOne_, JoinColumn as JoinColumn_, IntColumn as IntColumn_} from "@subsquid/typeorm-store"
 import {SendPacket} from "./sendPacket.model"
 import {RecvPacket} from "./recvPacket.model"
 import {WriteAckPacket} from "./writeAckPacket.model"
@@ -39,10 +39,6 @@ export class Packet {
     @Index_()
     @Column_("varchar", {length: 13, nullable: false})
     state!: PacketStates
-
-    @Index_()
-    @StringColumn_({nullable: true})
-    sender!: string | undefined | null
 
     @Index_()
     @IntColumn_({nullable: true})
