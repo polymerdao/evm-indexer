@@ -1,5 +1,4 @@
-import { Web3 } from 'web3';
-import { isAddress } from 'web3-validator';
+import { ethers } from 'ethers';
 import { logger } from '../utils/logger';
 
 export function getDispatcherType(portPrefix: string) {
@@ -18,7 +17,7 @@ export function getDispatcherClientName(portPrefix: string) {
 }
 
 export function packetToSender(packetData: Uint8Array): string {
-  const hexString = Web3.utils.bytesToHex(packetData);
+  const hexString = ethers.hexlify(packetData);
 
   if (hexString.length < 66) {
     logger.error(`Invalid packet data: ${hexString}`);
@@ -28,7 +27,7 @@ export function packetToSender(packetData: Uint8Array): string {
   const paddedAddress = hexString.slice(0, 66);
   const address = '0x' + paddedAddress.slice(-40);
 
-  if (!isAddress(address)) {
+  if (!ethers.isAddress(address)) {
     logger.error(`Invalid packet sender: ${address}`);
     return '';
   }
