@@ -9,6 +9,9 @@ const DISPATCHERS: string[] = [
   process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!,
 ]
 
+console.log("DISPATCHERS", DISPATCHERS)
+console.log("topics", topics)
+
 const processor = IbcProcessor()
   .setGateway(process.env.BASE_GATEWAY!)
   .setRpcEndpoint({
