@@ -44,4 +44,10 @@ sqd serve       # GraphQL server
 
 ## Database migration
 After making a change to the graphql schema a migration needs to be generated.
-Follow steps in [this doc](https://docs.subsquid.io/sdk/resources/persisting-data/typeorm/#database-migrations) to generate and apply a migration.
+```bash
+npm run build
+# apply existing migrations so that only new migrations are generated
+npx squid-typeorm-migration apply
+npx squid-typeorm-migration generate
+npx squid-typeorm-migration apply
+```

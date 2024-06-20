@@ -31,16 +31,18 @@ type SendPacket @entity {
   dispatcherAddress: String!
   dispatcherType: String!
   dispatcherClientName: String!
-  sourcePortAddress: String!
-  srcChannelId: String!
+  sourcePortAddress: String! @index
+  srcChannelId: String! @index
   sourceChannel: Channel
-  packet: String!
+  packet: String! @index
   sequence: BigInt!
   timeoutTimestamp: BigInt!
   blockNumber: BigInt!
   blockTimestamp: BigInt! @index
   transactionHash: String! @index
   chainId: Int! @index
+  packetDataSender: String @index
+  uchEventSender: String @index
   gas: BigInt!
   gasPrice: BigInt
   maxFeePerGas: BigInt
@@ -57,8 +59,8 @@ type RecvPacket @entity {
   dispatcherAddress: String!
   dispatcherType: String!
   dispatcherClientName: String!
-  destPortAddress: String!
-  destChannelId: String!
+  destPortAddress: String! @index
+  destChannelId: String! @index
   sequence: BigInt!
   blockNumber: BigInt!
   blockTimestamp: BigInt! @index

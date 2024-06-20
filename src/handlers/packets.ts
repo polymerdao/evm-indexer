@@ -3,7 +3,7 @@ import { Packet, PacketCatchUpError, SendPacket, WriteAckPacket } from '../model
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
-import { getDispatcherClientName, getDispatcherType } from "./helpers";
+import { getDispatcherClientName, getDispatcherType, packetToSender } from "./helpers";
 import { logger } from "../utils/logger";
 import { In } from "typeorm";
 import { TmClient } from "./tmclient";
@@ -13,7 +13,7 @@ import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
 import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
 import {Promise as Bluebird} from "bluebird";
 
-export function handleSendPacket(block: Block, log: Log, portPrefix: string): models.SendPacket {
+export function handleSendPacket(block: Block, log: Log, portPrefix: string, uchEventSender: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId)
   const packetHash = ethers.sha256(event.packet)
@@ -21,6 +21,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string): mo
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
+  const packetDataSender = packetToSender(event.packet)
 
   return new models.SendPacket({
     id: log.id,
@@ -36,6 +37,8 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string): mo
     blockTimestamp: BigInt(log.block.timestamp),
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
+    uchEventSender,
+    packetDataSender,
     gas,
     gasPrice,
     maxFeePerGas,
@@ -198,7 +201,7 @@ export async function sendPacketHook(sendPacket: models.SendPacket, ctx: Context
   return new models.Packet({
     id: key,
     state: state,
-    sendPacket: sendPacket,
+    sendPacket: sendPacket
   });
 }
 

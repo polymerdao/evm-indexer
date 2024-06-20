@@ -1,4 +1,5 @@
 import * as dispatcher from '../abi/dispatcher'
+import * as uch from '../abi/uch'
 import { Contract } from '../abi/dispatcher'
 import { topics } from '../utils/topics'
 import { Context } from '../utils/types'
@@ -94,8 +95,21 @@ export async function handler(ctx: Context) {
     writeTimeoutPackets: [],
   };
 
+  const uchPacketSends = new Map<string, string>();
+
   for (let block of ctx.blocks) {
     for (let log of block.logs) {
+
+      const currTopic = log.topics[0]
+      if (!topics.includes(currTopic)) continue
+
+      // UCH Packet Sent
+      if (currTopic === uch.events.UCHPacketSent.topic) {
+        const transactionHash = log.transactionHash
+        const source = uch.events.UCHPacketSent.decode(log).source
+        uchPacketSends.set(transactionHash, source)
+        continue
+      }
 
       let portPrefix = portPrefixCache.get(log.address)
       if (!portPrefix) {
@@ -106,12 +120,9 @@ export async function handler(ctx: Context) {
         portPrefixCache.set(log.address, portPrefix)
       }
 
-      const currTopic = log.topics[0]
-      if (!topics.includes(currTopic)) continue
-
       // Packet events
       if (currTopic === dispatcher.events.SendPacket.topic) {
-        entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix))
+        entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix, uchPacketSends.get(log.transactionHash) || ''))
       } else if (currTopic === dispatcher.events.RecvPacket.topic) {
         entities.recvPackets.push(handleRecvPacket(block.header, log, portPrefix))
       } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {

@@ -4,9 +4,11 @@ import { topics } from '../utils/topics'
 import { handler } from '../handlers'
 import { MAX_BATCH_CALL_SIZE, VERSION } from "./constants";
 
-const DISPATCHERS: string[] = [
+const CONTRACTS: string[] = [
   process.env.DISPATCHER_ADDRESS_BASE!,
   process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!,
+  process.env.UNIVERSAL_CHANNEL_ADDRESS_BASE!,
+  process.env.UNIVERSAL_CHANNEL_ADDRESS_BASE_SIMCLIENT!
 ]
 
 const processor = IbcProcessor()
@@ -24,7 +26,7 @@ const processor = IbcProcessor()
     )
   })
   .addLog({
-    address: DISPATCHERS,
+    address: CONTRACTS,
     topic0: topics,
     transaction: true
   })
