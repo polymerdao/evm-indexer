@@ -168,6 +168,9 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
     }
   }
 
+  channelUpdates = uniqueByLastOccurrence(channelUpdates);
+  channelEventUpdates = uniqueByLastOccurrence(channelEventUpdates);
+
   await ctx.store.upsert(channelUpdates)
   await ctx.store.upsert(channelEventUpdates)
 
@@ -177,6 +180,8 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
     channelUpdates.push(...confirmedChannels);
     confirmedChannels.forEach(channel => uniqueChannelIds.add(channel.id));
   }
+
+  channelUpdates = uniqueByLastOccurrence(channelUpdates);
   await ctx.store.upsert(channelUpdates)
 
   await channelMetrics(Array.from(uniqueChannelIds), ctx);

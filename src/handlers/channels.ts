@@ -241,7 +241,7 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
     where: {
       portId: portId,
       channelId: channelId,
-      state: ChannelStates.TRY,
+      state: In([ChannelStates.TRY, ChannelStates.OPEN]),
       blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
     },
     order: {blockTimestamp: "desc"},
