@@ -241,7 +241,7 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
     where: {
       portId: portId,
       channelId: channelId,
-      state: ChannelStates.TRY,
+      state: In([ChannelStates.TRY, ChannelStates.OPEN]),
       blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
     },
     order: {blockTimestamp: "desc"},
@@ -267,14 +267,17 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
     tryChannel.channelOpenAck = cpChannel.channelOpenAck
   }
 
-  tryChannel.state = ChannelStates.OPEN
-  tryChannel.channelOpenConfirm = channelOpenConfirm
+  if (tryChannel.state != ChannelStates.OPEN) {
+    tryChannel.state = ChannelStates.OPEN
+    tryChannel.channelOpenConfirm = channelOpenConfirm
 
-  if (tryChannel.channelOpenInit) {
-    tryChannel.initToConfirmTime = Number(channelOpenConfirm.blockTimestamp - tryChannel.channelOpenInit.blockTimestamp) / 1000
+    if (tryChannel.channelOpenInit) {
+      tryChannel.initToConfirmTime = Number(channelOpenConfirm.blockTimestamp - tryChannel.channelOpenInit.blockTimestamp) / 1000
+    }
+
+    entities.push(tryChannel)
   }
 
-  entities.push(tryChannel)
   return entities
 }
 
