@@ -36,7 +36,6 @@ import {
   ChannelOpenInit,
   ChannelOpenTry,
   CloseIbcChannel,
-  Packet,
   RecvPacket,
   SendPacket,
   Timeout,
@@ -44,13 +43,11 @@ import {
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
-import { CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP } from "../chains/constants";
-import { IsNull, LessThan, Not } from "typeorm";
 
 export enum StatName {
-  SendPackets = 'SendPackets',
-  RecvPackets = 'RecvPackets',
-  AckPackets = 'AckPackets',
+  SendPacket = 'SendPacket',
+  RecvPacket = 'RecvPacket',
+  AckPacket = 'AckPacket',
   WriteAckPacket = 'WriteAckPacket',
   WriteTimeoutPacket = 'WriteTimeoutPacket',
   Timeout = 'Timeout',

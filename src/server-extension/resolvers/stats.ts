@@ -1,5 +1,15 @@
 import { Arg, Field, ObjectType, Query, Resolver } from 'type-graphql'
-import { And, Brackets, EntityManager, IsNull, LessThan, MoreThan, Not } from 'typeorm'
+import {
+  And,
+  Brackets,
+  EntityManager,
+  IsNull,
+  LessThan,
+  LessThanOrEqual,
+  MoreThan,
+  MoreThanOrEqual,
+  Not
+} from 'typeorm'
 import {
   Acknowledgement,
   Channel, ChannelCatchUpError,
@@ -60,7 +70,7 @@ export class BackfillStat {
 export class StatsResolver {
   constructor(private tx: () => Promise<EntityManager>) {}
 
-  async getStat(name: StatName, chainId: number): Promise<Stat> {
+  async getStat(name: StatName, chainId: number, start: number, end: number): Promise<Stat> {
     const manager = await this.tx()
 
     let where = {}
@@ -68,15 +78,29 @@ export class StatsResolver {
       where = {chainId}
     }
 
+    if (start) {
+      where = {
+        ...where,
+        blockTimestamp: MoreThanOrEqual(start)
+      }
+    }
+
+    if (end) {
+      where = {
+        ...where,
+        blockTimestamp: LessThanOrEqual(end)
+      }
+    }
+
     let val: number = 0
     switch (name) {
-      case StatName.SendPackets:
+      case StatName.SendPacket:
         val = await manager.getRepository(SendPacket).count({where})
         break
-      case StatName.RecvPackets:
+      case StatName.RecvPacket:
         val = await manager.getRepository(RecvPacket).count({where})
         break
-      case StatName.AckPackets:
+      case StatName.AckPacket:
         val = await manager.getRepository(Acknowledgement).count({where})
         break
       case StatName.WriteAckPacket:
@@ -112,16 +136,18 @@ export class StatsResolver {
   async stats(
     @Arg('name', {nullable: true}) name: StatName,
     @Arg('chainId', {nullable: true}) chainId: number,
+    @Arg('start', {nullable: true}) start: number,
+    @Arg('end', {nullable: true}) end: number,
   ): Promise<Stat[]> {
 
     if (name) {
-      return [await this.getStat(name, chainId)]
+      return [await this.getStat(name, chainId, start, end)]
     }
 
 
     let res: Stat[] = []
     for (const name of Object.values(StatName)) {
-      res.push(await this.getStat(name, chainId))
+      res.push(await this.getStat(name, chainId, start, end))
     }
 
     return res
