@@ -1,5 +1,6 @@
 import * as dispatcher from "../abi/dispatcher";
 import * as uch from "../abi/uch";
+import * as fee from "../abi/fee";
 
 export let topics = [
   // Packets
@@ -18,5 +19,9 @@ export let topics = [
   dispatcher.events.CloseIbcChannel.topic,
 
   // UCH
-  uch.events.UCHPacketSent.topic
+  uch.events.UCHPacketSent.topic,
+
+  // Fee Vault
+  fee.events.OpenChannelFeeDeposited.topic,
+  fee.events.SendPacketFeeDeposited.topic,
 ];

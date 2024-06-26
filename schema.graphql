@@ -343,3 +343,31 @@ type ChannelCatchUpError @entity {
 
   channel: Channel @derivedFrom(field: "catchupError")
 }
+
+type SendPacketFeeDeposited @entity {
+  id: ID!
+  channelId: String! @index
+  sequence: BigInt! @index
+  gasLimits: [Int!]!
+  gasPrices: [Int!]!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
+  chainId: Int! @index
+  from: String! @index
+}
+
+type OpenChannelFeeDeposited @entity {
+  id: ID!
+  sourceAddress: String! @index
+  version: String!
+  ordering: Int!
+  connectionHops: [String!]!
+  counterpartyPortId: String!
+  feeAmount: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt! @index
+  transactionHash: String! @index
+  chainId: Int! @index
+  from: String! @index
+}
