@@ -1,6 +1,7 @@
 import * as dispatcher from '../abi/dispatcher'
-import * as uch from '../abi/uch'
 import { Contract } from '../abi/dispatcher'
+import * as uch from '../abi/uch'
+import * as fee from '../abi/fee'
 import { topics } from '../utils/topics'
 import { Context } from '../utils/types'
 import {
@@ -36,13 +37,16 @@ import {
   ChannelOpenInit,
   ChannelOpenTry,
   CloseIbcChannel,
+  OpenChannelFeeDeposited,
   RecvPacket,
   SendPacket,
+  SendPacketFeeDeposited,
   Timeout,
   WriteAckPacket,
   WriteTimeoutPacket
 } from "../model";
 import { Entity } from "@subsquid/typeorm-store/lib/store";
+import { handleOpenChannelFee, handleSendPacketFee } from "./fees";
 
 export enum StatName {
   SendPacket = 'SendPacket',
@@ -71,6 +75,8 @@ type Entities = {
   acknowledgements: Acknowledgement[],
   timeouts: Timeout[],
   writeTimeoutPackets: WriteTimeoutPacket[],
+  sendPacketFees: SendPacketFeeDeposited[],
+  openChannelFees: OpenChannelFeeDeposited[],
 }
 
 const portPrefixCache = new Map<string, string>();
@@ -90,6 +96,8 @@ export async function handler(ctx: Context) {
     acknowledgements: [],
     timeouts: [],
     writeTimeoutPackets: [],
+    sendPacketFees: [],
+    openChannelFees: [],
   };
 
   const uchPacketSends = new Map<string, string>();
@@ -141,6 +149,13 @@ export async function handler(ctx: Context) {
         entities.openAckIbcChannels.push(handleChannelOpenAck(block.header, log))
       } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
         entities.openConfirmIbcChannels.push(handleChannelOpenConfirm(block.header, log))
+      }
+
+      // fee events
+      else if (currTopic === fee.events.SendPacketFeeDeposited.topic) {
+        entities.sendPacketFees.push(handleSendPacketFee(block.header, log))
+      } else if (currTopic === fee.events.OpenChannelFeeDeposited.topic) {
+        entities.openChannelFees.push(handleOpenChannelFee(block.header, log))
       }
     }
   }
@@ -254,4 +269,6 @@ async function upsertNewEntities(ctx: Context, entities: Entities) {
   await ctx.store.upsert(entities.acknowledgements);
   await ctx.store.upsert(entities.timeouts);
   await ctx.store.upsert(entities.writeTimeoutPackets);
+  await ctx.store.upsert(entities.sendPacketFees);
+  await ctx.store.upsert(entities.openChannelFees);
 }
