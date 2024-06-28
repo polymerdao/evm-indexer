@@ -11,8 +11,7 @@ const CONTRACTS: string[] = [
   process.env.UNIVERSAL_CHANNEL_ADDRESS_BASE_SIMCLIENT!
 ]
 
-const processor = IbcProcessor()
-  .setGateway(process.env.BASE_GATEWAY!)
+let processor = IbcProcessor()
   .setRpcEndpoint({
     url: process.env.BASE_RPC!,
     rateLimit: Number(process.env.RPC_RATE_LIMIT!),
@@ -30,6 +29,10 @@ const processor = IbcProcessor()
     topic0: topics,
     transaction: true
   })
+
+if (process.env.BASE_GATEWAY) {
+  processor = processor.setGateway(process.env.BASE_GATEWAY)
+}
 
 processor.run(new TypeormDatabase({
     supportHotBlocks: true,
