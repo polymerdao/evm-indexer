@@ -51,3 +51,19 @@ npx squid-typeorm-migration apply
 npx squid-typeorm-migration generate
 npx squid-typeorm-migration apply
 ```
+
+## Troubleshooting
+
+### TypeError: Cannot read properties of undefined (reading 'toLowerCase')
+```bash
+    at /squid/node_modules/@subsquid/evm-processor/lib/processor.js:437:39
+    at Array.map (<anonymous>)
+    at mapRequest (/squid/node_modules/@subsquid/evm-processor/lib/processor.js:437:28)
+    at EvmBatchProcessor.addLog (/squid/node_modules/@subsquid/evm-processor/lib/processor.js:195:20)
+    at Object.<anonymous> (/squid/lib/chains/optimism.js:24:6)
+    at Module._compile (node:internal/modules/cjs/loader:1364:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1422:10)
+    at Module.load (node:internal/modules/cjs/loader:1203:32)
+```
+That is likely caused by missing some env vars like `DISPATCHER_ADDRESS_BASE` or `UNIVERSAL_CHANNEL_ADDRESS_OPTIMISM`.
+Check that you have all the required env vars set in your runtime.
