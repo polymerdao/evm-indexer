@@ -26,6 +26,7 @@ export function IbcProcessor() {
         cumulativeGasUsed: true,
         from: true,
         type: true,
+        value: true,
       }
     })
 }
