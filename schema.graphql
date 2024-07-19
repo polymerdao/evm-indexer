@@ -1,347 +1,347 @@
 # Packets
 type Packet @entity @index(fields: ["sendPacket", "recvPacket", "writeAckPacket", "ackPacket"], unique: true) {
-  id: ID!
-  sendPacket: SendPacket @unique
-  recvPacket: RecvPacket @unique
-  writeAckPacket: WriteAckPacket @unique
-  ackPacket: Acknowledgement @unique
-  state: PacketStates! @index
+    id: ID!
+    sendPacket: SendPacket @unique
+    recvPacket: RecvPacket @unique
+    writeAckPacket: WriteAckPacket @unique
+    ackPacket: Acknowledgement @unique
+    state: PacketStates! @index
 
-  sendToRecvTime: Int @index
-  sendToRecvGas: Int @index
-  sendToAckTime: Int @index
-  sendToAckGas: Int @index
-  sendToRecvPolymerGas: Int @index
-  sendToAckPolymerGas: Int @index
+    sendToRecvTime: Int @index
+    sendToRecvGas: Int @index
+    sendToAckTime: Int @index
+    sendToAckGas: Int @index
+    sendToRecvPolymerGas: Int @index
+    sendToAckPolymerGas: Int @index
 
-  catchupError: PacketCatchUpError @unique
+    catchupError: PacketCatchUpError @unique
 }
 
 enum PacketStates {
-  SENT
-  RECV
-  WRITE_ACK
-  ACK
-  TIMEOUT
-  WRITE_TIMEOUT
+    SENT
+    RECV
+    WRITE_ACK
+    ACK
+    TIMEOUT
+    WRITE_TIMEOUT
 }
 
 type SendPacket @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  sourcePortAddress: String! @index
-  srcChannelId: String! @index
-  sourceChannel: Channel
-  packet: String! @index
-  sequence: BigInt!
-  timeoutTimestamp: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  packetDataSender: String @index
-  uchEventSender: String @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  packetRelation: Packet @derivedFrom(field: "sendPacket")
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    sourcePortAddress: String! @index
+    srcChannelId: String! @index
+    sourceChannel: Channel
+    packet: String! @index
+    sequence: BigInt!
+    timeoutTimestamp: BigInt!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    packetDataSender: String @index
+    uchEventSender: String @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    packetRelation: Packet @derivedFrom(field: "sendPacket")
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type RecvPacket @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  destPortAddress: String! @index
-  destChannelId: String! @index
-  sequence: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  packet: Packet @derivedFrom(field: "recvPacket")
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    destPortAddress: String! @index
+    destChannelId: String! @index
+    sequence: BigInt!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    packet: Packet @derivedFrom(field: "recvPacket")
 }
 
 type WriteAckPacket @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  writerPortAddress: String!
-  writerChannelId: String!
-  sequence: BigInt!
-  ackPacketSuccess: Boolean!
-  ackPacketData: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  packet: Packet @derivedFrom(field: "writeAckPacket")
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    writerPortAddress: String!
+    writerChannelId: String!
+    sequence: BigInt!
+    ackPacketSuccess: Boolean!
+    ackPacketData: String!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    packet: Packet @derivedFrom(field: "writeAckPacket")
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type Acknowledgement @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  sourcePortAddress: String!
-  sourceChannelId: String!
-  sequence: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  packet: Packet @derivedFrom(field: "ackPacket")
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    sourcePortAddress: String!
+    sourceChannelId: String!
+    sequence: BigInt!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    packet: Packet @derivedFrom(field: "ackPacket")
 }
 
 type Timeout @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  sourcePortAddress: String!
-  sourceChannelId: String!
-  sequence: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    sourcePortAddress: String!
+    sourceChannelId: String!
+    sequence: BigInt!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
 }
 
 type WriteTimeoutPacket @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  writerPortAddress: String!
-  writerChannelId: String!
-  sequence: BigInt!
-  timeoutHeightRevisionNumber: BigInt!
-  timeoutHeightRevisionHeight: BigInt!
-  timeoutTimestamp: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    writerPortAddress: String!
+    writerChannelId: String!
+    sequence: BigInt!
+    timeoutHeightRevisionNumber: BigInt!
+    timeoutHeightRevisionHeight: BigInt!
+    timeoutTimestamp: BigInt!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
 }
 
 
 # Channels
 type Channel @entity{
-  id: ID!
-  channelId: String! @index
-  portId: String! @index
-  counterpartyPortId: String!  @index
-  counterpartyChannelId: String!  @index
-  version: String!
-  ordering: Int!
-  connectionHops: [String!]!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  state: ChannelStates!
+    id: ID!
+    channelId: String! @index
+    portId: String! @index
+    counterpartyPortId: String!  @index
+    counterpartyChannelId: String!  @index
+    version: String!
+    ordering: Int!
+    connectionHops: [String!]!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    state: ChannelStates!
 
-  channelOpenInit: ChannelOpenInit @index
-  channelOpenTry: ChannelOpenTry @index
-  channelOpenAck: ChannelOpenAck @index
-  channelOpenConfirm: ChannelOpenConfirm @index
-  closeIbcChannel: CloseIbcChannel @index
+    channelOpenInit: ChannelOpenInit @index
+    channelOpenTry: ChannelOpenTry @index
+    channelOpenAck: ChannelOpenAck @index
+    channelOpenConfirm: ChannelOpenConfirm @index
+    closeIbcChannel: CloseIbcChannel @index
 
-  initToTryTime: Int
-  initToAckTime: Int
-  initToConfirmTime: Int
-  initToTryGas: Int
-  initToTryPolymerGas: Int
-  initToAckGas: Int
-  initToAckPolymerGas: Int
-  initToConfirmGas: Int
-  initToConfirmPolymerGas: Int
+    initToTryTime: Int
+    initToAckTime: Int
+    initToConfirmTime: Int
+    initToTryGas: Int
+    initToTryPolymerGas: Int
+    initToAckGas: Int
+    initToAckPolymerGas: Int
+    initToConfirmGas: Int
+    initToConfirmPolymerGas: Int
 
-  catchupError: ChannelCatchUpError @unique
+    catchupError: ChannelCatchUpError @unique
 }
 
 enum ChannelStates {
-  INIT
-  TRY
-  OPEN
-  CLOSED
+    INIT
+    TRY
+    OPEN
+    CLOSED
 }
 
 type ChannelOpenInit @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  portId: String!
-  channelId: String!
-  portAddress: String!
-  version: String!
-  ordering: Int!
-  feeEnabled: Boolean!
-  connectionHops: [String!]!
-  counterpartyPortId: String!
-  counterpartyChannelId: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  from: String!
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    portId: String!
+    channelId: String!
+    portAddress: String!
+    version: String!
+    ordering: Int!
+    feeEnabled: Boolean!
+    connectionHops: [String!]!
+    counterpartyPortId: String!
+    counterpartyChannelId: String!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    from: String!
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type ChannelOpenTry @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  portId: String!
-  channelId: String!
-  portAddress: String!
-  version: String!
-  ordering: Int!
-  feeEnabled: Boolean!
-  connectionHops: [String!]!
-  counterpartyPortId: String!
-  counterpartyChannelId: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    portId: String!
+    channelId: String!
+    portAddress: String!
+    version: String!
+    ordering: Int!
+    feeEnabled: Boolean!
+    connectionHops: [String!]!
+    counterpartyPortId: String!
+    counterpartyChannelId: String!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type ChannelOpenAck @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  portId: String!
-  channelId: String!
-  portAddress: String!
-  counterpartyPortId: String!
-  counterpartyChannelId: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    portId: String!
+    channelId: String!
+    portAddress: String!
+    counterpartyPortId: String!
+    counterpartyChannelId: String!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type ChannelOpenConfirm @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  portId: String!
-  channelId: String!
-  portAddress: String!
-  counterpartyPortId: String!
-  counterpartyChannelId: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    portId: String!
+    channelId: String!
+    portAddress: String!
+    counterpartyPortId: String!
+    counterpartyChannelId: String!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type CloseIbcChannel @entity {
-  id: ID!
-  dispatcherAddress: String!
-  dispatcherType: String!
-  dispatcherClientName: String!
-  portAddress: String!
-  portId: String!
-  channelId: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  gas: BigInt!
-  gasPrice: BigInt
-  maxFeePerGas: BigInt
-  maxPriorityFeePerGas: BigInt
-  from: String!
-  polymerTxHash: String @index
-  polymerGas: Int
-  polymerBlockNumber: BigInt
+    id: ID!
+    dispatcherAddress: String!
+    dispatcherType: String!
+    dispatcherClientName: String!
+    portAddress: String!
+    portId: String!
+    channelId: String!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    from: String!
+    polymerTxHash: String @index
+    polymerGas: Int
+    polymerBlockNumber: BigInt
 }
 
 type PacketCatchUpError @entity {
-  id: ID!
-  sendToRecvPolymerGas: Int! @index
-  sendToAckPolymerGas: Int! @index
+    id: ID!
+    sendToRecvPolymerGas: Int! @index
+    sendToAckPolymerGas: Int! @index
 
-  packet: Packet @derivedFrom(field: "catchupError")
+    packet: Packet @derivedFrom(field: "catchupError")
 }
 
 type ChannelCatchUpError @entity {
-  id: ID!
-  initToTryPolymerGas: Int! @index
-  initToConfirmPolymerGas: Int! @index
-  initToAckPolymerGas: Int! @index
+    id: ID!
+    initToTryPolymerGas: Int! @index
+    initToConfirmPolymerGas: Int! @index
+    initToAckPolymerGas: Int! @index
 
-  channel: Channel @derivedFrom(field: "catchupError")
+    channel: Channel @derivedFrom(field: "catchupError")
 }
 
 type SendPacketFeeDeposited @entity {
@@ -360,16 +360,53 @@ type SendPacketFeeDeposited @entity {
 }
 
 type OpenChannelFeeDeposited @entity {
-  id: ID!
-  sourceAddress: String! @index
-  version: String!
-  ordering: Int!
-  connectionHops: [String!]!
-  counterpartyPortId: String!
-  feeAmount: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  from: String! @index
+    id: ID!
+    sourceAddress: String! @index
+    version: String!
+    ordering: Int!
+    connectionHops: [String!]!
+    counterpartyPortId: String!
+    feeAmount: BigInt!
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    from: String! @index
+}
+
+
+type Transaction @entity {
+    id: ID!
+    transactionHash: String! @index
+    blockNumber: BigInt! @index
+    blockTimestamp: BigInt! @index
+    chainId: Int! @index
+    from: String! @index
+    to: String @index
+    value: BigInt!
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    gasUsed: BigInt!
+    cumulativeGasUsed: BigInt!
+    transactionType: Int!
+}
+
+type Transaction @entity {
+    id: ID!
+    transactionHash: String! @index
+    blockNumber: BigInt! @index
+    blockTimestamp: BigInt! @index
+    chainId: Int! @index
+    from: String! @index
+    to: String @index
+    value: BigInt!
+    gas: BigInt!
+    gasPrice: BigInt
+    maxFeePerGas: BigInt
+    maxPriorityFeePerGas: BigInt
+    gasUsed: BigInt!
+    cumulativeGasUsed: BigInt!
+    transactionType: Int!
 }
