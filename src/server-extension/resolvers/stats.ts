@@ -79,17 +79,11 @@ export class StatsResolver {
     }
 
     if (start) {
-      where = {
-        ...where,
-        blockTimestamp: MoreThanOrEqual(start)
-      }
+      where = And(where, { blockTimestamp: MoreThanOrEqual(start) })
     }
 
     if (end) {
-      where = {
-        ...where,
-        blockTimestamp: LessThanOrEqual(end)
-      }
+      where = And(where, { blockTimestamp: LessThanOrEqual(end) })
     }
 
     let val: number = 0
