@@ -24,6 +24,7 @@ export async function getCosmosPolymerData(query: SearchTxQuery, eventType: stri
   query Query($spec: jsonb) {
     transaction(where: {logs: {_contains: $spec}}) {
       gas_used
+      
       hash
       height
     }    
@@ -50,6 +51,7 @@ export async function getCosmosPolymerData(query: SearchTxQuery, eventType: stri
     }
   ]
 
+  console.log(`Searching for tx with query: ${JSON.stringify(query)} and spec: ${JSON.stringify(spec)}`)
   const gqRes = await fetchGraphQL(operation, {spec})
   const data = await gqRes.json()
   if (data.error) {
