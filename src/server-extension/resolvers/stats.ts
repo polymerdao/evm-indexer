@@ -78,17 +78,17 @@ export class StatsResolver {
       where = {chainId}
     }
 
-    if (start) {
+    if (start || end) {
       where = {
         ...where,
-        blockTimestamp: MoreThanOrEqual(start)
-      }
-    }
-
-    if (end) {
-      where = {
-        ...where,
-        blockTimestamp: LessThanOrEqual(end)
+        blockTimestamp: new Brackets((qb) => {
+          if (start) {
+            qb.where({blockTimestamp: MoreThanOrEqual(start)})
+          }
+          if (end) {
+            qb.andWhere({blockTimestamp: LessThanOrEqual(end)})
+          }
+        })
       }
     }
 
@@ -157,11 +157,11 @@ export class StatsResolver {
   @Query(() => BackfillStat)
   async backfill(): Promise<BackfillStat> {
     const manager = await this.tx()
-  
+
     console.time("packetsQuery");
     const packets = await manager.getRepository(Packet).count({where: getMissingPacketMetricsClauses()})
     console.timeEnd("packetsQuery");
-  
+
     console.time("packetCatchupErrorsQuery");
     let packetCatchupErrors = await manager.getRepository(PacketCatchUpError).count({
       where: [
@@ -174,7 +174,7 @@ export class StatsResolver {
       ]
     })
     console.timeEnd("packetCatchupErrorsQuery");
-  
+
     console.time("channelsQuery");
     let channels = await manager.getRepository(Channel).count({
       relations: {
@@ -187,7 +187,7 @@ export class StatsResolver {
       where: getMissingChannelMetricsClauses()
     })
     console.timeEnd("channelsQuery");
-  
+
     console.time("channelCatchupErrorsQuery");
     let channelCatchupErrors = await manager.getRepository(ChannelCatchUpError).count({
       where: [
@@ -203,7 +203,7 @@ export class StatsResolver {
       ]
     })
     console.timeEnd("channelCatchupErrorsQuery");
-  
+
     return {
       channels,
       packets,
