@@ -8,7 +8,8 @@ const CONTRACTS: string[] = [
   process.env.DISPATCHER_ADDRESS_BASE!,
   process.env.DISPATCHER_ADDRESS_BASE_SIMCLIENT!,
   process.env.UNIVERSAL_CHANNEL_ADDRESS_BASE!,
-  process.env.UNIVERSAL_CHANNEL_ADDRESS_BASE_SIMCLIENT!
+  process.env.UNIVERSAL_CHANNEL_ADDRESS_BASE_SIMCLIENT!,
+  process.env.FEE_VAULT_BASE!
 ]
 
 let processor = IbcProcessor()

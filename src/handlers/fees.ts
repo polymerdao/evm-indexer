@@ -8,6 +8,7 @@ export function handleSendPacketFee(block: Block, log: Log) {
   let event = fee.events.SendPacketFeeDeposited.decode(log)
   let channelId = ethers.decodeBytes32String(event.channelId)
   return new SendPacketFeeDeposited({
+    id: log.id,
     channelId: channelId,
     sequence: event.sequence,
     gasLimits: event.gasLimits.map(Number),
@@ -23,6 +24,7 @@ export function handleSendPacketFee(block: Block, log: Log) {
 export function handleOpenChannelFee(block: Block, log: Log) {
   let event = fee.events.OpenChannelFeeDeposited.decode(log)
   return new OpenChannelFeeDeposited({
+    id: log.id,
     sourceAddress: event.sourceAddress,
     version: event.version,
     ordering: event.ordering,
