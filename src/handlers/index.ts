@@ -82,6 +82,7 @@ type Entities = {
 const portPrefixCache = new Map<string, string>();
 
 export async function handler(ctx: Context) {
+  console.log(`Processing blocks`);
   let chainIdPromise = ctx._chain.client.call("eth_chainId")
   const entities: Entities = {
     openInitIbcChannels: [],
@@ -162,10 +163,28 @@ export async function handler(ctx: Context) {
 
   let chainId = Number(await chainIdPromise);
 
+  const upsertStart = Date.now();
   await upsertNewEntities(ctx, entities);
-  await postBlockChannelHook(ctx, entities)
-  await postBlockPacketHook(ctx, entities)
+  const upsertEnd = Date.now();
+  if (upsertEnd - upsertStart > 1000) {
+    console.log(`upsertNewEntities took ${upsertEnd - upsertStart}ms`);
+  }
+
+  const postBlockChannelStart = Date.now();
+  await postBlockChannelHook(ctx, entities);
+  const postBlockChannelEnd = Date.now();
+  if (postBlockChannelEnd - postBlockChannelStart > 1000) {
+    console.log(`postBlockChannelHook took ${postBlockChannelEnd - postBlockChannelStart}ms`);
+  }
+
+  const postBlockPacketStart = Date.now();
+  await postBlockPacketHook(ctx, entities);
+  const postBlockPacketEnd = Date.now();
+  if (postBlockPacketEnd - postBlockPacketStart > 1000) {
+    console.log(`postBlockPacketHook took ${postBlockPacketEnd - postBlockPacketStart}ms`);
+  }
 }
+
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
   const uniqueChannelIds = new Set<string>();
@@ -236,24 +255,60 @@ const processAndUpsertPackets = async <T extends { id: string }>(
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   const uniquePacketIds = new Set<string>();
 
+  let startTime = Date.now();
   let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook);
+  let endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`processAndUpsertPackets - sendPackets took ${endTime - startTime}ms`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   let sendPacketUpdates = (await Promise.all(entities.sendPackets.map(packet => packetSourceChannelUpdate(packet, ctx))))
     .filter((packet): packet is SendPacket => packet !== null);
+  endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`packetSourceChannelUpdate - sendPackets took ${endTime - startTime}ms`);
+  }
   sendPacketUpdates = uniqueByLastOccurrence(sendPacketUpdates);
+
+  startTime = Date.now();
   await ctx.store.upsert(sendPacketUpdates);
+  endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`ctx.store.upsert - sendPacketUpdates took ${endTime - startTime}ms`);
+  }
 
+  startTime = Date.now();
   packetUpdates = await processAndUpsertPackets(entities.recvPackets, ctx, recvPacketHook);
+  endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`processAndUpsertPackets - recvPackets took ${endTime - startTime}ms`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   packetUpdates = await processAndUpsertPackets(entities.writeAckPackets, ctx, writeAckPacketHook);
+  endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`processAndUpsertPackets - writeAckPackets took ${endTime - startTime}ms`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   packetUpdates = await processAndUpsertPackets(entities.acknowledgements, ctx, ackPacketHook);
+  endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`processAndUpsertPackets - acknowledgements took ${endTime - startTime}ms`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   await packetMetrics(Array.from(uniquePacketIds), ctx);
+  endTime = Date.now();
+  if (endTime - startTime > 1000) {
+    console.log(`packetMetrics took ${endTime - startTime}ms`);
+  }
 }
 
 async function upsertNewEntities(ctx: Context, entities: Entities) {
