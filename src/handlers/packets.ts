@@ -408,7 +408,12 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
     return
   }
 
+  const addCatchupErrorsStart = Date.now();
   await addCatchupErrorsToPackets(packets, ctx);
+  const addCatchupErrorsEnd = Date.now();
+  if ((addCatchupErrorsEnd - addCatchupErrorsStart) / 1000 > 1) {
+    console.log(`addCatchupErrorsToPackets took ${(addCatchupErrorsEnd - addCatchupErrorsStart) / 1000}s`);
+  }
 
   let sendPackets: SendPacket[] = []
   let writeAckPackets: WriteAckPacket[] = []
@@ -433,7 +438,12 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
 
     if (!packet.sendToRecvPolymerGas && packet.sendPacket && packet.recvPacket && packet.catchupError!.sendToRecvPolymerGas < CATCHUP_ERROR_LIMIT) {
       try {
+        const updateSendToRecvPolymerGasStart = Date.now();
         await updateSendToRecvPolymerGas(packet, ctx);
+        const updateSendToRecvPolymerGasEnd = Date.now();
+        if ((updateSendToRecvPolymerGasEnd - updateSendToRecvPolymerGasStart) / 1000 > 1) {
+          console.log(`updateSendToRecvPolymerGas took ${(updateSendToRecvPolymerGasEnd - updateSendToRecvPolymerGasStart) / 1000}s`);
+        }
         sendPackets.push(packet.sendPacket)
       } catch (e) {
         ctx.log.error(`Error updating sendToRecvPolymerGas for ${packet.id} ${e}`)
@@ -444,7 +454,12 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
 
     if (!packet.sendToAckPolymerGas && packet.sendPacket && packet.recvPacket && packet.writeAckPacket && packet.catchupError!.sendToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
       try {
+        const updateSendToAckPolymerGasStart = Date.now();
         await updateSendToAckPolymerGas(packet, ctx);
+        const updateSendToAckPolymerGasEnd = Date.now();
+        if ((updateSendToAckPolymerGasEnd - updateSendToAckPolymerGasStart) / 1000 > 1) {
+          console.log(`updateSendToAckPolymerGas took ${(updateSendToAckPolymerGasEnd - updateSendToAckPolymerGasStart) / 1000}s`);
+        }
         writeAckPackets.push(packet.writeAckPacket)
       } catch (e) {
         ctx.log.error(`Error updating sendToAckPolymerGas for ${packet.id} ${e}`)
@@ -454,10 +469,38 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
     }
   };
 
+  const bluebirdMapStart = Date.now();
   await Bluebird.map(packets, mapper, {concurrency: concurrency}); // Adjust the concurrency level as needed
+  const bluebirdMapEnd = Date.now();
+  if ((bluebirdMapEnd - bluebirdMapStart) / 1000 > 1) {
+    console.log(`Bluebird.map took ${(bluebirdMapEnd - bluebirdMapStart) / 1000}s`);
+  }
 
+  const upsertSendPacketsStart = Date.now();
   await ctx.store.upsert(sendPackets);
+  const upsertSendPacketsEnd = Date.now();
+  if ((upsertSendPacketsEnd - upsertSendPacketsStart) / 1000 > 1) {
+    console.log(`ctx.store.upsert - sendPackets took ${(upsertSendPacketsEnd - upsertSendPacketsStart) / 1000}s`);
+  }
+
+  const upsertWriteAckPacketsStart = Date.now();
   await ctx.store.upsert(writeAckPackets);
+  const upsertWriteAckPacketsEnd = Date.now();
+  if ((upsertWriteAckPacketsEnd - upsertWriteAckPacketsStart) / 1000 > 1) {
+    console.log(`ctx.store.upsert - writeAckPackets took ${(upsertWriteAckPacketsEnd - upsertWriteAckPacketsStart) / 1000}s`);
+  }
+
+  const upsertPacketsStart = Date.now();
   await ctx.store.upsert(packets);
+  const upsertPacketsEnd = Date.now();
+  if ((upsertPacketsEnd - upsertPacketsStart) / 1000 > 1) {
+    console.log(`ctx.store.upsert - packets took ${(upsertPacketsEnd - upsertPacketsStart) / 1000}s`);
+  }
+
+  const upsertCatchUpErrorsStart = Date.now();
   await ctx.store.upsert(Array.from(catchUpErrors));
+  const upsertCatchUpErrorsEnd = Date.now();
+  if ((upsertCatchUpErrorsEnd - upsertCatchUpErrorsStart) / 1000 > 1) {
+    console.log(`ctx.store.upsert - catchUpErrors took ${(upsertCatchUpErrorsEnd - upsertCatchUpErrorsStart) / 1000}s`);
+  }
 }
