@@ -24,6 +24,7 @@ export async function getCosmosPolymerData(query: SearchTxQuery, eventType: stri
   query Query($spec: jsonb) {
     transaction(where: {logs: {_contains: $spec}}) {
       gas_used
+      
       hash
       height
     }    
