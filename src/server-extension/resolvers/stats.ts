@@ -1,6 +1,6 @@
 import { Arg, Field, ObjectType, Query, Resolver } from 'type-graphql'
 import {
-  And,
+  And, Between,
   Brackets,
   EntityManager,
   IsNull,
@@ -73,23 +73,18 @@ export class StatsResolver {
   async getStat(name: StatName, chainId: number, start: number, end: number): Promise<Stat> {
     const manager = await this.tx()
 
-    let where = {}
+    let where: any = {}
+
     if (chainId) {
-      where = {chainId}
+      where.chainId = chainId
     }
 
-    if (start) {
-      where = {
-        ...where,
-        blockTimestamp: MoreThanOrEqual(start)
-      }
-    }
-
-    if (end) {
-      where = {
-        ...where,
-        blockTimestamp: LessThanOrEqual(end)
-      }
+    if (start && end) {
+      where.blockTimestamp = Between(start, end)
+    } else if (start) {
+      where.blockTimestamp = MoreThanOrEqual(start)
+    } else if (end) {
+      where.blockTimestamp = LessThanOrEqual(end)
     }
 
     let val: number = 0
@@ -157,11 +152,11 @@ export class StatsResolver {
   @Query(() => BackfillStat)
   async backfill(): Promise<BackfillStat> {
     const manager = await this.tx()
-  
+
     console.time("packetsQuery");
     const packets = await manager.getRepository(Packet).count({where: getMissingPacketMetricsClauses()})
     console.timeEnd("packetsQuery");
-  
+
     console.time("packetCatchupErrorsQuery");
     let packetCatchupErrors = await manager.getRepository(PacketCatchUpError).count({
       where: [
@@ -174,7 +169,7 @@ export class StatsResolver {
       ]
     })
     console.timeEnd("packetCatchupErrorsQuery");
-  
+
     console.time("channelsQuery");
     let channels = await manager.getRepository(Channel).count({
       relations: {
@@ -187,7 +182,7 @@ export class StatsResolver {
       where: getMissingChannelMetricsClauses()
     })
     console.timeEnd("channelsQuery");
-  
+
     console.time("channelCatchupErrorsQuery");
     let channelCatchupErrors = await manager.getRepository(ChannelCatchUpError).count({
       where: [
@@ -203,7 +198,7 @@ export class StatsResolver {
       ]
     })
     console.timeEnd("channelCatchupErrorsQuery");
-  
+
     return {
       channels,
       packets,
