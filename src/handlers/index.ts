@@ -82,7 +82,6 @@ type Entities = {
 const portPrefixCache = new Map<string, string>();
 
 export async function handler(ctx: Context) {
-  let chainIdPromise = ctx._chain.client.call("eth_chainId")
   const entities: Entities = {
     openInitIbcChannels: [],
     openTryIbcChannels: [],
@@ -116,39 +115,53 @@ export async function handler(ctx: Context) {
         continue
       }
 
-      let portPrefix = portPrefixCache.get(log.address)
-      if (!portPrefix) {
-        // Get the port prefix from the last block in case the port prefix hasn't been properly set in the beginning
-        let latestHeight = Number(await ctx._chain.client.call("eth_blockNumber", ["latest"]))
-        const contract = new Contract(ctx, {height: latestHeight}, log.address)
-        portPrefix = String(await contract.portPrefix())
-        portPrefixCache.set(log.address, portPrefix)
-      }
-
       // Packet events
-      if (currTopic === dispatcher.events.SendPacket.topic) {
-        entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix, uchPacketSends.get(log.transactionHash) || ''))
-      } else if (currTopic === dispatcher.events.RecvPacket.topic) {
-        entities.recvPackets.push(handleRecvPacket(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
-        entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
-        entities.acknowledgements.push(handleAcknowledgement(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.Timeout.topic) {
-        entities.timeouts.push(handleTimeout(block.header, log, portPrefix))
-      } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
-        entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, portPrefix))
-      }
+      if ([
+        dispatcher.events.SendPacket.topic,
+        dispatcher.events.RecvPacket.topic,
+        dispatcher.events.WriteAckPacket.topic,
+        dispatcher.events.Acknowledgement.topic,
+        dispatcher.events.Timeout.topic,
+        dispatcher.events.WriteTimeoutPacket.topic,
+        dispatcher.events.ChannelOpenInit.topic,
+        dispatcher.events.ChannelOpenTry.topic,
+        dispatcher.events.ChannelOpenAck.topic,
+        dispatcher.events.ChannelOpenConfirm.topic
+      ].includes(currTopic)) {
+        let portPrefix = portPrefixCache.get(log.address)
+        if (!portPrefix) {
+          // Get the port prefix from the last block in case the port prefix hasn't been properly set in the beginning
+          let latestHeight = Number(await ctx._chain.client.call("eth_blockNumber", ["latest"]))
+          const contract = new Contract(ctx, {height: latestHeight}, log.address)
+          portPrefix = String(await contract.portPrefix())
+          portPrefixCache.set(log.address, portPrefix)
+        }
 
-      // Channel events
-      else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
-        entities.openInitIbcChannels.push(handleChannelOpenInit(portPrefix, block.header, log))
-      } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
-        entities.openTryIbcChannels.push(handleChannelOpenTry(block.header, log))
-      } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
-        entities.openAckIbcChannels.push(handleChannelOpenAck(block.header, log))
-      } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
-        entities.openConfirmIbcChannels.push(handleChannelOpenConfirm(block.header, log))
+        // Packet events
+        if (currTopic === dispatcher.events.SendPacket.topic) {
+          entities.sendPackets.push(handleSendPacket(block.header, log, portPrefix, uchPacketSends.get(log.transactionHash) || ''))
+        } else if (currTopic === dispatcher.events.RecvPacket.topic) {
+          entities.recvPackets.push(handleRecvPacket(block.header, log, portPrefix))
+        } else if (currTopic === dispatcher.events.WriteAckPacket.topic) {
+          entities.writeAckPackets.push(handleWriteAckPacket(block.header, log, portPrefix))
+        } else if (currTopic === dispatcher.events.Acknowledgement.topic) {
+          entities.acknowledgements.push(handleAcknowledgement(block.header, log, portPrefix))
+        } else if (currTopic === dispatcher.events.Timeout.topic) {
+          entities.timeouts.push(handleTimeout(block.header, log, portPrefix))
+        } else if (currTopic === dispatcher.events.WriteTimeoutPacket.topic) {
+          entities.writeTimeoutPackets.push(handleWriteTimeoutPacket(block.header, log, portPrefix))
+        }
+
+        // Channel events
+        else if (currTopic === dispatcher.events.ChannelOpenInit.topic) {
+          entities.openInitIbcChannels.push(handleChannelOpenInit(portPrefix, block.header, log))
+        } else if (currTopic === dispatcher.events.ChannelOpenTry.topic) {
+          entities.openTryIbcChannels.push(handleChannelOpenTry(block.header, log))
+        } else if (currTopic === dispatcher.events.ChannelOpenAck.topic) {
+          entities.openAckIbcChannels.push(handleChannelOpenAck(block.header, log))
+        } else if (currTopic === dispatcher.events.ChannelOpenConfirm.topic) {
+          entities.openConfirmIbcChannels.push(handleChannelOpenConfirm(block.header, log))
+        }
       }
 
       // fee events
@@ -159,8 +172,6 @@ export async function handler(ctx: Context) {
       }
     }
   }
-
-  let chainId = Number(await chainIdPromise);
 
   await upsertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities)
