@@ -348,8 +348,10 @@ type SendPacketFeeDeposited @entity {
   id: ID!
   channelId: String! @index
   sequence: BigInt! @index
-  gasLimits: [Int!]!
-  gasPrices: [Int!]!
+  sendGasLimit: BigInt!
+  sendGasPrice: BigInt!
+  ackGasLimit: BigInt!
+  ackGasPrice: BigInt!
   blockNumber: BigInt!
   blockTimestamp: BigInt! @index
   transactionHash: String! @index
