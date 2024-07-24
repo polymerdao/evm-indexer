@@ -322,7 +322,8 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
     txs = await stargateClient.searchTx(query)
     elapsedTime = (Date.now() - startTime) / 1000;
     if (elapsedTime > 1) {
-      console.log(`stargateClient.searchTx took ${elapsedTime} seconds`);
+      const queryString = JSON.stringify(query, (key, value) => typeof value === 'bigint' ? value.toString() : value);
+      console.log(`stargateClient.searchTx took ${elapsedTime} seconds with query ${queryString}`);
     }
   } catch (e) {
     throw new Error(`Polymer tx search failed ${e}`)
