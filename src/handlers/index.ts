@@ -264,7 +264,9 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   packetUpdates = await processAndUpsertPackets(entities.acknowledgements, ctx, ackPacketHook);
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
-  await packetMetrics(Array.from(uniquePacketIds), ctx);
+  if (process.env.CALC_PACKET_METRICS === 'true') {
+    await packetMetrics(Array.from(uniquePacketIds), ctx);
+  }
 }
 
 async function upsertNewEntities(ctx: Context, entities: Entities) {
