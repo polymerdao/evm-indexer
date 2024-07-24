@@ -247,24 +247,54 @@ const processAndUpsertPackets = async <T extends { id: string }>(
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   const uniquePacketIds = new Set<string>();
 
+  let startTime = Date.now();
   let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook);
+  let elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`processAndUpsertPackets (sendPackets) took ${elapsedTime} seconds`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   let sendPacketUpdates = (await Promise.all(entities.sendPackets.map(packet => packetSourceChannelUpdate(packet, ctx))))
     .filter((packet): packet is SendPacket => packet !== null);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`packetSourceChannelUpdate (sendPackets) took ${elapsedTime} seconds`);
+  }
   sendPacketUpdates = uniqueByLastOccurrence(sendPacketUpdates);
   await ctx.store.upsert(sendPacketUpdates);
 
+  startTime = Date.now();
   packetUpdates = await processAndUpsertPackets(entities.recvPackets, ctx, recvPacketHook);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`processAndUpsertPackets (recvPackets) took ${elapsedTime} seconds`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   packetUpdates = await processAndUpsertPackets(entities.writeAckPackets, ctx, writeAckPacketHook);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`processAndUpsertPackets (writeAckPackets) took ${elapsedTime} seconds`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   packetUpdates = await processAndUpsertPackets(entities.acknowledgements, ctx, ackPacketHook);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`processAndUpsertPackets (acknowledgements) took ${elapsedTime} seconds`);
+  }
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
+  startTime = Date.now();
   await packetMetrics(Array.from(uniquePacketIds), ctx);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`packetMetrics took ${elapsedTime} seconds`);
+  }
 }
 
 async function upsertNewEntities(ctx: Context, entities: Entities) {

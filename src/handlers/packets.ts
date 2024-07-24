@@ -415,25 +415,52 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
   const catchUpErrors = new Set<PacketCatchUpError>();
 
   let mapper = async (packet: models.Packet) => {
+    let startTime, elapsedTime;
+
     if (!packet.sendToRecvTime && packet.sendPacket?.blockTimestamp && packet.recvPacket?.blockTimestamp) {
+      startTime = Date.now();
       packet.sendToRecvTime = Number(packet.recvPacket.blockTimestamp - packet.sendPacket.blockTimestamp) / 1000;
+      elapsedTime = (Date.now() - startTime) / 1000;
+      if (elapsedTime > 1) {
+        console.log(`Calculating sendToRecvTime for ${packet.id} took ${elapsedTime} seconds`);
+      }
     }
 
     if (!packet.sendToRecvGas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
+      startTime = Date.now();
       packet.sendToRecvGas = Number(packet.sendPacket.gas + packet.recvPacket.gas);
+      elapsedTime = (Date.now() - startTime) / 1000;
+      if (elapsedTime > 1) {
+        console.log(`Calculating sendToRecvGas for ${packet.id} took ${elapsedTime} seconds`);
+      }
     }
 
     if (!packet.sendToAckTime && packet.ackPacket?.blockTimestamp && packet.sendPacket?.blockTimestamp) {
+      startTime = Date.now();
       packet.sendToAckTime = Number(packet.ackPacket.blockTimestamp - packet.sendPacket.blockTimestamp) / 1000;
+      elapsedTime = (Date.now() - startTime) / 1000;
+      if (elapsedTime > 1) {
+        console.log(`Calculating sendToAckTime for ${packet.id} took ${elapsedTime} seconds`);
+      }
     }
 
     if (!packet.sendToAckGas && packet.ackPacket?.gas && packet.sendPacket?.gas && packet.recvPacket?.gas) {
+      startTime = Date.now();
       packet.sendToAckGas = Number(packet.ackPacket.gas + packet.sendPacket.gas + packet.recvPacket.gas);
+      elapsedTime = (Date.now() - startTime) / 1000;
+      if (elapsedTime > 1) {
+        console.log(`Calculating sendToAckGas for ${packet.id} took ${elapsedTime} seconds`);
+      }
     }
 
     if (!packet.sendToRecvPolymerGas && packet.sendPacket && packet.recvPacket && packet.catchupError!.sendToRecvPolymerGas < CATCHUP_ERROR_LIMIT) {
       try {
+        startTime = Date.now();
         await updateSendToRecvPolymerGas(packet, ctx);
+        elapsedTime = (Date.now() - startTime) / 1000;
+        if (elapsedTime > 1) {
+          console.log(`updateSendToRecvPolymerGas for ${packet.id} took ${elapsedTime} seconds`);
+        }
         sendPackets.push(packet.sendPacket)
       } catch (e) {
         ctx.log.error(`Error updating sendToRecvPolymerGas for ${packet.id} ${e}`)
@@ -444,7 +471,12 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
 
     if (!packet.sendToAckPolymerGas && packet.sendPacket && packet.recvPacket && packet.writeAckPacket && packet.catchupError!.sendToAckPolymerGas < CATCHUP_ERROR_LIMIT) {
       try {
+        startTime = Date.now();
         await updateSendToAckPolymerGas(packet, ctx);
+        elapsedTime = (Date.now() - startTime) / 1000;
+        if (elapsedTime > 1) {
+          console.log(`updateSendToAckPolymerGas for ${packet.id} took ${elapsedTime} seconds`);
+        }
         writeAckPackets.push(packet.writeAckPacket)
       } catch (e) {
         ctx.log.error(`Error updating sendToAckPolymerGas for ${packet.id} ${e}`)
@@ -454,10 +486,40 @@ export async function packetMetrics(packetIds: string[], ctx: Context, concurren
     }
   };
 
-  await Bluebird.map(packets, mapper, {concurrency: concurrency}); // Adjust the concurrency level as needed
+  let startTime, elapsedTime;
 
+  startTime = Date.now();
+  await Bluebird.map(packets, mapper, {concurrency: concurrency}); // Adjust the concurrency level as needed
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`Bluebird.map took ${elapsedTime} seconds`);
+  }
+
+  startTime = Date.now();
   await ctx.store.upsert(sendPackets);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`ctx.store.upsert(sendPackets) took ${elapsedTime} seconds`);
+  }
+
+  startTime = Date.now();
   await ctx.store.upsert(writeAckPackets);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`ctx.store.upsert(writeAckPackets) took ${elapsedTime} seconds`);
+  }
+
+  startTime = Date.now();
   await ctx.store.upsert(packets);
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`ctx.store.upsert(packets) took ${elapsedTime} seconds`);
+  }
+
+  startTime = Date.now();
   await ctx.store.upsert(Array.from(catchUpErrors));
+  elapsedTime = (Date.now() - startTime) / 1000;
+  if (elapsedTime > 1) {
+    console.log(`ctx.store.upsert(catchUpErrors) took ${elapsedTime} seconds`);
+  }
 }
