@@ -20,7 +20,7 @@ export function packetToSender(packetData: Uint8Array): string {
   const hexString = ethers.hexlify(packetData);
 
   if (hexString.length < 66) {
-    logger.error(`Invalid packet data: ${hexString}`);
+    logger.debug(`Invalid packet data: ${hexString}`);
     return '';
   }
 

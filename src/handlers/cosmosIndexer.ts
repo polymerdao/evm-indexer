@@ -21,8 +21,8 @@ async function fetchGraphQL(
 
 export async function getCosmosPolymerData(query: SearchTxQuery, eventType: string): Promise<PolymerData | null> {
   const operation = `
-  query Query($spec: jsonb) {
-    transaction(where: {logs: {_contains: $spec}}) {
+  query Query($conditions: [transaction_bool_exp!]) {
+    transaction(where: {_and: $conditions}) {
       gas_used
       hash
       height
@@ -35,23 +35,22 @@ export async function getCosmosPolymerData(query: SearchTxQuery, eventType: stri
   }
 
   // remove the prefix `${eventType}.` from each key in the query of type SearchTxQuery
-  query = query.map(({key, value}) => {
+  const processedQuery = query.map(({key, value}) => {
     return {key: key.startsWith(eventType) ? key.slice(eventType.length + 1) : key, value: value.toString()}
   })
 
-  let spec = [
-    {
-      "events": [
-        {
-          "type": eventType,
-          "attributes": query
-        }
-      ]
+  // Create separate conditions for each key-value pair
+  const conditions = processedQuery.map(({key, value}) => ({
+    logs: {
+      _contains: [{key, value}]
     }
-  ]
+  }))
 
-  console.log(`Searching for tx with query: ${JSON.stringify(query)} and spec: ${JSON.stringify(spec)}`)
-  const gqRes = await fetchGraphQL(operation, {spec})
+  for (let i = 0; i < conditions.length; i++) {
+    console.log(`Condition ${i}: ${conditions[i]}`)
+  }
+
+  const gqRes = await fetchGraphQL(operation, {conditions})
   const data = await gqRes.json()
   if (data.error) {
     throw new Error(`Polymer tx search failed for query ${JSON.stringify(query)} with error: ${data.error}`)
