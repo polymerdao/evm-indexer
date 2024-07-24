@@ -12,6 +12,8 @@ const CONTRACTS: string[] = [
   process.env.FEE_VAULT_BASE!
 ]
 
+console.log("Base contracts to watch: ", CONTRACTS)
+
 let processor = IbcProcessor()
   .setRpcEndpoint({
     url: process.env.BASE_RPC!,
