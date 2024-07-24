@@ -12,6 +12,8 @@ const CONTRACTS: string[] = [
   process.env.FEE_VAULT_OPTIMISM!
 ]
 
+console.log("OP contracts to watch: ", CONTRACTS)
+
 let processor = IbcProcessor()
   .setRpcEndpoint({
     url: process.env.OPTIMISM_RPC!,
