@@ -78,6 +78,9 @@ async function updateMissingChannelMetrics(ctx: Context) {
     uniqueChannelIds.add(channel.id);
   }
 
+  if (uniqueChannelIds.size > 0) {
+    console.log(`Backfilling ${uniqueChannelIds.size} channels`);
+  }
   await channelMetrics(Array.from(uniqueChannelIds), ctx);
 }
 
@@ -127,6 +130,10 @@ async function updateMissingPacketMetrics(ctx: Context) {
     for (let catchupError of catchupErrors) {
       uniquePacketIds.add(catchupError.id);
     }
+  }
+
+  if (uniquePacketIds.size > 0) {
+    console.log(`Backfilling ${uniquePacketIds.size} packets`);
   }
 
   await packetMetrics(Array.from(uniquePacketIds), ctx, BACKFILL_CONCURRENCY);
