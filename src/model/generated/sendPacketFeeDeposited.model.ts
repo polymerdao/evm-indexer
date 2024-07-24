@@ -17,11 +17,17 @@ export class SendPacketFeeDeposited {
     @BigIntColumn_({nullable: false})
     sequence!: bigint
 
-    @IntColumn_({array: true, nullable: false})
-    gasLimits!: (number)[]
+    @BigIntColumn_({nullable: false})
+    sendGasLimit!: bigint
 
-    @IntColumn_({array: true, nullable: false})
-    gasPrices!: (number)[]
+    @BigIntColumn_({nullable: false})
+    sendGasPrice!: bigint
+
+    @BigIntColumn_({nullable: false})
+    ackGasLimit!: bigint
+
+    @BigIntColumn_({nullable: false})
+    ackGasPrice!: bigint
 
     @BigIntColumn_({nullable: false})
     blockNumber!: bigint
