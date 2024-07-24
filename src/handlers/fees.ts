@@ -7,12 +7,19 @@ import { OpenChannelFeeDeposited, SendPacketFeeDeposited } from "../model";
 export function handleSendPacketFee(block: Block, log: Log) {
   let event = fee.events.SendPacketFeeDeposited.decode(log)
   let channelId = ethers.decodeBytes32String(event.channelId)
+
+  if (event.gasLimits.length !== 2 || event.gasPrices.length !== 2) {
+    throw new Error('Invalid gas limits or gas prices')
+  }
+
   return new SendPacketFeeDeposited({
     id: log.id,
     channelId: channelId,
     sequence: event.sequence,
-    gasLimits: event.gasLimits.map(Number),
-    gasPrices: event.gasPrices.map(Number),
+    sendGasLimit: BigInt(event.gasLimits[0]),
+    sendGasPrice: BigInt(event.gasPrices[0]),
+    ackGasLimit: BigInt(event.gasLimits[1]),
+    ackGasPrice: BigInt(event.gasPrices[1]),
     blockNumber: BigInt(block.height),
     blockTimestamp: BigInt(log.block.timestamp),
     transactionHash: log.transactionHash,
