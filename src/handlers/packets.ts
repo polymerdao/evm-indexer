@@ -308,7 +308,7 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
   const polymerData = await getCosmosPolymerData(query, eventType)
   let elapsedTime = (Date.now() - startTime) / 1000;
   if (elapsedTime > 1) {
-    console.log(`getCosmosPolymerData took ${elapsedTime} seconds`);
+    // console.log(`getCosmosPolymerData took ${elapsedTime} seconds`);
   }
   if (polymerData) {
     return polymerData
