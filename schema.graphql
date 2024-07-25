@@ -374,25 +374,6 @@ type OpenChannelFeeDeposited @entity {
     from: String! @index
 }
 
-
-type Transaction @entity {
-    id: ID!
-    transactionHash: String! @index
-    blockNumber: BigInt! @index
-    blockTimestamp: BigInt! @index
-    chainId: Int! @index
-    from: String! @index
-    to: String @index
-    value: BigInt!
-    gas: BigInt!
-    gasPrice: BigInt
-    maxFeePerGas: BigInt
-    maxPriorityFeePerGas: BigInt
-    gasUsed: BigInt!
-    cumulativeGasUsed: BigInt!
-    transactionType: Int!
-}
-
 type Transaction @entity {
     id: ID!
     transactionHash: String! @index
