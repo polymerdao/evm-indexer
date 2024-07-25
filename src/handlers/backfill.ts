@@ -1,6 +1,6 @@
 import { Context } from "../utils/types";
 import { BACKFILL_CONCURRENCY, CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP } from "../chains/constants";
-import { Channel, Packet, PacketCatchUpError } from "../model";
+import { Channel, Packet, PacketCatchUpError, SendPacket, SendPacketFeeDeposited } from "../model";
 import { And, IsNull, LessThan, MoreThan, Not } from "typeorm";
 import { channelMetrics } from "./channels";
 import { packetMetrics } from "./packets";
@@ -11,6 +11,8 @@ export async function handler(ctx: Context) {
     await updateMissingPacketMetrics(ctx);
     await updateMissingChannelMetrics(ctx);
   }
+
+  await updateMissingFees(ctx)
 }
 
 export function getMissingChannelMetricsClauses() {
@@ -130,4 +132,31 @@ async function updateMissingPacketMetrics(ctx: Context) {
   }
 
   await packetMetrics(Array.from(uniquePacketIds), ctx, BACKFILL_CONCURRENCY);
+}
+
+async function updateMissingFees(ctx: Context) {
+  let sendPackets = await ctx.store.find(SendPacket, {
+    take: CATCHUP_BATCH_SIZE,
+    where: {
+      feeDeposited: IsNull()
+    }
+  })
+
+  let updatedSendPackets: SendPacket[] = [];
+  let updatedSendPacketFees: SendPacketFeeDeposited[] = [];
+
+  for (let sendPacket of sendPackets) {
+    let sendPacketFee = await ctx.store.findOne(SendPacketFeeDeposited,
+      {where: {transactionHash: sendPacket.transactionHash}});
+    if (sendPacketFee) {
+      sendPacket.feeDeposited = sendPacketFee;
+      sendPacketFee.sendPacket = sendPacket;
+
+      updatedSendPackets.push(sendPacket);
+      updatedSendPacketFees.push(sendPacketFee);
+    }
+  }
+
+  await ctx.store.upsert(updatedSendPackets);
+  await ctx.store.upsert(updatedSendPacketFees);
 }
