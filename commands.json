@@ -59,6 +59,11 @@
         "deps": ["build", "migration:apply"],
         "cmd": ["node", "--require=dotenv/config", "lib/chains/backfill.js"]
       },
+      "process:wallets": {
+        "description": "Load .env and start the Wallets squid processor",
+        "deps": ["build", "migration:apply"],
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets.js"]
+      },
       "process:prod:optimism": {
         "description": "Start the Optimism squid processor",
         "deps": ["migration:apply"],
@@ -74,6 +79,11 @@
         "description": "Start the backfill squid processor",
         "cmd": ["node", "lib/chains/backfill.js"],
         "hidden": true
+      },
+      "process:prod:wallets": {
+          "description": "Start the wallets squid processor",
+          "cmd": ["node", "lib/chains/wallets.js"],
+          "hidden": true
       },
       "serve": {
         "description": "Start the GraphQL API server",
