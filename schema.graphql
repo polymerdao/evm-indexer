@@ -52,6 +52,8 @@ type SendPacket @entity {
     polymerTxHash: String @index
     polymerGas: Int
     polymerBlockNumber: BigInt
+
+    feeDeposited: SendPacketFeeDeposited @unique
 }
 
 type RecvPacket @entity {
@@ -345,18 +347,19 @@ type ChannelCatchUpError @entity {
 }
 
 type SendPacketFeeDeposited @entity {
-  id: ID!
-  channelId: String! @index
-  sequence: BigInt! @index
-  sendGasLimit: BigInt!
-  sendGasPrice: BigInt!
-  ackGasLimit: BigInt!
-  ackGasPrice: BigInt!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt! @index
-  transactionHash: String! @index
-  chainId: Int! @index
-  from: String! @index
+    id: ID!
+    channelId: String! @index
+    sequence: BigInt! @index
+    sendGasLimit: BigInt! @index
+    sendGasPrice: BigInt! @index
+    ackGasLimit: BigInt! @index
+    ackGasPrice: BigInt! @index
+    blockNumber: BigInt!
+    blockTimestamp: BigInt! @index
+    transactionHash: String! @index
+    chainId: Int! @index
+    from: String! @index
+    sendPacket: SendPacket @derivedFrom(field: "feeDeposited")
 }
 
 type OpenChannelFeeDeposited @entity {
