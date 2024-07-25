@@ -230,6 +230,8 @@ type ChannelOpenInit @entity {
     polymerTxHash: String @index
     polymerGas: Int
     polymerBlockNumber: BigInt
+
+    feesDeposited: [OpenChannelFeeDeposited!] @derivedFrom(field: "openChannel")
 }
 
 type ChannelOpenTry @entity {
@@ -375,6 +377,7 @@ type OpenChannelFeeDeposited @entity {
     transactionHash: String! @index
     chainId: Int! @index
     from: String! @index
+    openChannel: ChannelOpenInit @index
 }
 
 type Transaction @entity {

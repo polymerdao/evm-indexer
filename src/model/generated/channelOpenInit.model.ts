@@ -1,4 +1,5 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BooleanColumn as BooleanColumn_, BigIntColumn as BigIntColumn_, Index as Index_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, IntColumn as IntColumn_, BooleanColumn as BooleanColumn_, BigIntColumn as BigIntColumn_, Index as Index_, OneToMany as OneToMany_} from "@subsquid/typeorm-store"
+import {OpenChannelFeeDeposited} from "./openChannelFeeDeposited.model"
 
 @Entity_()
 export class ChannelOpenInit {
@@ -84,4 +85,7 @@ export class ChannelOpenInit {
 
     @BigIntColumn_({nullable: true})
     polymerBlockNumber!: bigint | undefined | null
+
+    @OneToMany_(() => OpenChannelFeeDeposited, e => e.openChannel)
+    feesDeposited!: OpenChannelFeeDeposited[]
 }
