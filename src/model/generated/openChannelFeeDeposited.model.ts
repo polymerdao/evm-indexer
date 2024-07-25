@@ -1,4 +1,5 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_} from "@subsquid/typeorm-store"
+import {ChannelOpenInit} from "./channelOpenInit.model"
 
 @Entity_()
 export class OpenChannelFeeDeposited {
@@ -46,4 +47,8 @@ export class OpenChannelFeeDeposited {
     @Index_()
     @StringColumn_({nullable: false})
     from!: string
+
+    @Index_()
+    @ManyToOne_(() => ChannelOpenInit, {nullable: true})
+    openChannel!: ChannelOpenInit | undefined | null
 }

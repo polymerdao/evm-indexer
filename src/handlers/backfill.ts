@@ -1,6 +1,13 @@
 import { Context } from "../utils/types";
 import { BACKFILL_CONCURRENCY, CATCHUP_BATCH_SIZE, CATCHUP_ERROR_LIMIT, ENABLE_CATCHUP } from "../chains/constants";
-import { Channel, Packet, PacketCatchUpError, SendPacket, SendPacketFeeDeposited } from "../model";
+import {
+  Channel, ChannelOpenInit,
+  OpenChannelFeeDeposited,
+  Packet,
+  PacketCatchUpError,
+  SendPacket,
+  SendPacketFeeDeposited
+} from "../model";
 import { And, IsNull, LessThan, MoreThan, Not } from "typeorm";
 import { channelMetrics } from "./channels";
 import { packetMetrics } from "./packets";
@@ -12,7 +19,8 @@ export async function handler(ctx: Context) {
     await updateMissingChannelMetrics(ctx);
   }
 
-  await updateMissingFees(ctx)
+  await updateMissingSendPacketFees(ctx)
+  await updateMissingOpenChannelFeeDeposited(ctx)
 }
 
 export function getMissingChannelMetricsClauses() {
@@ -134,15 +142,7 @@ async function updateMissingPacketMetrics(ctx: Context) {
   await packetMetrics(Array.from(uniquePacketIds), ctx, BACKFILL_CONCURRENCY);
 }
 
-async function updateMissingFees(ctx: Context) {
-  const missingFeesCount = await ctx.store.count(SendPacketFeeDeposited, {
-    where: {
-      sendPacket: IsNull()
-    }
-  });
-
-  console.log(`Missing ${missingFeesCount} send packet fees`);
-
+async function updateMissingSendPacketFees(ctx: Context) {
   let sendPacketFees = await ctx.store.find(SendPacketFeeDeposited, {
     take: CATCHUP_BATCH_SIZE,
     where: {
@@ -175,4 +175,40 @@ async function updateMissingFees(ctx: Context) {
 
   await ctx.store.upsert(updatedSendPackets);
   await ctx.store.upsert(updatedSendPacketFees);
+}
+
+
+async function updateMissingOpenChannelFeeDeposited(ctx: Context) {
+  let openChannelFees = await ctx.store.find(OpenChannelFeeDeposited, {
+    take: CATCHUP_BATCH_SIZE,
+    where: {
+      openChannel: IsNull()
+    }
+  })
+
+  let updatedOpenChannels: ChannelOpenInit[] = [];
+  let updatedOpenChannelFees: OpenChannelFeeDeposited[] = [];
+
+  for (let openChannelFee of openChannelFees) {
+    let openChannel = await ctx.store.findOne(ChannelOpenInit,
+      {
+        where: {
+          chainId: openChannelFee.chainId,
+          counterpartyPortId: openChannelFee.counterpartyPortId,
+          portAddress: openChannelFee.sourceAddress,
+        }
+      });
+    if (openChannel) {
+      openChannel.feesDeposited = [openChannelFee];
+      openChannelFee.openChannel = openChannel;
+
+      updatedOpenChannels.push(openChannel);
+      updatedOpenChannelFees.push(openChannelFee);
+    } else {
+      console.log(`Could not find open channel for open channel fee ${openChannelFee.id}`);
+    }
+  }
+
+  await ctx.store.upsert(updatedOpenChannels);
+  await ctx.store.upsert(updatedOpenChannelFees);
 }
