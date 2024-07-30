@@ -6,12 +6,10 @@ import { Block, Context, Log } from '../utils/types'
 import { getDispatcherClientName, getDispatcherType, packetToSender } from "./helpers";
 import { logger } from "../utils/logger";
 import { In } from "typeorm";
-import { TmClient } from "./tmclient";
-import { IndexedTx } from "@cosmjs/stargate";
 import { SearchTxQuery } from "@cosmjs/stargate/build/search";
 import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
 import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
-import {Promise as Bluebird} from "bluebird";
+import { Promise as Bluebird } from "bluebird";
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string, uchEventSender: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -309,25 +307,7 @@ async function getPolymerData(query: SearchTxQuery, eventType: string): Promise<
     return polymerData
   }
 
-  const stargateClient = await TmClient.getStargate();
-
-  let txs: IndexedTx[] = []
-  try {
-    txs = await stargateClient.searchTx(query)
-  } catch (e) {
-    throw new Error(`Polymer tx search failed ${e}`)
-  }
-
-  if (txs.length > 1) {
-    throw new Error(`Multiple txs found during search`);
-  }
-
-  if (txs.length == 0) {
-    console.log(query)
-    throw new Error(`No polymer data found in peptide for ${eventType}`)
-  }
-
-  return txs[0]
+  throw new Error(`No polymer data found in juno for ${eventType} with query parameters: ${JSON.stringify(query, (key, value) => typeof value === 'bigint' ? value.toString() : value)}`)
 }
 
 async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
@@ -386,7 +366,12 @@ async function addCatchupErrorsToPackets(packets: Packet[], ctx: Context) {
 
   for (const packet of packets) {
     if (!packet.catchupError) {
-      packet.catchupError = new PacketCatchUpError({id: packet.id, packet: packet, sendToRecvPolymerGas: 0, sendToAckPolymerGas: 0})
+      packet.catchupError = new PacketCatchUpError({
+        id: packet.id,
+        packet: packet,
+        sendToRecvPolymerGas: 0,
+        sendToAckPolymerGas: 0
+      })
       catchupErrors.push(packet.catchupError)
     }
   }
