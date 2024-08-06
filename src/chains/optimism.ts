@@ -18,9 +18,7 @@ let processor = IbcProcessor()
   })
   .setBlockRange({
     // from: 11662566
-    from: Math.min(
-      Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK!)
-    ),
+    from: Number(process.env.DISPATCHER_ADDRESS_OPTIMISM_START_BLOCK!),
   })
   .addLog({
     address: CONTRACTS,

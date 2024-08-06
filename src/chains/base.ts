@@ -17,8 +17,7 @@ let processor = IbcProcessor()
     maxBatchCallSize: MAX_BATCH_CALL_SIZE,
   })
   .setBlockRange({
-    // from: 9676707
-    from: Math.min(Number(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK!)),
+    from: Number(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK!),
   })
   .addLog({
     address: CONTRACTS,
