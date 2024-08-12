@@ -16,6 +16,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, uch
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId)
   const packetHash = ethers.sha256(event.packet)
   const gas = BigInt(log.transaction!.gas)
+  const gasUsed = BigInt(log.transaction!.gasUsed)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
@@ -38,6 +39,7 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, uch
     uchEventSender,
     packetDataSender,
     gas,
+    gasUsed,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
@@ -51,6 +53,7 @@ export function handleRecvPacket(block: Block, log: Log, portPrefix: string): mo
   let event = dispatcher.events.RecvPacket.decode(log)
   let destChannelId = ethers.decodeBytes32String(event.destChannelId)
   const gas = BigInt(log.transaction!.gas)
+  const gasUsed = BigInt(log.transaction!.gasUsed)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
@@ -68,6 +71,7 @@ export function handleRecvPacket(block: Block, log: Log, portPrefix: string): mo
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasUsed,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
@@ -80,6 +84,7 @@ export function handleWriteAckPacket(block: Block, log: Log, portPrefix: string)
   let writerChannelId = ethers.decodeBytes32String(event.writerChannelId);
   const packetHash = ethers.sha256(event.ackPacket.data);
   const gas = BigInt(log.transaction!.gas)
+  const gasUsed = BigInt(log.transaction!.gasUsed)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
@@ -99,6 +104,7 @@ export function handleWriteAckPacket(block: Block, log: Log, portPrefix: string)
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasUsed,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
@@ -109,6 +115,7 @@ export function handleWriteAckPacket(block: Block, log: Log, portPrefix: string)
 export function handleAcknowledgement(block: Block, log: Log, portPrefix: string): models.Acknowledgement {
   let event = dispatcher.events.Acknowledgement.decode(log);
   const gas = BigInt(log.transaction!.gas)
+  const gasUsed = BigInt(log.transaction!.gasUsed)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
@@ -126,6 +133,7 @@ export function handleAcknowledgement(block: Block, log: Log, portPrefix: string
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasUsed,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
@@ -137,6 +145,7 @@ export function handleTimeout(block: Block, log: Log, portPrefix: string): model
   let event = dispatcher.events.Timeout.decode(log);
   let sourceChannelId = ethers.decodeBytes32String(event.sourceChannelId);
   const gas = BigInt(log.transaction!.gas)
+  const gasUsed = BigInt(log.transaction!.gasUsed)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
@@ -154,6 +163,7 @@ export function handleTimeout(block: Block, log: Log, portPrefix: string): model
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasUsed,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
@@ -165,6 +175,7 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, portPrefix: str
   let event = dispatcher.events.WriteTimeoutPacket.decode(log);
   let writerChannelId = ethers.decodeBytes32String(event.writerChannelId);
   const gas = BigInt(log.transaction!.gas)
+  const gasUsed = BigInt(log.transaction!.gasUsed)
   const gasPrice = log.transaction?.gasPrice ? BigInt(log.transaction.gasPrice) : null
   const maxFeePerGas = log.transaction?.maxFeePerGas ? BigInt(log.transaction.maxFeePerGas) : null
   const maxPriorityFeePerGas = log.transaction?.maxPriorityFeePerGas ? BigInt(log.transaction.maxPriorityFeePerGas) : null
@@ -185,6 +196,7 @@ export function handleWriteTimeoutPacket(block: Block, log: Log, portPrefix: str
     transactionHash: log.transactionHash,
     chainId: log.transaction?.chainId || 0,
     gas,
+    gasUsed,
     gasPrice,
     maxFeePerGas,
     maxPriorityFeePerGas,
