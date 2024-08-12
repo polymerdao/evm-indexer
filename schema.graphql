@@ -44,6 +44,7 @@ type SendPacket @entity {
     packetDataSender: String @index
     uchEventSender: String @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -72,6 +73,7 @@ type RecvPacket @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -94,6 +96,7 @@ type WriteAckPacket @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -117,6 +120,7 @@ type Acknowledgement @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -137,6 +141,7 @@ type Timeout @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -159,6 +164,7 @@ type WriteTimeoutPacket @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -227,6 +233,7 @@ type ChannelOpenInit @entity {
     chainId: Int! @index
     from: String!
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -256,6 +263,7 @@ type ChannelOpenTry @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
     from: String!
@@ -279,6 +287,7 @@ type ChannelOpenAck @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -303,6 +312,7 @@ type ChannelOpenConfirm @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
@@ -325,6 +335,7 @@ type CloseIbcChannel @entity {
     transactionHash: String! @index
     chainId: Int! @index
     gas: BigInt!
+    gasUsed: BigInt
     gasPrice: BigInt
     maxFeePerGas: BigInt
     maxPriorityFeePerGas: BigInt
