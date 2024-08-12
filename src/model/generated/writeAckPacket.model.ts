@@ -53,6 +53,9 @@ export class WriteAckPacket {
     gas!: bigint
 
     @BigIntColumn_({nullable: true})
+    gasUsed!: bigint | undefined | null
+
+    @BigIntColumn_({nullable: true})
     gasPrice!: bigint | undefined | null
 
     @BigIntColumn_({nullable: true})

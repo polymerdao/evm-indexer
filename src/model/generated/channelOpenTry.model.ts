@@ -64,6 +64,9 @@ export class ChannelOpenTry {
     gas!: bigint
 
     @BigIntColumn_({nullable: true})
+    gasUsed!: bigint | undefined | null
+
+    @BigIntColumn_({nullable: true})
     maxFeePerGas!: bigint | undefined | null
 
     @BigIntColumn_({nullable: true})
