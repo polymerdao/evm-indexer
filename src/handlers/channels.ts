@@ -42,6 +42,7 @@ export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log
     chainId: log.transaction?.chainId || 0,
     from: log.transaction?.from || '',
     gas: log.transaction?.gas,
+    gasUsed: log.transaction?.gasUsed,
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas,
   });
@@ -74,6 +75,7 @@ export function handleChannelOpenTry(block: Block, log: Log): ChannelOpenTry {
     chainId: log.transaction?.chainId || 0,
     from: log.transaction?.from || '',
     gas: log.transaction?.gas,
+    gasUsed: log.transaction?.gasUsed,
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas,
   })
@@ -101,6 +103,7 @@ export function handleChannelOpenAck(block: Block, log: Log): ChannelOpenAck {
     chainId: log.transaction?.chainId || 0,
     from: log.transaction?.from || '',
     gas: log.transaction?.gas,
+    gasUsed: log.transaction?.gasUsed,
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas
   })
@@ -127,6 +130,7 @@ export function handleChannelOpenConfirm(block: Block, log: Log): ChannelOpenCon
     chainId: log.transaction?.chainId || 0,
     from: log.transaction?.from || '',
     gas: log.transaction?.gas,
+    gasUsed: log.transaction?.gasUsed,
     maxFeePerGas: log.transaction?.maxFeePerGas,
     maxPriorityFeePerGas: log.transaction?.maxPriorityFeePerGas
   })
