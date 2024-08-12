@@ -59,10 +59,20 @@
         "deps": ["build", "migration:apply"],
         "cmd": ["node", "--require=dotenv/config", "lib/chains/backfill.js"]
       },
-      "process:wallets": {
+      "process:eth:wallets": {
         "description": "Load .env and start the Wallets squid processor",
         "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets.js"]
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/eth.js"]
+      },
+      "process:base:wallets": {
+        "description": "Load .env and start the Base Wallets squid processor",
+        "deps": ["build", "migration:apply"],
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/base.js"]
+      },
+      "process:optimism:wallets": {
+        "description": "Load .env and start the Optimism Wallets squid processor",
+        "deps": ["build", "migration:apply"],
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/optimism.js"]
       },
       "process:prod:optimism": {
         "description": "Start the Optimism squid processor",
@@ -80,10 +90,20 @@
         "cmd": ["node", "lib/chains/backfill.js"],
         "hidden": true
       },
-      "process:prod:wallets": {
-          "description": "Start the wallets squid processor",
-          "cmd": ["node", "lib/chains/wallets.js"],
-          "hidden": true
+      "process:prod:eth:wallets": {
+        "description": "Start the wallets squid processor",
+        "cmd": ["node", "lib/chains/wallets/eth.js"],
+        "hidden": true
+      },
+      "process:prod:base:wallets": {
+        "description": "Start the wallets squid processor",
+        "cmd": ["node", "lib/chains/wallets/base.js"],
+        "hidden": true
+      },
+      "process:prod:optimism:wallets": {
+        "description": "Start the wallets squid processor",
+        "cmd": ["node", "lib/chains/wallets/optimism.js"],
+        "hidden": true
       },
       "serve": {
         "description": "Start the GraphQL API server",

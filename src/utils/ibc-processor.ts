@@ -27,6 +27,7 @@ export function IbcProcessor() {
         from: true,
         type: true,
         value: true,
+        status: true,
       }
     })
 }
