@@ -286,11 +286,14 @@ async function postBlockFeeHook(ctx: Context, entities: Entities) {
     if (sendPacket) {
       sendPacket.totalRecvFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
       sendPacket.totalAckFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
+      if (!sendPacket.feesDeposited) {
+        sendPacket.feesDeposited = [sendPacketFee];
+      }
       // Store up to 20 fee transactions per packet
-      if (sendPacket.feesDeposited.length < 20) {
-        sendPacket.feesDeposited = sendPacket.feesDeposited.concat(sendPacketFee);
-      } else {
+      else if (sendPacket.feesDeposited.length >= 20) {
         console.log(`Send packet ${sendPacket.id} already has 20 associated fee transactions`);
+      } else {
+        sendPacket.feesDeposited = sendPacket.feesDeposited.concat(sendPacketFee);
       }
       sendPacketFee.sendPacket = sendPacket;
 
