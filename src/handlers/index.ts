@@ -45,8 +45,8 @@ import {
   WriteAckPacket,
   WriteTimeoutPacket
 } from "../model";
-import { Entity } from "@subsquid/typeorm-store/lib/store";
 import { handleOpenChannelFee, handleSendPacketFee } from "./fees";
+import { Entity } from "@subsquid/typeorm-store/lib/store";
 
 export enum StatName {
   SendPacket = 'SendPacket',
@@ -174,8 +174,9 @@ export async function handler(ctx: Context) {
   }
 
   await upsertNewEntities(ctx, entities);
-  await postBlockChannelHook(ctx, entities)
-  await postBlockPacketHook(ctx, entities)
+  await postBlockChannelHook(ctx, entities);
+  await postBlockPacketHook(ctx, entities);
+  await postBlockFeeHook(ctx, entities);
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
@@ -267,6 +268,41 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   if (process.env.CALC_PACKET_METRICS === 'true') {
     await packetMetrics(Array.from(uniquePacketIds), ctx);
   }
+}
+
+async function postBlockFeeHook(ctx: Context, entities: Entities) {
+  let updatedSendPackets: SendPacket[] = [];
+  let updatedSendPacketFees: SendPacketFeeDeposited[] = [];
+
+  for (let sendPacketFee of entities.sendPacketFees) {
+    let sendPacket = await ctx.store.findOne(SendPacket,
+      {
+        where: {
+          chainId: sendPacketFee.chainId,
+          srcChannelId: sendPacketFee.channelId,
+          sequence: sendPacketFee.sequence
+        }
+      });
+    if (sendPacket) {
+      sendPacket.totalRecvFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
+      sendPacket.totalAckFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
+      // Store up to 20 fee transactions per packet
+      if (sendPacket.feesDeposited.length < 20) {
+        sendPacket.feesDeposited = sendPacket.feesDeposited.concat(sendPacketFee);
+      } else {
+        console.log(`Send packet ${sendPacket.id} already has 20 associated fee transactions`);
+      }
+      sendPacketFee.sendPacket = sendPacket;
+
+      updatedSendPackets.push(sendPacket);
+      updatedSendPacketFees.push(sendPacketFee);
+    } else {
+      console.log(`Could not find send packet for send packet fee ${sendPacketFee.id}`);
+    }
+  }
+
+  await ctx.store.upsert(updatedSendPackets);
+  await ctx.store.upsert(updatedSendPacketFees);
 }
 
 async function upsertNewEntities(ctx: Context, entities: Entities) {

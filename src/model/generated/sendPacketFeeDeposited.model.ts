@@ -20,11 +20,11 @@ export class SendPacketFeeDeposited {
 
     @Index_()
     @BigIntColumn_({nullable: false})
-    sendGasLimit!: bigint
+    recvGasLimit!: bigint
 
     @Index_()
     @BigIntColumn_({nullable: false})
-    sendGasPrice!: bigint
+    recvGasPrice!: bigint
 
     @Index_()
     @BigIntColumn_({nullable: false})

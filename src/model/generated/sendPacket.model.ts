@@ -95,6 +95,14 @@ export class SendPacket {
     @BigIntColumn_({nullable: true})
     polymerBlockNumber!: bigint | undefined | null
 
+    @Index_()
+    @BigIntColumn_({nullable: false})
+    totalRecvFeesDeposited!: bigint
+
+    @Index_()
+    @BigIntColumn_({nullable: false})
+    totalAckFeesDeposited!: bigint
+
     @OneToMany_(() => SendPacketFeeDeposited, e => e.sendPacket)
     feesDeposited!: SendPacketFeeDeposited[]
 }

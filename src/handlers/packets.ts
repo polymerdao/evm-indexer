@@ -42,6 +42,8 @@ export function handleSendPacket(block: Block, log: Log, portPrefix: string, uch
     maxFeePerGas,
     maxPriorityFeePerGas,
     from: log.transaction?.from || '',
+    totalRecvFeesDeposited: BigInt(0),
+    totalAckFeesDeposited: BigInt(0),
   })
 }
 

@@ -5,7 +5,7 @@ import type { EventParams as EParams, FunctionArguments, FunctionReturn } from '
 export const events = {
     OpenChannelFeeDeposited: event("0x8ab5595b5ac9231b64513ba86f6bd9fb73c51cae40c36083f7dfc2298e4429e6", {"sourceAddress": p.address, "version": p.string, "ordering": p.uint8, "connectionHops": p.array(p.string), "counterpartyPortId": p.string, "feeAmount": p.uint256}),
     OwnershipTransferred: event("0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0", {"previousOwner": indexed(p.address), "newOwner": indexed(p.address)}),
-    SendPacketFeeDeposited: event("0x0733dc80f277e205edf5d913fa5d91fa0c4cc2635db600b365471c688356c034", {"channelId": indexed(p.bytes32), "sequence": indexed(p.uint64), "gasLimits": p.fixedSizeArray(p.uint256, 2), "gasPrices": p.fixedSizeArray(p.uint256, 2)}),
+    SendPacketFeeDeposited: event("0x0733dc80f277e205edf5d913fa5d91fa0c4cc2635db600b365471c688356c034", {"channelId": p.bytes32, "sequence": p.uint64, "gasLimits": p.fixedSizeArray(p.uint256, 2), "gasPrices": p.fixedSizeArray(p.uint256, 2)}),
 }
 
 export const functions = {
