@@ -4,10 +4,8 @@ module.exports = class Data1723751676020 {
     async up(db) {
         await db.query(`DROP INDEX "public"."IDX_36524a30939bb522f1eda95267"`)
         await db.query(`DROP INDEX "public"."IDX_b05770c7b9f6fba9a0b12814e9"`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" DROP COLUMN "send_gas_limit"`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" DROP COLUMN "send_gas_price"`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" ADD "recv_gas_limit" numeric NOT NULL`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" ADD "recv_gas_price" numeric NOT NULL`)
+        await db.query(`ALTER TABLE "send_packet_fee_deposited" RENAME COLUMN "send_gas_limit" TO "recv_gas_limit"`);
+        await db.query(`ALTER TABLE "send_packet_fee_deposited" RENAME COLUMN "send_gas_price" TO "recv_gas_price"`);
         await db.query(`ALTER TABLE "send_packet" ADD "total_recv_fees_deposited" numeric NOT NULL`)
         await db.query(`ALTER TABLE "send_packet" ADD "total_ack_fees_deposited" numeric NOT NULL`)
         await db.query(`CREATE INDEX "IDX_2c83d97c2235020f49a5b6b03d" ON "send_packet_fee_deposited" ("recv_gas_limit") `)
@@ -19,10 +17,8 @@ module.exports = class Data1723751676020 {
     async down(db) {
         await db.query(`CREATE INDEX "IDX_36524a30939bb522f1eda95267" ON "send_packet_fee_deposited" ("send_gas_limit") `)
         await db.query(`CREATE INDEX "IDX_b05770c7b9f6fba9a0b12814e9" ON "send_packet_fee_deposited" ("send_gas_price") `)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" ADD "send_gas_limit" numeric NOT NULL`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" ADD "send_gas_price" numeric NOT NULL`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" DROP COLUMN "recv_gas_limit"`)
-        await db.query(`ALTER TABLE "send_packet_fee_deposited" DROP COLUMN "recv_gas_price"`)
+        await db.query(`ALTER TABLE "send_packet_fee_deposited" RENAME COLUMN "recv_gas_limit" TO "send_gas_limit"`);
+        await db.query(`ALTER TABLE "send_packet_fee_deposited" RENAME COLUMN "recv_gas_price" TO "send_gas_price"`);
         await db.query(`ALTER TABLE "send_packet" DROP COLUMN "total_recv_fees_deposited"`)
         await db.query(`ALTER TABLE "send_packet" DROP COLUMN "total_ack_fees_deposited"`)
         await db.query(`DROP INDEX "public"."IDX_2c83d97c2235020f49a5b6b03d"`)

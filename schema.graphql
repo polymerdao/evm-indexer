@@ -55,7 +55,7 @@ type SendPacket @entity {
 
     totalRecvFeesDeposited: BigInt! @index
     totalAckFeesDeposited: BigInt! @index
-    feesDeposited: [SendPacketFeeDeposited!] @derivedFrom(field: "sendPacket")
+    lastFeeDeposited: SendPacketFeeDeposited @derivedFrom(field: "sendPacket")
 }
 
 type RecvPacket @entity {
@@ -363,7 +363,7 @@ type SendPacketFeeDeposited @entity {
     transactionHash: String! @index
     chainId: Int! @index
     from: String! @index
-    sendPacket: SendPacket @index
+    sendPacket: SendPacket @index @unique
 }
 
 type OpenChannelFeeDeposited @entity {
