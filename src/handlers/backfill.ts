@@ -166,6 +166,11 @@ async function updateMissingSendPacketFees(ctx: Context) {
       sendPacket.totalRecvFeesDeposited = sendPacket.totalRecvFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
       sendPacket.totalAckFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
       sendPacket.lastFeeDeposited = sendPacketFee;
+      if (!sendPacket.feesDeposited) {
+        sendPacket.feesDeposited = [sendPacketFee];
+      } else {
+        sendPacket.feesDeposited.push(sendPacketFee);
+      }
       sendPacketFee.sendPacket = sendPacket;
 
       updatedSendPackets.push(sendPacket);

@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, ManyToOne as ManyToOne_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, ManyToOne as ManyToOne_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_, OneToMany as OneToMany_} from "@subsquid/typeorm-store"
 import {Channel} from "./channel.model"
 import {Packet} from "./packet.model"
 import {SendPacketFeeDeposited} from "./sendPacketFeeDeposited.model"
@@ -105,4 +105,7 @@ export class SendPacket {
 
     @OneToOne_(() => SendPacketFeeDeposited, e => e.sendPacket)
     lastFeeDeposited!: SendPacketFeeDeposited | undefined | null
+
+    @OneToMany_(() => SendPacketFeeDeposited, e => e.sendPacket)
+    feesDeposited!: SendPacketFeeDeposited[]
 }
