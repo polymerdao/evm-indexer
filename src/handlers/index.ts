@@ -176,7 +176,6 @@ export async function handler(ctx: Context) {
   await upsertNewEntities(ctx, entities);
   await postBlockChannelHook(ctx, entities);
   await postBlockPacketHook(ctx, entities);
-  await postBlockFeeHook(ctx, entities);
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {
@@ -268,41 +267,6 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   if (process.env.CALC_PACKET_METRICS === 'true') {
     await packetMetrics(Array.from(uniquePacketIds), ctx);
   }
-}
-
-async function postBlockFeeHook(ctx: Context, entities: Entities) {
-  let updatedSendPackets: SendPacket[] = [];
-  let updatedSendPacketFees: SendPacketFeeDeposited[] = [];
-
-  for (let sendPacketFee of entities.sendPacketFees) {
-    let sendPacket = await ctx.store.findOne(SendPacket,
-      {
-        where: {
-          chainId: sendPacketFee.chainId,
-          srcChannelId: sendPacketFee.channelId,
-          sequence: sendPacketFee.sequence
-        }
-      });
-    if (sendPacket) {
-      sendPacket.totalRecvFeesDeposited = sendPacket.totalRecvFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
-      sendPacket.totalAckFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
-      sendPacket.lastFeeDeposited = sendPacketFee;
-      if (!sendPacket.feesDeposited) {
-        sendPacket.feesDeposited = [sendPacketFee];
-      } else {
-        sendPacket.feesDeposited.push(sendPacketFee);
-      }
-      sendPacketFee.sendPacket = sendPacket;
-
-      updatedSendPackets.push(sendPacket);
-      updatedSendPacketFees.push(sendPacketFee);
-    } else {
-      console.log(`Could not find send packet for send packet fee ${sendPacketFee.id}`);
-    }
-  }
-
-  await ctx.store.upsert(updatedSendPackets);
-  await ctx.store.upsert(updatedSendPacketFees);
 }
 
 async function upsertNewEntities(ctx: Context, entities: Entities) {
