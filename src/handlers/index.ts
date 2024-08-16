@@ -284,7 +284,7 @@ async function postBlockFeeHook(ctx: Context, entities: Entities) {
         }
       });
     if (sendPacket) {
-      sendPacket.totalRecvFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
+      sendPacket.totalRecvFeesDeposited = sendPacket.totalRecvFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
       sendPacket.totalAckFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
       if (!sendPacket.feesDeposited) {
         sendPacket.feesDeposited = [sendPacketFee];
