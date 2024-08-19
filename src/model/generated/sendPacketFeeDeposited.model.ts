@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, ManyToOne as ManyToOne_} from "@subsquid/typeorm-store"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, BigIntColumn as BigIntColumn_, IntColumn as IntColumn_, OneToOne as OneToOne_, JoinColumn as JoinColumn_} from "@subsquid/typeorm-store"
 import {SendPacket} from "./sendPacket.model"
 
 @Entity_()
@@ -20,11 +20,11 @@ export class SendPacketFeeDeposited {
 
     @Index_()
     @BigIntColumn_({nullable: false})
-    sendGasLimit!: bigint
+    recvGasLimit!: bigint
 
     @Index_()
     @BigIntColumn_({nullable: false})
-    sendGasPrice!: bigint
+    recvGasPrice!: bigint
 
     @Index_()
     @BigIntColumn_({nullable: false})
@@ -53,7 +53,8 @@ export class SendPacketFeeDeposited {
     @StringColumn_({nullable: false})
     from!: string
 
-    @Index_()
-    @ManyToOne_(() => SendPacket, {nullable: true})
+    @Index_({unique: true})
+    @OneToOne_(() => SendPacket, {nullable: true})
+    @JoinColumn_()
     sendPacket!: SendPacket | undefined | null
 }

@@ -45,8 +45,8 @@ import {
   WriteAckPacket,
   WriteTimeoutPacket
 } from "../model";
-import { Entity } from "@subsquid/typeorm-store/lib/store";
 import { handleOpenChannelFee, handleSendPacketFee } from "./fees";
+import { Entity } from "@subsquid/typeorm-store/lib/store";
 
 export enum StatName {
   SendPacket = 'SendPacket',
@@ -174,8 +174,8 @@ export async function handler(ctx: Context) {
   }
 
   await upsertNewEntities(ctx, entities);
-  await postBlockChannelHook(ctx, entities)
-  await postBlockPacketHook(ctx, entities)
+  await postBlockChannelHook(ctx, entities);
+  await postBlockPacketHook(ctx, entities);
 }
 
 export async function postBlockChannelHook(ctx: Context, entities: Entities) {

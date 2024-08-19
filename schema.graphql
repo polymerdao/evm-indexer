@@ -53,6 +53,9 @@ type SendPacket @entity {
     polymerGas: Int
     polymerBlockNumber: BigInt
 
+    totalRecvFeesDeposited: BigInt! @index
+    totalAckFeesDeposited: BigInt! @index
+    lastFeeDeposited: SendPacketFeeDeposited @derivedFrom(field: "sendPacket")
     feesDeposited: [SendPacketFeeDeposited!] @derivedFrom(field: "sendPacket")
 }
 
@@ -352,8 +355,8 @@ type SendPacketFeeDeposited @entity {
     id: ID!
     channelId: String! @index
     sequence: BigInt! @index
-    sendGasLimit: BigInt! @index
-    sendGasPrice: BigInt! @index
+    recvGasLimit: BigInt! @index
+    recvGasPrice: BigInt! @index
     ackGasLimit: BigInt! @index
     ackGasPrice: BigInt! @index
     blockNumber: BigInt!
@@ -361,7 +364,7 @@ type SendPacketFeeDeposited @entity {
     transactionHash: String! @index
     chainId: Int! @index
     from: String! @index
-    sendPacket: SendPacket @index
+    sendPacket: SendPacket @index @unique
 }
 
 type OpenChannelFeeDeposited @entity {
