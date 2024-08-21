@@ -7,8 +7,8 @@ module.exports = class Data1723836233391 {
         await db.query(`DROP INDEX "public"."IDX_9415c52ccc157e1a37c9f3f623"`)
         await db.query(`ALTER TABLE "send_packet_fee_deposited" RENAME COLUMN "send_gas_limit" TO "recv_gas_limit"`);
         await db.query(`ALTER TABLE "send_packet_fee_deposited" RENAME COLUMN "send_gas_price" TO "recv_gas_price"`);
-        await db.query(`ALTER TABLE "send_packet" ADD "total_recv_fees_deposited" numeric NOT NULL`)
-        await db.query(`ALTER TABLE "send_packet" ADD "total_ack_fees_deposited" numeric NOT NULL`)
+        await db.query(`ALTER TABLE "send_packet" ADD "total_recv_fees_deposited" numeric`)
+        await db.query(`ALTER TABLE "send_packet" ADD "total_ack_fees_deposited" numeric`)
         await db.query(`ALTER TABLE "send_packet_fee_deposited" DROP CONSTRAINT "FK_9415c52ccc157e1a37c9f3f6235"`)
         await db.query(`ALTER TABLE "send_packet_fee_deposited" ADD CONSTRAINT "UQ_9415c52ccc157e1a37c9f3f6235" UNIQUE ("send_packet_id")`)
         await db.query(`CREATE INDEX "IDX_2c83d97c2235020f49a5b6b03d" ON "send_packet_fee_deposited" ("recv_gas_limit") `)

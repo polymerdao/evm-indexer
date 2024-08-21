@@ -163,9 +163,13 @@ async function updateMissingSendPacketFees(ctx: Context) {
         }
       });
     if (sendPacket) {
-      sendPacket.totalRecvFeesDeposited = sendPacket.totalRecvFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
-      sendPacket.totalAckFeesDeposited = sendPacket.totalAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
-      sendPacket.lastFeeDeposited = sendPacketFee;
+      const currRecvFeesDeposited = sendPacket.totalRecvFeesDeposited ? sendPacket.totalRecvFeesDeposited : BigInt(0);
+      sendPacket.totalRecvFeesDeposited = currRecvFeesDeposited + BigInt(sendPacketFee.recvGasLimit * sendPacketFee.recvGasPrice);
+      const currAckFeesDeposited = sendPacket.totalAckFeesDeposited ? sendPacket.totalAckFeesDeposited : BigInt(0);
+      sendPacket.totalAckFeesDeposited = currAckFeesDeposited + BigInt(sendPacketFee.ackGasLimit * sendPacketFee.ackGasPrice);
+      if (!sendPacket.firstFeeDeposited) {
+        sendPacket.firstFeeDeposited = sendPacketFee;
+      }
       if (!sendPacket.feesDeposited) {
         sendPacket.feesDeposited = [sendPacketFee];
       } else {
