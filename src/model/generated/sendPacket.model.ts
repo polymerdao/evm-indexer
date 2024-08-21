@@ -96,15 +96,15 @@ export class SendPacket {
     polymerBlockNumber!: bigint | undefined | null
 
     @Index_()
-    @BigIntColumn_({nullable: false})
-    totalRecvFeesDeposited!: bigint
+    @BigIntColumn_({nullable: true})
+    totalRecvFeesDeposited!: bigint | undefined | null
 
     @Index_()
-    @BigIntColumn_({nullable: false})
-    totalAckFeesDeposited!: bigint
+    @BigIntColumn_({nullable: true})
+    totalAckFeesDeposited!: bigint | undefined | null
 
     @OneToOne_(() => SendPacketFeeDeposited, e => e.sendPacket)
-    lastFeeDeposited!: SendPacketFeeDeposited | undefined | null
+    firstFeeDeposited!: SendPacketFeeDeposited | undefined | null
 
     @OneToMany_(() => SendPacketFeeDeposited, e => e.sendPacket)
     feesDeposited!: SendPacketFeeDeposited[]

@@ -53,9 +53,9 @@ type SendPacket @entity {
     polymerGas: Int
     polymerBlockNumber: BigInt
 
-    totalRecvFeesDeposited: BigInt! @index
-    totalAckFeesDeposited: BigInt! @index
-    lastFeeDeposited: SendPacketFeeDeposited @derivedFrom(field: "sendPacket")
+    totalRecvFeesDeposited: BigInt @index
+    totalAckFeesDeposited: BigInt @index
+    firstFeeDeposited: SendPacketFeeDeposited @derivedFrom(field: "sendPacket")
     feesDeposited: [SendPacketFeeDeposited!] @derivedFrom(field: "sendPacket")
 }
 
