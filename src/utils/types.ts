@@ -1,4 +1,4 @@
-import { IbcProcessor } from './ibc-processor'
+import { IbcProcessor, TxProcessor } from './ibc-processor'
 import {
   BlockHeader,
   DataHandlerContext,
@@ -14,3 +14,7 @@ export type Context = DataHandlerContext<Store, Fields>
 export type Block = BlockHeader<Fields>
 export type Log = _Log<Fields>
 export type Transaction = _Transaction<Fields>
+
+const traceProcessorType = TxProcessor([])
+export type TraceFields = EvmBatchProcessorFields<typeof traceProcessorType>
+export type TraceContext = DataHandlerContext<Store, TraceFields>

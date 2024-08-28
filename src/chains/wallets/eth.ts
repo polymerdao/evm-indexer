@@ -1,5 +1,5 @@
 import { TypeormDatabase } from '@subsquid/typeorm-store'
-import { IbcProcessor } from '../../utils/ibc-processor'
+import { TxProcessor } from '../../utils/ibc-processor'
 import { MAX_BATCH_CALL_SIZE, VERSION } from "../constants";
 import { handler } from "../../handlers/wallets";
 
@@ -8,17 +8,11 @@ const ADDRESSES: string[] = [
   process.env.PROPOSER_ADDRESS!,
 ]
 
-let processor = IbcProcessor()
+let processor = TxProcessor(ADDRESSES)
   .setRpcEndpoint({
     url: process.env.TXS_RPC!,
     rateLimit: Number(process.env.RPC_RATE_LIMIT!),
     maxBatchCallSize: MAX_BATCH_CALL_SIZE,
-  })
-  .addTransaction({
-    from: ADDRESSES,
-  })
-  .addTransaction({
-    to: ADDRESSES,
   })
 
 if (process.env.TXS_GATEWAY) {
