@@ -1,5 +1,5 @@
 import { TypeormDatabase } from '@subsquid/typeorm-store'
-import { IbcProcessor } from '../../utils/ibc-processor'
+import { TxProcessor } from '../../utils/ibc-processor'
 import { MAX_BATCH_CALL_SIZE, VERSION } from "../constants";
 import { handler } from "../../handlers/wallets";
 
@@ -8,7 +8,7 @@ const ADDRESSES: string[] = [
   process.env.RELAYER_BASE!,
 ]
 
-let processor = IbcProcessor()
+let processor = TxProcessor(ADDRESSES)
   .setRpcEndpoint({
     url: process.env.BASE_RPC!,
     rateLimit: Number(process.env.RPC_RATE_LIMIT!),
@@ -16,12 +16,6 @@ let processor = IbcProcessor()
   })
   .setBlockRange({
     from: Number(process.env.DISPATCHER_ADDRESS_BASE_START_BLOCK!),
-  })
-  .addTransaction({
-    from: ADDRESSES,
-  })
-  .addTransaction({
-    to: ADDRESSES,
   })
 
 if (process.env.BASE_TXS_GATEWAY) {
