@@ -4,7 +4,6 @@ import { MAX_BATCH_CALL_SIZE, VERSION } from "../constants";
 import { handler } from "../../handlers/wallets";
 
 const ADDRESSES: string[] = [
-  process.env.FEE_VAULT_OPTIMISM!,
   process.env.RELAYER_OPTIMISM!,
 ]
 
