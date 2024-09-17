@@ -1,0 +1,23 @@
+base:
+  contracts:
+    - "${DISPATCHER_ADDRESS_BASE}"
+    - "${UNIVERSAL_CHANNEL_ADDRESS_BASE}"
+    - "${FEE_VAULT_BASE}"
+optimism:
+  contracts:
+    - "${DISPATCHER_ADDRESS_OPTIMISM}"
+    - "${UNIVERSAL_CHANNEL_ADDRESS_OPTIMISM}"
+    - "${FEE_VAULT_OPTIMISM}"
+backfill:
+  contracts:
+    - "${DISPATCHER_ADDRESS_OPTIMISM}"
+base_txs:
+  transactions:
+    - "${RELAYER_BASE}"
+op_txs:
+  transactions:
+    - "${RELAYER_OPTIMISM}"
+eth_txs:
+  transactions:
+    - "${BATCHER_ADDRESS}"
+    - "${PROPOSER_ADDRESS}"
