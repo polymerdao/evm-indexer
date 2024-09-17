@@ -5,17 +5,18 @@ import { z } from "zod";
 import { topics } from "./topics";
 import { Context } from "./types";
 import { TypeormDatabase } from "@subsquid/typeorm-store";
+import dotenvExpand from 'dotenv-expand';
 
 const ConfigSchema = z.record(z.string(),
   z.object({
-    transactions: z.array(z.string()),
-    contracts: z.array(z.string()),
+    transactions: z.array(z.string()).optional(),
+    contracts: z.array(z.string()).optional(),
   }))
 
 type Config = z.infer<typeof ConfigSchema>
 
 export function IbcProcessor(processorName: string) {
-  processorName = processorName.toUpperCase();
+  let capProcessorName = processorName.toUpperCase();
 
   // Read the config file
   const configPath = process.env.CONFIG_FILE
@@ -26,7 +27,18 @@ export function IbcProcessor(processorName: string) {
   let config: Config
   try {
     const fileContents = fs.readFileSync(configPath, 'utf8')
-    config = ConfigSchema.parse(yaml.load(fileContents))
+    const rawConfig = yaml.load(fileContents) as Record<string, any>
+
+    // Interpolate environment variables
+    const interpolatedConfig = Object.entries(rawConfig).reduce((acc, [key, value]) => {
+      acc[key] = {
+        transactions: value.transactions?.map((t: string) => dotenvExpand.expand({ parsed: { VALUE: t } }).parsed!.VALUE),
+        contracts: value.contracts?.map((c: string) => dotenvExpand.expand({ parsed: { VALUE: c } }).parsed!.VALUE),
+      }
+      return acc
+    }, {} as Record<string, any>)
+    
+    config = ConfigSchema.parse(interpolatedConfig)
   } catch (error) {
     throw new Error(`Failed to read or parse config file: ${error}`)
   }
@@ -56,9 +68,9 @@ export function IbcProcessor(processorName: string) {
       }
     });
 
-  let rpcUrl = process.env[`${processorName}_RPC`]
+  let rpcUrl = process.env[`${capProcessorName}_RPC`]
   if (!rpcUrl) {
-    throw new Error(`Missing RPC endpoint for chain ${processorName}`)
+    throw new Error(`Missing RPC endpoint for chain ${capProcessorName}`)
   }
 
   let rpcRateLimit = process.env.RPC_RATE_LIMIT
@@ -67,7 +79,7 @@ export function IbcProcessor(processorName: string) {
     throw new Error(`Missing RPC rate limit env var`)
   }
 
-  let customRateLimit = process.env[`${processorName}_RPC_RATE_LIMIT`]
+  let customRateLimit = process.env[`${capProcessorName}_RPC_RATE_LIMIT`]
   if (customRateLimit) {
     rpcRateLimit = customRateLimit
   }
@@ -77,7 +89,7 @@ export function IbcProcessor(processorName: string) {
     throw new Error(`Missing max batch call size env var`)
   }
 
-  let customMaxBatchCallSize = process.env[`${processorName}_MAX_BATCH_CALL_SIZE`]
+  let customMaxBatchCallSize = process.env[`${capProcessorName}_MAX_BATCH_CALL_SIZE`]
   if (customMaxBatchCallSize) {
     maxBatchCallSize = customMaxBatchCallSize
   }
@@ -88,13 +100,13 @@ export function IbcProcessor(processorName: string) {
     maxBatchCallSize: Number(maxBatchCallSize),
   })
 
-  let gateway = process.env[`${processorName}_GATEWAY`]
+  let gateway = process.env[`${capProcessorName}_GATEWAY`]
   if (gateway) {
     processor = processor.setGateway(gateway)
   }
 
-  let fromBlock = process.env[`DISPATCHER_ADDRESS_${processorName}_START_BLOCK`]
-  if (!fromBlock) {
+  let fromBlock = process.env[`DISPATCHER_ADDRESS_${capProcessorName}_START_BLOCK`]
+  if (fromBlock) {
     processor = processor.setBlockRange({
       from: Number(fromBlock),
     })
