@@ -14,15 +14,18 @@
     "bluebird": "3.6.0",
     "dotenv": "^16.4.5",
     "ethers": "^6.12.1",
+    "js-yaml": "^4.1.0",
     "pg": "^8.11.5",
     "type-graphql": "^1.2.0-rc.1",
     "typeorm": "^0.3.20",
-    "winston": "^3.13.0"
+    "winston": "^3.13.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@subsquid/evm-typegen": "^4.0.0",
     "@subsquid/typeorm-codegen": "^2.0.0",
     "@types/bluebird": "^3.5.42",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.12.7",
     "ts-node": "^10.9.2",
     "typescript": "~5.4.5"
