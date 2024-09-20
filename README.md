@@ -1,13 +1,3 @@
-# Multichain transfers squid
-
-This [squid](https://docs.subsquid.io/) captures USDC Transfer events on ETH and BSC, stores them in the same database and serves the data over a common GraphQL API.
-
-The Ethereum processor is located in `src/eth` and similarly the Binance Chain processor can be found in `src/bsc`. The scripts file `commands.json` was updated with the commands `process:eth` and `process:bsc` to run the processors. 
-
-You can find some useful hints on developing multichain squids on the [dedicated documentation page](https://docs.subsquid.io/basics/multichain/).
-
-Dependencies: Node.js, Docker, Git.
-
 ## Quickstart
 
 ```bash
@@ -15,8 +5,8 @@ Dependencies: Node.js, Docker, Git.
 npm i -g @subsquid/cli
 
 # 1. Clone the repo
-git clone https://github.com/subsquid-labs/multichain-transfers-example
-cd multichain-transfers-example
+git clone https://github.com/polymerdao/evm-indexer
+cd evm-indexer
 
 # 2. Install dependencies
 npm ci
@@ -37,8 +27,8 @@ A GraphiQL playground will be available at [localhost:4350/graphql](http://local
 
 You can also run individual services separately:
 ```bash
-sqd process:eth # Ethereum processor
-sqd process:bsc # BSC processor
+PROCESSOR_NAME=optimism sqd process # Optimism processor
+PROCESSOR_NAME=base sqd process # Base processor
 sqd serve       # GraphQL server
 ```
 
@@ -80,90 +70,55 @@ To set up a new chain for indexing contracts and/or transactions, follow these s
 
 1. Decide whether you want to track contracts, transactions, or both for the new chain.
 
-2. Choose a unique processor name for your new chain (e.g., 'arbitrum', 'polygon'). This name will be used throughout the setup process. Create a new file in the appropriate directory:
-   - For contracts: `src/chains/contracts/{processorName}.ts`
-   - For transactions: `src/chains/wallets/{processorName}.ts`
+2. Choose a unique processor name for your new chain (e.g., 'arbitrum', 'polygon'). This name will be used as the `PROCESSOR_NAME` environment variable.
 
-3. In this new file, import the necessary functions and handler:
-
-   For contracts:
-   ```typescript
-   import { runProcessor } from "../../utils/ibc-processor";
-   import { handler } from "../../handlers";
-
-   runProcessor('{processorName}', handler)
-   ```
-
-   For transactions:
-   ```typescript
-   import { runProcessor } from '../../utils/ibc-processor'
-   import { handler } from "../../handlers/wallets";
-
-   runProcessor('{processorName}_txs', handler)
-   ```
-
-   Replace '{processorName}' with your chosen unique processor name.
-
-4. Update the configuration file (specified by the `CONFIG_FILE` environment variable) to include the new chain. Add an entry for your chain with the relevant contracts and/or transaction addresses:
+3. Update the configuration file (specified by the `CONFIG_FILE` environment variable) to include the new chain. Add an entry for your chain with the relevant configuration:
 
    ```yaml
-   {PROCESSOR_NAME}:
+   {processorName}:
      contracts:
        - "0x1234567890123456789012345678901234567890"
      transactions:
        - "0x0987654321098765432109876543210987654321"
+     rpc: "https://rpc.example.com"
+     rpcRateLimit: 10
+     maxBatchCallSize: 100
+     gateway: "https://gateway.example.com"
+     fromBlock: 1000000
+     finalityConfirmation: 20
+     version: 1
    ```
 
-5. Set the following environment variables for the new chain:
+   All fields are optional and can be overridden by environment variables. Note that if both `contracts` and `transactions` are omitted in the config, the processor won't perform any actual work and will exit after starting.
 
-   - `{PROCESSOR_NAME}_RPC`: The RPC endpoint for the new chain
-   - `{PROCESSOR_NAME}_GATEWAY`: (Optional) The gateway for the new chain
-   - `DISPATCHER_ADDRESS_{PROCESSOR_NAME}_START_BLOCK`: The starting block number for indexing
-   - `{PROCESSOR_NAME}_VERSION`: (Optional) The version number for the processor state schema
+4. Set the following environment variables for the new chain:
 
-   You can also set custom rate limits and batch call sizes:
+   - `PROCESSOR_NAME`: Set this to your chosen processor name
+   - `CONFIG_FILE`: Path to the configuration file
+   - `{PROCESSOR_NAME}_RPC`: The RPC endpoint for the new chain (overrides config)
+   - `{PROCESSOR_NAME}_GATEWAY`: The gateway for the new chain (overrides config)
+   - `DISPATCHER_ADDRESS_{PROCESSOR_NAME}_START_BLOCK`: The starting block number for indexing (overrides config's `fromBlock`)
+   - `{PROCESSOR_NAME}_VERSION`: The version number for the processor state schema (overrides config)
+   - `RPC_RATE_LIMIT`: Global RPC rate limit (can be overridden per chain)
+   - `MAX_BATCH_CALL_SIZE`: Global max batch call size (can be overridden per chain)
+   - `FINALITY_CONFIRMATION`: Global finality confirmation (can be overridden per chain)
+
+   You can also set chain-specific overrides:
    - `{PROCESSOR_NAME}_RPC_RATE_LIMIT`: Custom RPC rate limit for this chain
    - `{PROCESSOR_NAME}_MAX_BATCH_CALL_SIZE`: Custom max batch call size for this chain
 
-6. If needed, update the appropriate handler file:
-   - For contracts: `src/handlers/index.ts`
-   - For transactions: `src/handlers/wallets.ts`
-   Include any chain-specific logic in the handler function.
+   Note: Environment variables take precedence over configuration file values.
 
-7. Add new squid commands for the new chain in the `commands.json` file:
+5. To run the processor for the new chain, use the following command:
 
-   For contracts:
-   ```json
-   "process:{processorName}": {
-     "description": "Load .env and start the {ProcessorName} squid processor",
-     "deps": ["build", "migration:apply"],
-     "cmd": ["node", "--require=dotenv/config", "lib/chains/contracts/{processorName}.js"]
-   },
-   "process:prod:{processorName}": {
-     "description": "Start the {ProcessorName} squid processor",
-     "cmd": ["node", "lib/chains/contracts/{processorName}.js"],
-     "hidden": true
-   }
+   ```bash
+   PROCESSOR_NAME={processorName} sqd process
    ```
 
-   For transactions:
-   ```json
-   "process:{processorName}:wallets": {
-     "description": "Load .env and start the {ProcessorName} Wallets squid processor",
-     "deps": ["build", "migration:apply"],
-     "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/{processorName}.js"]
-   },
-   "process:prod:{processorName}:wallets": {
-     "description": "Start the {ProcessorName} Wallets squid processor",
-     "cmd": ["node", "lib/chains/wallets/{processorName}.js"],
-     "hidden": true
-   }
-   ```
+   This command will use the same processor code but with the configuration specific to the new chain.
 
-   Replace '{processorName}' with your chosen unique processor name and '{ProcessorName}' with a capitalized version.
-
-8. Rebuild and restart your squid to include the new chain in the indexing process.
+6. Rebuild your squid to ensure all changes are compiled.
 
 Remember to replace '{processorName}' and '{PROCESSOR_NAME}' with your actual unique processor name in all the above examples. The `ibc-processor.ts` utility will automatically set up the processor with the correct configuration based on the environment variables and the config file.
 
-Note: If you're tracking both contracts and transactions for the new chain, you'll need to create two separate files (one in each directory) and set up both processors and commands.
+Note: This setup allows you to use the same processor code for multiple chains, simplifying maintenance and reducing code duplication. You only need to specify different `PROCESSOR_NAME` environment variables to run the processor for different chains.

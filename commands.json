@@ -44,65 +44,15 @@
         "description": "Generate data access classes for an ABI file(s) in the ./abi folder",
         "cmd": ["squid-evm-typegen", "./src/abi", {"glob": "./abi/*.json"}, "--multicall"]
       },
-      "process:optimism": {
-        "description": "Load .env and start the OP squid processor",
+      "process": {
+        "description": "Load .env and start a squid processor",
         "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/optimism.js"]
+        "cmd": ["node", "--require=dotenv/config", "lib/chains/processor.js"]
       },
-      "process:base": {
-        "description": "Load .env and start the Base squid processor",
-        "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/base.js"]
-      },
-      "process:backfill": {
-        "description": "Load .env and start the Backfill squid processor",
-        "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/backfill.js"]
-      },
-      "process:eth:wallets": {
-        "description": "Load .env and start the Wallets squid processor",
-        "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/eth.js"]
-      },
-      "process:base:wallets": {
-        "description": "Load .env and start the Base Wallets squid processor",
-        "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/base.js"]
-      },
-      "process:optimism:wallets": {
-        "description": "Load .env and start the Optimism Wallets squid processor",
-        "deps": ["build", "migration:apply"],
-        "cmd": ["node", "--require=dotenv/config", "lib/chains/wallets/optimism.js"]
-      },
-      "process:prod:optimism": {
-        "description": "Start the Optimism squid processor",
+      "process:prod": {
+        "description": "Start the squid processor",
         "deps": ["migration:apply"],
-        "cmd": ["node", "lib/chains/optimism.js"],
-        "hidden": true
-      },
-      "process:prod:base": {
-        "description": "Start the Base squid processor",
-        "cmd": ["node", "lib/chains/base.js"],
-        "hidden": true
-      },
-      "process:prod:backfill": {
-        "description": "Start the backfill squid processor",
-        "cmd": ["node", "lib/chains/backfill.js"],
-        "hidden": true
-      },
-      "process:prod:eth:wallets": {
-        "description": "Start the wallets squid processor",
-        "cmd": ["node", "lib/chains/wallets/eth.js"],
-        "hidden": true
-      },
-      "process:prod:base:wallets": {
-        "description": "Start the wallets squid processor",
-        "cmd": ["node", "lib/chains/wallets/base.js"],
-        "hidden": true
-      },
-      "process:prod:optimism:wallets": {
-        "description": "Start the wallets squid processor",
-        "cmd": ["node", "lib/chains/wallets/optimism.js"],
+        "cmd": ["node", "lib/chains/processor.js"],
         "hidden": true
       },
       "serve": {

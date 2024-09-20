@@ -10,15 +10,15 @@ deploy:
     - name: optimism-processor
       cmd:
         - sqd
-        - process:prod:optimism
+        - process:prod
       env:
-        RPC_ENDPOINT_ETH: ${{ secrets.RPC_ENDPOINT_ETH }}
+        PROCESSOR_NAME: optimism
     - name: base-processor
       cmd:
         - sqd
-        - process:prod:base
+        - process:prod
       env:
-        RPC_ENDPOINT_BSC: ${{ secrets.RPC_ENDPOINT_BSC }}
+        PROCESSOR_NAME: base
   api:
     cmd:
       - sqd
