@@ -11,11 +11,26 @@ const ConfigSchema = z.record(z.string(),
   z.object({
     transactions: z.array(z.string()).optional(),
     contracts: z.array(z.string()).optional(),
+    rpc: z.string().optional(),
+    rpcRateLimit: z.number().optional(),
+    maxBatchCallSize: z.number().optional(),
+    gateway: z.string().optional(),
+    fromBlock: z.number().optional(),
+    finalityConfirmation: z.number().optional(),
+    version: z.number().default(1).optional(),
   }))
 
 type Config = z.infer<typeof ConfigSchema>
 
-export function IbcProcessor(processorName: string) {
+export function IbcProcessor(processorName?: string) {
+  if (!processorName) {
+    processorName = process.env.PROCESSOR_NAME
+  }
+
+  if (!processorName) {
+    throw new Error('PROCESSOR_NAME environment variable is not set')
+  }
+
   let capProcessorName = processorName.toUpperCase();
 
   // Read the config file
@@ -32,12 +47,20 @@ export function IbcProcessor(processorName: string) {
     // Interpolate environment variables
     const interpolatedConfig = Object.entries(rawConfig).reduce((acc, [key, value]) => {
       acc[key] = {
-        transactions: value.transactions?.map((t: string) => dotenvExpand.expand({ parsed: { VALUE: t } }).parsed!.VALUE),
-        contracts: value.contracts?.map((c: string) => dotenvExpand.expand({ parsed: { VALUE: c } }).parsed!.VALUE),
+        ...value,
+        transactions: value.transactions?.map((t: string) => dotenvExpand.expand({parsed: {VALUE: t}}).parsed!.VALUE),
+        contracts: value.contracts?.map((c: string) => dotenvExpand.expand({parsed: {VALUE: c}}).parsed!.VALUE),
+        rpc: dotenvExpand.expand({parsed: {VALUE: value.rpc}}).parsed!.VALUE,
+        rpcRateLimit: dotenvExpand.expand({parsed: {VALUE: value.rpcRateLimit}}).parsed!.VALUE,
+        maxBatchCallSize: dotenvExpand.expand({parsed: {VALUE: value.maxBatchCallSize}}).parsed!.VALUE,
+        gateway: dotenvExpand.expand({parsed: {VALUE: value.gateway}}).parsed!.VALUE,
+        fromBlock: dotenvExpand.expand({parsed: {VALUE: value.fromBlock}}).parsed!.VALUE,
+        finalityConfirmation: dotenvExpand.expand({parsed: {VALUE: value.finalityConfirmation}}).parsed!.VALUE,
+        version: dotenvExpand.expand({parsed: {VALUE: value.version}}).parsed!.VALUE,
       }
       return acc
     }, {} as Record<string, any>)
-    
+
     config = ConfigSchema.parse(interpolatedConfig)
   } catch (error) {
     throw new Error(`Failed to read or parse config file: ${error}`)
@@ -68,53 +91,52 @@ export function IbcProcessor(processorName: string) {
       }
     });
 
-  let rpcUrl = process.env[`${capProcessorName}_RPC`]
+  let rpcUrl = config[processorName]?.rpc ?? process.env[`${capProcessorName}_RPC`]
   if (!rpcUrl) {
     throw new Error(`Missing RPC endpoint for chain ${capProcessorName}`)
   }
 
-  let rpcRateLimit = process.env.RPC_RATE_LIMIT
-
-  if (!rpcRateLimit) {
-    throw new Error(`Missing RPC rate limit env var`)
+  let rpcRateLimit = config[processorName]?.rpcRateLimit ?? Number(process.env.RPC_RATE_LIMIT)
+  if (rpcRateLimit === undefined) {
+    throw new Error(`Missing RPC rate limit`)
   }
 
-  let customRateLimit = process.env[`${capProcessorName}_RPC_RATE_LIMIT`]
-  if (customRateLimit) {
+  let customRateLimit = Number(process.env[`${capProcessorName}_RPC_RATE_LIMIT`])
+  if (!isNaN(customRateLimit)) {
     rpcRateLimit = customRateLimit
   }
 
-  let maxBatchCallSize = process.env.MAX_BATCH_CALL_SIZE ?? "100"
-  if (!maxBatchCallSize) {
-    throw new Error(`Missing max batch call size env var`)
+  let maxBatchCallSize = config[processorName]?.maxBatchCallSize ?? Number(process.env.MAX_BATCH_CALL_SIZE ?? "100")
+  if (maxBatchCallSize === undefined) {
+    throw new Error(`Missing max batch call size`)
   }
 
-  let customMaxBatchCallSize = process.env[`${capProcessorName}_MAX_BATCH_CALL_SIZE`]
-  if (customMaxBatchCallSize) {
+  let customMaxBatchCallSize = Number(process.env[`${capProcessorName}_MAX_BATCH_CALL_SIZE`])
+  if (!isNaN(customMaxBatchCallSize)) {
     maxBatchCallSize = customMaxBatchCallSize
   }
 
   processor = processor.setRpcEndpoint({
     url: rpcUrl,
-    rateLimit: Number(rpcRateLimit),
-    maxBatchCallSize: Number(maxBatchCallSize),
+    rateLimit: rpcRateLimit,
+    maxBatchCallSize: maxBatchCallSize,
   })
 
-  let gateway = process.env[`${capProcessorName}_GATEWAY`]
+  let gateway = config[processorName]?.gateway ?? process.env[`${capProcessorName}_GATEWAY`]
   if (gateway) {
     processor = processor.setGateway(gateway)
   }
 
-  let fromBlock = process.env[`DISPATCHER_ADDRESS_${capProcessorName}_START_BLOCK`]
+  let fromBlock = config[processorName]?.fromBlock ?? Number(process.env[`DISPATCHER_ADDRESS_${capProcessorName}_START_BLOCK`])
   if (fromBlock) {
     processor = processor.setBlockRange({
-      from: Number(fromBlock),
+      from: fromBlock,
     })
   }
 
-  let finalityConfirmation = process.env.FINALITY_CONFIRMATION;
+  let finalityConfirmation = config[processorName]?.finalityConfirmation ?? Number(process.env.FINALITY_CONFIRMATION);
   if (finalityConfirmation) {
-    processor = processor.setFinalityConfirmation(Number(finalityConfirmation))
+    processor = processor.setFinalityConfirmation(finalityConfirmation)
   }
 
   if (config[processorName]) {
@@ -136,13 +158,17 @@ export function IbcProcessor(processorName: string) {
     }
   }
 
-  return processor
+  return {processor, processorName, config}
 }
 
-export function runProcessor(processorName: string, handler: (ctx: Context) => Promise<void>) {
-  const processor = IbcProcessor(processorName)
+export function runProcessor(handler: (ctx: Context) => Promise<void>) {
+  const {processor, processorName, config} = IbcProcessor()
 
-  let version = process.env[`${processorName.toUpperCase()}_VERSION`] ?? '1';
+  let version = process.env[`${processorName.toUpperCase()}_VERSION`] ?? config.version ?? 1;
+  if (!version) {
+    throw new Error('Version not set')
+  }
+
   processor.run(new TypeormDatabase({
       supportHotBlocks: true,
       isolationLevel: "REPEATABLE READ",
