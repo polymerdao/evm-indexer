@@ -19,7 +19,7 @@ import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
-  let portAddress = ethers.getAddress(event.recevier)
+  let portAddress = ethers.getAddress(event.receiver)
   let portId = `${portPrefix}${portAddress.slice(2)}`
 
   return new ChannelOpenInit({

@@ -6,6 +6,13 @@
   },
   {
     "type": "function",
+    "name": "acceptOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "acknowledgement",
     "inputs": [
       {
@@ -136,6 +143,88 @@
             "internalType": "uint256"
           }
         ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "channelCloseConfirm",
+    "inputs": [
+      {
+        "name": "portAddress",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "proof",
+        "type": "tuple",
+        "internalType": "struct Ics23Proof",
+        "components": [
+          {
+            "name": "proof",
+            "type": "tuple[]",
+            "internalType": "struct OpIcs23Proof[]",
+            "components": [
+              {
+                "name": "path",
+                "type": "tuple[]",
+                "internalType": "struct OpIcs23ProofPath[]",
+                "components": [
+                  {
+                    "name": "prefix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  },
+                  {
+                    "name": "suffix",
+                    "type": "bytes",
+                    "internalType": "bytes"
+                  }
+                ]
+              },
+              {
+                "name": "key",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "value",
+                "type": "bytes",
+                "internalType": "bytes"
+              },
+              {
+                "name": "prefix",
+                "type": "bytes",
+                "internalType": "bytes"
+              }
+            ]
+          },
+          {
+            "name": "height",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "channelCloseInit",
+    "inputs": [
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "outputs": [],
@@ -530,16 +619,16 @@
   },
   {
     "type": "function",
-    "name": "closeIbcChannel",
-    "inputs": [
+    "name": "feeVault",
+    "inputs": [],
+    "outputs": [
       {
-        "name": "channelId",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "",
+        "type": "address",
+        "internalType": "contract IFeeVault"
       }
     ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -591,6 +680,11 @@
             "name": "counterpartyChannelId",
             "type": "bytes32",
             "internalType": "bytes32"
+          },
+          {
+            "name": "portId",
+            "type": "string",
+            "internalType": "string"
           }
         ]
       }
@@ -599,12 +693,17 @@
   },
   {
     "type": "function",
-    "name": "getOptimisticConsensusState",
+    "name": "getState",
     "inputs": [
       {
         "name": "height",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "connection",
+        "type": "string",
+        "internalType": "string"
       }
     ],
     "outputs": [
@@ -612,16 +711,6 @@
         "name": "appHash",
         "type": "uint256",
         "internalType": "uint256"
-      },
-      {
-        "name": "fraudProofEndTime",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "ended",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -636,9 +725,9 @@
         "internalType": "string"
       },
       {
-        "name": "lightClient",
+        "name": "_feeVault",
         "type": "address",
-        "internalType": "contract LightClient"
+        "internalType": "contract IFeeVault"
       }
     ],
     "outputs": [],
@@ -647,6 +736,19 @@
   {
     "type": "function",
     "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pendingOwner",
     "inputs": [],
     "outputs": [
       {
@@ -830,6 +932,19 @@
   },
   {
     "type": "function",
+    "name": "removeConnection",
+    "inputs": [
+      {
+        "name": "connection",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
@@ -853,6 +968,30 @@
         "name": "timeoutTimestamp",
         "type": "uint64",
         "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "sequence",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setClientForConnection",
+    "inputs": [
+      {
+        "name": "connection",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "lightClient",
+        "type": "address",
+        "internalType": "contract ILightClient"
       }
     ],
     "outputs": [],
@@ -1018,56 +1157,12 @@
   },
   {
     "type": "function",
-    "name": "updateClientWithOptimisticConsensusState",
+    "name": "updateClient",
     "inputs": [
       {
-        "name": "l1header",
-        "type": "tuple",
-        "internalType": "struct L1Header",
-        "components": [
-          {
-            "name": "header",
-            "type": "bytes[]",
-            "internalType": "bytes[]"
-          },
-          {
-            "name": "stateRoot",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "number",
-            "type": "uint64",
-            "internalType": "uint64"
-          }
-        ]
-      },
-      {
         "name": "proof",
-        "type": "tuple",
-        "internalType": "struct OpL2StateProof",
-        "components": [
-          {
-            "name": "accountProof",
-            "type": "bytes[]",
-            "internalType": "bytes[]"
-          },
-          {
-            "name": "outputRootProof",
-            "type": "bytes[]",
-            "internalType": "bytes[]"
-          },
-          {
-            "name": "l2OutputProposalKey",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
-          {
-            "name": "l2BlockHash",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          }
-        ]
+        "type": "bytes",
+        "internalType": "bytes"
       },
       {
         "name": "height",
@@ -1078,20 +1173,14 @@
         "name": "appHash",
         "type": "uint256",
         "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "fraudProofEndTime",
-        "type": "uint256",
-        "internalType": "uint256"
       },
       {
-        "name": "ended",
-        "type": "bool",
-        "internalType": "bool"
+        "name": "connection",
+        "type": "string",
+        "internalType": "string"
       }
     ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -1335,6 +1424,82 @@
   },
   {
     "type": "event",
+    "name": "ChannelCloseConfirm",
+    "inputs": [
+      {
+        "name": "portAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelCloseConfirmError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelCloseInit",
+    "inputs": [
+      {
+        "name": "portAddress",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ChannelCloseInitError",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "error",
+        "type": "bytes",
+        "indexed": false,
+        "internalType": "bytes"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "ChannelOpenAck",
     "inputs": [
       {
@@ -1414,7 +1579,7 @@
     "name": "ChannelOpenInit",
     "inputs": [
       {
-        "name": "recevier",
+        "name": "receiver",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -1541,44 +1706,6 @@
   },
   {
     "type": "event",
-    "name": "CloseIbcChannel",
-    "inputs": [
-      {
-        "name": "portAddress",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "channelId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "CloseIbcChannelError",
-    "inputs": [
-      {
-        "name": "receiver",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "error",
-        "type": "bytes",
-        "indexed": false,
-        "internalType": "bytes"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "Initialized",
     "inputs": [
       {
@@ -1586,6 +1713,25 @@
         "type": "uint8",
         "indexed": false,
         "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferStarted",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1827,17 +1973,85 @@
   },
   {
     "type": "error",
+    "name": "channelIdNotFound",
+    "inputs": [
+      {
+        "name": "channelId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "channelNotOwnedByPortAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "channelNotOwnedBySender",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "invalidCounterPartyPortId",
+    "name": "invalidAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "invalidConnection",
+    "inputs": [
+      {
+        "name": "connection",
+        "type": "string",
+        "internalType": "string"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "invalidConnectionHops",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "invalidCounterParty",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "invalidPacket",
     "inputs": []
   },
   {
     "type": "error",
     "name": "invalidPacketSequence",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "invalidPortPrefix",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "invalidVersion",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "lightClientNotFound",
+    "inputs": [
+      {
+        "name": "connection",
+        "type": "string",
+        "internalType": "string"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "notEnoughGas",
     "inputs": []
   },
   {
