@@ -222,22 +222,36 @@ export async function postBlockChannelHook(ctx: Context, entities: Entities) {
 }
 
 // Helper function to filter out duplicates and keep only the last occurrence based on `id`
-const uniqueByLastOccurrence = <T extends { id: string }>(items: T[]): T[] => {
+const uniqueByLastOccurrence = <T extends { id: string }>(items: T[], objectId?: string): T[] => {
   const seen = new Map<string, T>();
   for (const item of items) {
     seen.set(item.id, item); // This will overwrite previous entries with the same id
   }
+
+  if (objectId) {
+    // Further filter by the provided field (like 'sendPacket')
+    const seenByObjectId = new Map<string, T>();
+    for (const item of Array.from(seen.values())) {
+      const objectIdValue = item[objectId]; // Dynamically access the field using bracket notation
+      if (objectIdValue) {
+        seenByObjectId.set(String(objectIdValue), item); // Convert to string if necessary
+      }
+    }
+    return Array.from(seenByObjectId.values());
+  }
+
   return Array.from(seen.values());
 };
 
 const processAndUpsertPackets = async <T extends { id: string }>(
   packets: T[],
   ctx: Context,
-  hookFunction: (packet: T, ctx: Context) => Promise<any>
+  hookFunction: (packet: T, ctx: Context) => Promise<any>,
+  objectId: string
 ): Promise<string[]> => {
   let processedPackets = await Promise.all(packets.map(packet => hookFunction(packet, ctx)));
   processedPackets = processedPackets.filter((packet): packet is T => packet !== null);
-  processedPackets = uniqueByLastOccurrence(processedPackets);
+  processedPackets = uniqueByLastOccurrence(processedPackets, objectId);
   await ctx.store.upsert(processedPackets);
 
   // Return the unique IDs of processed packets
@@ -247,7 +261,7 @@ const processAndUpsertPackets = async <T extends { id: string }>(
 export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   const uniquePacketIds = new Set<string>();
 
-  let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook);
+  let packetUpdates = await processAndUpsertPackets(entities.sendPackets, ctx, sendPacketHook, 'sendPacket');
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
   let sendPacketUpdates = (await Promise.all(entities.sendPackets.map(packet => packetSourceChannelUpdate(packet, ctx))))
@@ -255,13 +269,13 @@ export async function postBlockPacketHook(ctx: Context, entities: Entities) {
   sendPacketUpdates = uniqueByLastOccurrence(sendPacketUpdates);
   await ctx.store.upsert(sendPacketUpdates);
 
-  packetUpdates = await processAndUpsertPackets(entities.recvPackets, ctx, recvPacketHook);
+  packetUpdates = await processAndUpsertPackets(entities.recvPackets, ctx, recvPacketHook, 'recvPacket');
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
-  packetUpdates = await processAndUpsertPackets(entities.writeAckPackets, ctx, writeAckPacketHook);
+  packetUpdates = await processAndUpsertPackets(entities.writeAckPackets, ctx, writeAckPacketHook, 'writeAckPacket');
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
-  packetUpdates = await processAndUpsertPackets(entities.acknowledgements, ctx, ackPacketHook);
+  packetUpdates = await processAndUpsertPackets(entities.acknowledgements, ctx, ackPacketHook, 'ackPacket');
   packetUpdates.forEach(id => uniquePacketIds.add(id));
 
   if (process.env.CALC_PACKET_METRICS === 'true') {
