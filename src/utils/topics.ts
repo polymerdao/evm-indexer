@@ -16,7 +16,8 @@ export let topics = [
   dispatcher.events.ChannelOpenTry.topic,
   dispatcher.events.ChannelOpenAck.topic,
   dispatcher.events.ChannelOpenConfirm.topic,
-  dispatcher.events.CloseIbcChannel.topic,
+  dispatcher.events.ChannelCloseInit.topic,
+  dispatcher.events.ChannelCloseConfirm.topic,
 
   // UCH
   uch.events.UCHPacketSent.topic,
