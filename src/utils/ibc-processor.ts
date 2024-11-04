@@ -42,7 +42,7 @@ export function IbcProcessor(processorName?: string) {
   try {
     const fileContents = fs.readFileSync(configPath, 'utf8')
     const interpolatedFileContents = fileContents.replace(/\$\{([A-Z0-9_]+)}/g, (match, p1) => {
-      return process.env[p1] || match; // Replace with env var value, or keep the placeholder if not found
+      return process.env[p1] !== undefined ? String(process.env[p1]) : match; // Replace with env var value (even if empty), or keep the placeholder if not found
     });
     const interpolatedConfig = yaml.load(interpolatedFileContents) as Record<string, any>
     config = ConfigSchema.parse(interpolatedConfig)
