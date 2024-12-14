@@ -1,10 +1,10 @@
 import { EvmBatchProcessor } from '@subsquid/evm-processor'
 import * as fs from 'fs'
 import * as yaml from 'js-yaml'
-import { z } from "zod";
-import { topics } from "./topics";
-import { Context } from "./types";
-import { TypeormDatabase } from "@subsquid/typeorm-store";
+import { z } from 'zod';
+import { topics } from './topics';
+import { Context } from './types';
+import { TypeormDatabase } from '@subsquid/typeorm-store';
 
 const ConfigSchema = z.record(z.string(),
   z.object({
@@ -90,7 +90,7 @@ export function IbcProcessor(processorName?: string) {
     rpcRateLimit = customRateLimit
   }
 
-  let maxBatchCallSize = config[processorName]?.maxBatchCallSize ?? Number(process.env.MAX_BATCH_CALL_SIZE ?? "100")
+  let maxBatchCallSize = config[processorName]?.maxBatchCallSize ?? Number(process.env.MAX_BATCH_CALL_SIZE ?? '100')
   if (maxBatchCallSize === undefined) {
     throw new Error(`Missing max batch call size`)
   }
@@ -155,7 +155,7 @@ export function runProcessor(handler: (ctx: Context) => Promise<void>) {
 
   processor.run(new TypeormDatabase({
       supportHotBlocks: true,
-      isolationLevel: "REPEATABLE READ",
+      isolationLevel: 'REPEATABLE READ',
       stateSchema: `${processorName}_processor_${version}`
     }),
     async (ctx) => {

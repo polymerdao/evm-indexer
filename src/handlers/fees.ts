@@ -1,7 +1,7 @@
-import { Block, Log } from "../utils/types";
+import { Block, Log } from '../utils/types';
 import * as fee from '../abi/fee'
-import { ethers } from "ethers";
-import { OpenChannelFeeDeposited, SendPacketFeeDeposited } from "../model";
+import { ethers } from 'ethers';
+import { OpenChannelFeeDeposited, SendPacketFeeDeposited } from '../model';
 
 
 export function handleSendPacketFee(block: Block, log: Log) {

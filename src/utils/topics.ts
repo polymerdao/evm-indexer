@@ -1,6 +1,6 @@
-import * as dispatcher from "../abi/dispatcher";
-import * as uch from "../abi/uch";
-import * as fee from "../abi/fee";
+import * as dispatcher from '../abi/dispatcher';
+import * as uch from '../abi/uch';
+import * as fee from '../abi/fee';
 
 export let topics = [
   // Packets

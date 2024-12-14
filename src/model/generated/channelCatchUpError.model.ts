@@ -1,5 +1,5 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, IntColumn as IntColumn_, Index as Index_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
-import {Channel} from "./channel.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, IntColumn as IntColumn_, Index as Index_, OneToOne as OneToOne_} from '@subsquid/typeorm-store'
+import {Channel} from './channel.model'
 
 @Entity_()
 export class ChannelCatchUpError {

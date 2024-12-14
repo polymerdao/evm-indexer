@@ -3,13 +3,13 @@ import { Packet, PacketCatchUpError, SendPacket, WriteAckPacket } from '../model
 import * as dispatcher from '../abi/dispatcher'
 import { ethers } from 'ethers'
 import { Block, Context, Log } from '../utils/types'
-import { getDispatcherClientName, getDispatcherType, packetToSender } from "./helpers";
-import { logger } from "../utils/logger";
-import { In } from "typeorm";
-import { SearchTxQuery } from "@cosmjs/stargate/build/search";
-import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
-import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
-import { Promise as Bluebird } from "bluebird";
+import { getDispatcherClientName, getDispatcherType, packetToSender } from './helpers';
+import { logger } from '../utils/logger';
+import { In } from 'typeorm';
+import { SearchTxQuery } from '@cosmjs/stargate/build/search';
+import { getCosmosPolymerData, PolymerData } from './cosmosIndexer';
+import { CATCHUP_ERROR_LIMIT } from '../chains/constants';
+import { Promise as Bluebird } from 'bluebird';
 
 export function handleSendPacket(block: Block, log: Log, portPrefix: string, uchEventSender: string): models.SendPacket {
   let event = dispatcher.events.SendPacket.decode(log)
@@ -329,18 +329,18 @@ async function updateSendToRecvPolymerGas(packet: Packet, ctx: Context) {
   const srcPortId = `polyibc.${sendPacket.dispatcherClientName}.${sendPacket.sourcePortAddress.slice(2)}`;
   const polymerData = await getPolymerData([
     {
-      key: "send_packet.packet_sequence",
+      key: 'send_packet.packet_sequence',
       value: sendPacket.sequence
     },
     {
-      key: "send_packet.packet_src_port",
+      key: 'send_packet.packet_src_port',
       value: srcPortId
     },
     {
-      key: "send_packet.packet_src_channel",
+      key: 'send_packet.packet_src_channel',
       value: sendPacket.srcChannelId
     }
-  ], "send_packet")
+  ], 'send_packet')
 
   let polymerGas = Number(polymerData!.gasUsed);
   packet.sendToRecvPolymerGas = polymerGas
@@ -355,18 +355,18 @@ async function updateSendToAckPolymerGas(packet: Packet, ctx: Context) {
 
   const polymerData = await getPolymerData([
     {
-      key: "write_acknowledgement.packet_sequence",
+      key: 'write_acknowledgement.packet_sequence',
       value: writeAckPacket.sequence
     },
     {
-      key: "write_acknowledgement.packet_dst_port",
+      key: 'write_acknowledgement.packet_dst_port',
       value: destPortId
     },
     {
-      key: "write_acknowledgement.packet_dst_channel",
+      key: 'write_acknowledgement.packet_dst_channel',
       value: writeAckPacket.writerChannelId
     }
-  ], "write_acknowledgement")
+  ], 'write_acknowledgement')
 
   let polymerGas = Number(polymerData!.gasUsed);
   packet.sendToAckPolymerGas = polymerGas + packet.sendToRecvPolymerGas!
