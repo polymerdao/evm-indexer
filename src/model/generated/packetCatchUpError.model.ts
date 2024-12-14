@@ -1,5 +1,5 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, IntColumn as IntColumn_, Index as Index_, OneToOne as OneToOne_} from "@subsquid/typeorm-store"
-import {Packet} from "./packet.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, IntColumn as IntColumn_, Index as Index_, OneToOne as OneToOne_} from '@subsquid/typeorm-store'
+import {Packet} from './packet.model'
 
 @Entity_()
 export class PacketCatchUpError {

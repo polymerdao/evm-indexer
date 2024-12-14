@@ -1,11 +1,11 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, OneToOne as OneToOne_, JoinColumn as JoinColumn_} from "@subsquid/typeorm-store"
-import {ChannelStates} from "./_channelStates"
-import {ChannelOpenInit} from "./channelOpenInit.model"
-import {ChannelOpenTry} from "./channelOpenTry.model"
-import {ChannelOpenAck} from "./channelOpenAck.model"
-import {ChannelOpenConfirm} from "./channelOpenConfirm.model"
-import {CloseIbcChannel} from "./closeIbcChannel.model"
-import {ChannelCatchUpError} from "./channelCatchUpError.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, StringColumn as StringColumn_, Index as Index_, IntColumn as IntColumn_, BigIntColumn as BigIntColumn_, ManyToOne as ManyToOne_, OneToOne as OneToOne_, JoinColumn as JoinColumn_} from '@subsquid/typeorm-store'
+import {ChannelStates} from './_channelStates'
+import {ChannelOpenInit} from './channelOpenInit.model'
+import {ChannelOpenTry} from './channelOpenTry.model'
+import {ChannelOpenAck} from './channelOpenAck.model'
+import {ChannelOpenConfirm} from './channelOpenConfirm.model'
+import {CloseIbcChannel} from './closeIbcChannel.model'
+import {ChannelCatchUpError} from './channelCatchUpError.model'
 
 @Entity_()
 export class Channel {
@@ -52,7 +52,7 @@ export class Channel {
     @StringColumn_({nullable: false})
     transactionHash!: string
 
-    @Column_("varchar", {length: 6, nullable: false})
+    @Column_('varchar', {length: 6, nullable: false})
     state!: ChannelStates
 
     @Index_()

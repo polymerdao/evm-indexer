@@ -1,8 +1,8 @@
-import { Context } from "../utils/types";
-import { Transaction } from "../model";
+import { Context } from '../utils/types';
+import { Transaction } from '../model';
 
 export async function handler(ctx: Context) {
-  let chainId = Number(await ctx._chain.client.call("eth_chainId"))
+  let chainId = Number(await ctx._chain.client.call('eth_chainId'))
 
   let txs: Transaction[] = []
   for (let block of ctx.blocks) {

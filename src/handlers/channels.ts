@@ -10,12 +10,12 @@ import {
 import * as dispatcher from '../abi/dispatcher'
 import { Block, Context, Log } from '../utils/types'
 import { ethers } from 'ethers'
-import { getDispatcherClientName, getDispatcherType } from "./helpers";
-import { logger } from "../utils/logger";
-import { In, LessThan, MoreThan } from "typeorm";
-import { TmClient } from "./tmclient";
-import { getCosmosPolymerData, PolymerData } from "./cosmosIndexer";
-import { CATCHUP_ERROR_LIMIT } from "../chains/constants";
+import { getDispatcherClientName, getDispatcherType } from './helpers';
+import { logger } from '../utils/logger';
+import { In, LessThan, MoreThan } from 'typeorm';
+import { TmClient } from './tmclient';
+import { getCosmosPolymerData, PolymerData } from './cosmosIndexer';
+import { CATCHUP_ERROR_LIMIT } from '../chains/constants';
 
 export function handleChannelOpenInit(portPrefix: string, block: Block, log: Log): ChannelOpenInit {
   let event = dispatcher.events.ChannelOpenInit.decode(log);
@@ -185,7 +185,7 @@ export async function ackChannelHook(channelOpenAck: ChannelOpenAck, ctx: Contex
       state: ChannelStates.INIT,
       blockTimestamp: LessThan(channelOpenAck.blockTimestamp)
     },
-    order: {blockTimestamp: "desc"},
+    order: {blockTimestamp: 'desc'},
     relations: {channelOpenInit: true}
   })
 
@@ -248,7 +248,7 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
       state: In([ChannelStates.TRY, ChannelStates.OPEN]),
       blockTimestamp: LessThan(channelOpenConfirm.blockTimestamp)
     },
-    order: {blockTimestamp: "desc"},
+    order: {blockTimestamp: 'desc'},
     relations: {channelOpenTry: true, channelOpenInit: true, channelOpenAck: true, channelOpenConfirm: true}
   })
 
@@ -284,7 +284,7 @@ export async function confirmChannelHook(channelOpenConfirm: ChannelOpenConfirm,
 
 async function getChannelTx(
   channel: ChannelOpenInit | ChannelOpenTry | ChannelOpenAck | ChannelOpenConfirm,
-  type: "init" | "try" | "ack" | "confirm"
+  type: 'init' | 'try' | 'ack' | 'confirm'
 ): Promise<PolymerData | null> {
   let query = [
     {key: `channel_open_${type}.port_id`, value: channel.portId},

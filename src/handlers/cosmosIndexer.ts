@@ -1,4 +1,4 @@
-import { SearchTxQuery } from "@cosmjs/stargate/build/search";
+import { SearchTxQuery } from '@cosmjs/stargate/build/search';
 
 export type PolymerData = {
   gasUsed: bigint;
@@ -10,7 +10,7 @@ async function fetchGraphQL(
   query: string,
   variables: Record<string, any>
 ) {
-  return fetch(process.env.POLY_INDEXER_URL ?? "http://localhost:8080/v1/graphql", {
+  return fetch(process.env.POLY_INDEXER_URL ?? 'http://localhost:8080/v1/graphql', {
     method: 'POST',
     body: JSON.stringify({
       query: query,
@@ -41,10 +41,10 @@ export async function getCosmosPolymerData(query: SearchTxQuery, eventType: stri
 
   let spec = [
     {
-      "events": [
+      'events': [
         {
-          "type": eventType,
-          "attributes": query
+          'type': eventType,
+          'attributes': query
         }
       ]
     }

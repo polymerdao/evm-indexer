@@ -25,10 +25,10 @@ import {
   Timeout,
   WriteAckPacket,
   WriteTimeoutPacket
-} from "../../model";
-import { StatName } from "../../handlers";
-import { CATCHUP_ERROR_LIMIT } from "../../chains/constants";
-import { getMissingChannelMetricsClauses, getMissingPacketMetricsClauses } from "../../handlers/backfill";
+} from '../../model';
+import { StatName } from '../../handlers';
+import { CATCHUP_ERROR_LIMIT } from '../../chains/constants';
+import { getMissingChannelMetricsClauses, getMissingPacketMetricsClauses } from '../../handlers/backfill';
 
 @ObjectType()
 export class Stat {
@@ -153,11 +153,11 @@ export class StatsResolver {
   async backfill(): Promise<BackfillStat> {
     const manager = await this.tx()
 
-    console.time("packetsQuery");
+    console.time('packetsQuery');
     const packets = await manager.getRepository(Packet).count({where: getMissingPacketMetricsClauses()})
-    console.timeEnd("packetsQuery");
+    console.timeEnd('packetsQuery');
 
-    console.time("packetCatchupErrorsQuery");
+    console.time('packetCatchupErrorsQuery');
     let packetCatchupErrors = await manager.getRepository(PacketCatchUpError).count({
       where: [
         {
@@ -168,9 +168,9 @@ export class StatsResolver {
         }
       ]
     })
-    console.timeEnd("packetCatchupErrorsQuery");
+    console.timeEnd('packetCatchupErrorsQuery');
 
-    console.time("channelsQuery");
+    console.time('channelsQuery');
     let channels = await manager.getRepository(Channel).count({
       relations: {
         channelOpenInit: true,
@@ -181,9 +181,9 @@ export class StatsResolver {
       },
       where: getMissingChannelMetricsClauses()
     })
-    console.timeEnd("channelsQuery");
+    console.timeEnd('channelsQuery');
 
-    console.time("channelCatchupErrorsQuery");
+    console.time('channelCatchupErrorsQuery');
     let channelCatchupErrors = await manager.getRepository(ChannelCatchUpError).count({
       where: [
         {
@@ -197,7 +197,7 @@ export class StatsResolver {
         }
       ]
     })
-    console.timeEnd("channelCatchupErrorsQuery");
+    console.timeEnd('channelCatchupErrorsQuery');
 
     return {
       channels,
