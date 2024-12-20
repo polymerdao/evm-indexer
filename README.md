@@ -59,7 +59,7 @@ That is likely caused by missing some env vars like `DISPATCHER_ADDRESS_BASE` or
 Check that you have all the required env vars set in your runtime.
 
 ### Not ready to serve block N of dataset X
-That error usually means that Subsquid's acrhival node is experiencing some issues.
+That error usually means that Subsquid's archival node is experiencing some issues.
 If you don't do a huge backfill, set the affected chain gateway like `OPTIMISM_GATEWAY` to an empty string and restart the indexer.
 Additionally, go to Subsquid's discord and open a support ticket like [this one](https://discord.com/channels/857105545135390731/1255998611716575263).
 
